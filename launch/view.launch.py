@@ -104,8 +104,8 @@ def generate_launch_description():
             rviz,
             spawn_robot,
             gz_bridge,
-            #gz_sim,
-            launch_world,
+            gz_sim,
+            #launch_world,
             ros_gz_image_bridge,
         ]
     )
