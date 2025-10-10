@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+
+<joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0.1 0 0.112" rpy="0 0 0"/>
+  </joint>
+
+ <link name="imu_link">
+  <visual>
+    <geometry>
+      <box size="0.05 0.05 0.05"/>
+    </geometry>
+  </visual>
+
+  <collision>
+    <geometry>
+      <box size="0.05 0.05 0.05"/>
+    </geometry>
+  </collision>
+
+  <inertial>
+            <mass value="0.1" />
+            <inertia ixx="0.01" ixy="0.0" ixz="0"
+            iyy="0.01" iyz="0" izz="0.01" />
+  </inertial>
+
+  
+</link>
+
+
+<gazebo reference="imu_link">
+  
+  <material>Gazebo/Black</material>
+
+  
+  <sensor name="imu_sensor" type="imu">
+    
+    <always_on>true</always_on>
+    <update_rate>200</update_rate>
+    <gz_frame_id>imu_link</gz_frame_id>
+
+   
+    <topic>imu</topic>
+
+    
+    <imu>
+      
+      <orientation_reference_frame parent_frame="imu_link" custom_rpy="0 0 0"/>
+
+      
+      <angular_velocity>
+        <x>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>2e-4</stddev>
+          </noise>
+        </x>
+        <y>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>2e-4</stddev>
+          </noise>
+        </y>
+        <z>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>2e-4</stddev>
+          </noise>
+        </z>
+      </angular_velocity>
+
+    
+      <linear_acceleration>
+        <x>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>1.7e-2</stddev>
+          </noise>
+        </x>
+        <y>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>1.7e-2</stddev>
+          </noise>
+        </y>
+        <z>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>1.7e-2</stddev>
+          </noise>
+        </z>
+      </linear_acceleration>
+
+     
+        <orientation_enabled>true</orientation_enabled>
+      </imu>
+
+      
+    </sensor>
+  </gazebo>
+
+
+
+</robot>
