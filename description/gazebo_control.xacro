@@ -9,9 +9,9 @@
 
             <left_joint>left_wheel_joint</left_joint>
             <right_joint>right_wheel_joint</right_joint>
-
-            <right_joint>right_wheel_joint</right_joint>
+            
             <right_joint>wheel_back_right_joint</right_joint>
+            <left_joint>wheel_back_left_joint</left_joint>
 
             <wheel_separation>1.8</wheel_separation>
             <wheel_radius>0.25</wheel_radius>
