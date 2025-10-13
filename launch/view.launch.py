@@ -8,7 +8,6 @@ from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 from launch.conditions import IfCondition
 
 
-
 def generate_launch_description():
     pkg_path = get_package_share_directory("base_desc")
     pkg_ros_gz_sim = get_package_share_directory("ros_gz_sim")
@@ -16,18 +15,22 @@ def generate_launch_description():
     xacro_file = os.path.join(pkg_path, "description", "robot.urdf.xacro")
     robot_desc = xacro.process_file(xacro_file).toxml()
 
-    twist_mux_params = os.path.join(get_package_share_directory('base_desc'),'config','twrist_mux.yaml')
+    twist_mux_params = os.path.join(
+        get_package_share_directory("base_desc"), "config", "twrist_mux.yaml"
+    )
 
-
-    use_sim_time = LaunchConfiguration('use_sim_time')
-    use_ros2_control = LaunchConfiguration('use_ros2_control')
+    use_sim_time = LaunchConfiguration("use_sim_time")
+    use_ros2_control = LaunchConfiguration("use_ros2_control")
 
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, "launch", "gz_sim.launch.py")
         ),
         launch_arguments={
-            "gz_args": PathJoinSubstitution([pkg_path, "worlds", "empty_gz.world"])
+            "gz_args": [
+                "-r ",
+                PathJoinSubstitution([pkg_path, "worlds", "empty_gz.world"]),
+            ],
         }.items(),
     )
 
@@ -35,7 +38,6 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(pkg_maize_field, "launch", "simulation.launch.py")
         ),
-        
     )
 
     robot_state_publisher = Node(
@@ -106,47 +108,49 @@ def generate_launch_description():
     diff_drive_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["diff_cont"],
-        condition=IfCondition(LaunchConfiguration('use_ros2_control'))
+        arguments=["diff_cont", "--controller-manager-timeout", "50"],
+        condition=IfCondition(LaunchConfiguration("use_ros2_control")),
+        output="screen",
     )
-
 
     joint_broad_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_broad"],
-        condition=IfCondition(LaunchConfiguration('use_ros2_control'))
+        arguments=["joint_broad", "--controller-manager-timeout", "20"],
+        condition=IfCondition(LaunchConfiguration("use_ros2_control")),
     )
 
-   
     twist_mux = Node(
-            package="twist_mux",
-            executable="twist_mux",
-            parameters=[twist_mux_params, {'use_sim_time': use_sim_time, 'use_stamped': use_ros2_control}],
-            remappings=[('/cmd_vel_out','/diff_cont/cmd_vel_unstamped')]
-        )
-  
+        package="twist_mux",
+        executable="twist_mux",
+        parameters=[
+            twist_mux_params,
+            {"use_sim_time": use_sim_time, "use_stamped": use_ros2_control},
+        ],
+        remappings=[("/cmd_vel_out", "/diff_cont/cmd_vel_unstamped")],
+    )
 
     return LaunchDescription(
         [
-            DeclareLaunchArgument('use_sim_time', default_value='true',
-                              description='Use sim time if true'),
-            DeclareLaunchArgument('use_ros2_control', default_value='true',
-                              description='ROS2 control enabled if true'),
-
+            DeclareLaunchArgument(
+                "use_sim_time", default_value="true", description="Use sim time if true"
+            ),
+            DeclareLaunchArgument(
+                "use_ros2_control",
+                default_value="true",
+                description="ROS2 control enabled if true",
+            ),
             robot_state_publisher,
-            joint_state_publisher_gui,
-            #joint_state_publisher_node,
+            # joint_state_publisher_gui,
+            joint_state_publisher_node,
             rviz,
             spawn_robot,
             gz_bridge,
             gz_sim,
-            #launch_world,
+            # launch_world,
             ros_gz_image_bridge,
-
             diff_drive_spawner,
             joint_broad_spawner,
-            twist_mux
-            
+            twist_mux,
         ]
     )
