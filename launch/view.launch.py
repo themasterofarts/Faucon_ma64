@@ -6,6 +6,8 @@ from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
 from launch.conditions import IfCondition
+from launch.actions import SetEnvironmentVariable, AppendEnvironmentVariable
+from os import path
 
 
 def generate_launch_description():
@@ -29,15 +31,26 @@ def generate_launch_description():
         launch_arguments={
             "gz_args": [
                 "-r ",
-                PathJoinSubstitution([pkg_path, "worlds", "empty_gz.world"]),
+                PathJoinSubstitution(
+                    [pkg_path, "worlds", "virtual_maize_field", "generated.world"]
+                ),
             ],
         }.items(),
+    )
+
+    environment = AppendEnvironmentVariable(
+        "GZ_SIM_RESOURCE_PATH",
+        path.join(get_package_share_directory("base_desc"), "worlds"),
     )
 
     launch_world = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_maize_field, "launch", "simulation.launch.py")
         ),
+        launch_arguments={
+            "world_path": os.path.join(pkg_path, "worlds", "virtual_maize_field"),
+            "world_name": "generated.world",
+        }.items(),
     )
 
     robot_state_publisher = Node(
@@ -75,15 +88,17 @@ def generate_launch_description():
             "-allow_renaming",
             "true",
             "-x",
-            "0.0",
+            "-2.28",
             "-y",
-            "0.0",
+            "-3.83",
             "-z",
-            "0.1",
+            "0.4",
             "-R",
-            "0.0",
+            "-0.01",
             "-P",
-            "0.0",
+            "-0.03",
+            "-Y",
+            "1.52",
         ],
     )
 
@@ -146,8 +161,9 @@ def generate_launch_description():
             rviz,
             spawn_robot,
             gz_bridge,
-            gz_sim,
-            # launch_world,
+            # gz_sim,
+            environment,
+            launch_world,
             ros_gz_image_bridge,
             diff_drive_spawner,
             joint_broad_spawner,

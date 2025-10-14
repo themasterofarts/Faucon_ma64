@@ -21,14 +21,14 @@
     <!-- Capteur GNSS -->
     <sensor name="gnss" type="navsat">
       <pose>0 0 0 0 0 0</pose>
-      <!-- topic côté Gazebo ; tu peux changer -->
+     
       <topic>/gnss/fix</topic>
-      <!-- Frame publiée (utile pour le bridge ROS2) -->
+      
       <gz_frame_id>gnss_frame</gz_frame_id>
       <update_rate>10</update_rate>
 
       <navsat>
-        <!-- Modèle de bruit simple ; ajuste à ta convenance -->
+       
         
         <position_sensing>
           <horizontal>
