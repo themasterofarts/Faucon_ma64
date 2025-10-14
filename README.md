@@ -6,15 +6,32 @@ Ce dépôt lance un robot URDF dans un monde Gazebo (champ de maïs virtuel), av
 
 ![Aperçu du résultat](docs/base_robot.png)
 
+---
+
 ## Prérequis
 
 - ROS 2 (Humble ou +)
 - `ros_gz_sim`, `ros_gz_bridge`, `ros_gz_image`
-- Packages du projet :
-  - `base_desc` (contient `description/robot.urdf.xacro`)
-  - `virtual_maize_field` (contient le launch `simulation.launch.py` et les ressources du monde)
+- Un workspace ROS 2 (ex. `~/ros2_ws`)
 
-Assure-toi d’avoir compilé et sourcé l’espace :
+---
+
+## Dépendance requise : `virtual_maize_field`
+
+Ce projet dépend du package **virtual_maize_field**. Clone dans le dossier `src/` de ton workspace **avant** de construire :
+
 ```bash
-colcon build --packages-up-to base_desc virtual_maize_field
+# Crée ton workspace ROS 2
+mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
+
+# Clone ce dépôt 
+git clone git@github.com:themasterofarts/Faucon_Base_Desc.git
+
+# Clone la dépendance depuis le repo de l'organisation
+git clone git@github.com:themasterofarts/virtual_maize_field.git
+
+# Installe les dépendances et compile
+cd ..
+rosdep install --from-paths src --ignore-src -y
+colcon build
 source install/setup.bash
