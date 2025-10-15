@@ -2,8 +2,8 @@
 
 # Virtual Maize Field – Demo de lancement (ROS 2 + Gazebo)
 
-[![CI – develop](https://github.com/themasterofarts/Faucon_Base_Desc/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/themasterofarts/Faucon_Base_Desc/actions/workflows/ci.yml?query=branch%3Adevelop)
-[![CI – main](https://github.com/themasterofarts/Faucon_Base_Desc/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/themasterofarts/Faucon_Base_Desc/actions/workflows/ci.yml?query=branch%3Amain)
+[![CI – develop](https://github.com/themasterofarts/Faucon_Base_Desc/actions/workflows/ci.yaml/badge.svg?branch=develop)](https://github.com/themasterofarts/Faucon_Base_Desc/actions/workflows/ci.yaml?query=branch%3Adevelop)
+[![CI – main](https://github.com/themasterofarts/Faucon_Base_Desc/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/themasterofarts/Faucon_Base_Desc/actions/workflows/ci.yaml?query=branch%3Amain)
 
 
 Ce dépôt lance un robot URDF dans un monde Gazebo (champ de maïs virtuel), avec ponts ROS ↔ Gazebo et visualisation RViz.
