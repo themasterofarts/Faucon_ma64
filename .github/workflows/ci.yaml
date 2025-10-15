@@ -49,7 +49,7 @@ jobs:
           # copie le dépôt courant dans le workspace (sans .git)
           rsync -a --exclude='.git' "$GITHUB_WORKSPACE/" "$WS_DIR/src/this_repo"
 
-      - name: Clone dependency: virtual_maize_field 
+      - name: Clone dependency virtual_maize_field 
         shell: bash
         run: |
           set -e
