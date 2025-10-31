@@ -1,4 +1,4 @@
-name: ROS2 Humble CI
+name: ROS2 Jazzy CI
 
 on:
   push:
@@ -13,13 +13,13 @@ concurrency:
 jobs:
   build:
     name: Build & Checks
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     container:
-      image: osrf/ros:humble-desktop
+      image: osrf/ros:jazzy-desktop
 
     env:
-      ROS_DISTRO: humble
+      ROS_DISTRO: jazzy
       WS_DIR: /root/ws
 
     steps:
@@ -35,9 +35,10 @@ jobs:
             git curl gnupg lsb-release rsync \
             python3-pip python3-colcon-common-extensions python3-vcstool \
             build-essential cmake \
-            ros-humble-ros2-control ros-humble-ros2-controllers \
-            ros-humble-ros-gz ros-humble-ros-gz-bridge ros-humble-ros-gz-image \
-            ros-humble-gz-ros2-control
+            ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
+            ros-jazzy-ros-gz ros-jazzy-ros-gz-bridge ros-jazzy-ros-gz-image \
+            ros-jazzy-gz-ros2-control \
+            ros-jazzy-behaviortree-cpp ros-jazzy-behaviortree-cpp-dbgsym ros-jazzy-nav2-bringup 
           rosdep update || (rosdep init && rosdep update)
 
       - name:  Prepare workspace
@@ -52,11 +53,11 @@ jobs:
         run: |
           set -e
           cd "$WS_DIR/src"
-          if [ ! -d "virtual_maize_field" ]; then
-            # HTTPS pour la CI (pas de clés SSH requises)
-            git clone https://github.com/themasterofarts/virtual_maize_field.git
-          fi
-          echo " virtual_maize_field cloned."
+          # if [ ! -d "virtual_maize_field" ]; then
+          #   # HTTPS pour la CI (pas de clés SSH requises)
+          #   git clone https://github.com/themasterofarts/virtual_maize_field.git
+          # fi
+          # echo " virtual_maize_field cloned."
 
       - name:  rosdep install
         shell: bash
