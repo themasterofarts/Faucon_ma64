@@ -46,8 +46,8 @@
         <plugin name="gz_ros2_control::GazeboSimROS2ControlPlugin" filename="libgz_ros2_control-system.so">
             <robot_param>robot_description</robot_param>
             <robot_param_node>robot_state_publisher</robot_param_node>
-            <parameters>$(find base_desc)/config/my_controllers.yaml</parameters>
-            <parameters>$(find base_desc)/config/gaz_ros2_ctl_use_sim.yaml</parameters>
+            <parameters>$(find faucon_base_desc)/config/my_controllers.yaml</parameters>
+            <parameters>$(find faucon_base_desc)/config/gaz_ros2_ctl_use_sim.yaml</parameters>
         </plugin>
     </gazebo>
 
