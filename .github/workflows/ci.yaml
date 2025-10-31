@@ -38,7 +38,7 @@ jobs:
             ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
             ros-jazzy-ros-gz ros-jazzy-ros-gz-bridge ros-jazzy-ros-gz-image \
             ros-jazzy-gz-ros2-control \
-            ros-jazzy-behveior-tree-cpp ros-jazzy-nav2-bringup \
+            ros-jazzy-behaviortree-cpp ros-jazzy-behaviortree-cpp-dbgsym ros-jazzy-nav2-bringup \
           rosdep update || (rosdep init && rosdep update)
 
       - name:  Prepare workspace
