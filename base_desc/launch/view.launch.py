@@ -11,14 +11,14 @@ from os import path
 
 
 def generate_launch_description():
-    pkg_path = get_package_share_directory("base_desc")
+    pkg_path = get_package_share_directory("faucon_base_desc")
     pkg_ros_gz_sim = get_package_share_directory("ros_gz_sim")
     pkg_maize_field = get_package_share_directory("virtual_maize_field")
     xacro_file = os.path.join(pkg_path, "description", "robot.urdf.xacro")
     robot_desc = xacro.process_file(xacro_file).toxml()
 
     twist_mux_params = os.path.join(
-        get_package_share_directory("base_desc"), "config", "twrist_mux.yaml"
+        get_package_share_directory("faucon_base_desc"), "config", "twrist_mux.yaml"
     )
 
     use_sim_time = LaunchConfiguration("use_sim_time")
@@ -40,7 +40,7 @@ def generate_launch_description():
 
     environment = AppendEnvironmentVariable(
         "GZ_SIM_RESOURCE_PATH",
-        path.join(get_package_share_directory("base_desc"), "worlds"),
+        path.join(get_package_share_directory("faucon_base_desc"), "worlds"),
     )
 
     launch_world = IncludeLaunchDescription(
