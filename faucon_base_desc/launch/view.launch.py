@@ -31,9 +31,7 @@ def generate_launch_description():
         launch_arguments={
             "gz_args": [
                 "-r ",
-                PathJoinSubstitution(
-                    [pkg_path, "worlds", "virtual_maize_field", "generated.world"]
-                ),
+                PathJoinSubstitution([pkg_path, "worlds", "empty_gz.world"]),
             ],
         }.items(),
     )
@@ -72,6 +70,14 @@ def generate_launch_description():
         executable="joint_state_publisher",
         name="joint_state_publisher",
         parameters=[{"robot_description": robot_desc}],
+    )
+
+    control_4ws = Node(
+        package="faucon_control",
+        executable="control_4ws.py",
+        name="control_4ws",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
     )
 
     rviz = Node(package="rviz2", executable="rviz2", name="rviz2", output="screen")
@@ -120,18 +126,34 @@ def generate_launch_description():
         arguments=["/camera/image_raw"],
     )
 
-    diff_drive_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["diff_cont", "--controller-manager-timeout", "50"],
-        condition=IfCondition(LaunchConfiguration("use_ros2_control")),
-        output="screen",
-    )
+    # Spawn ROS2 Control controllers
+
+    # diff_drive_spawner = Node(
+    #     package="controller_manager",
+    #     executable="spawner",
+    #     arguments=["diff_cont", "--controller-manager-timeout", "50"],
+    #     condition=IfCondition(LaunchConfiguration("use_ros2_control")),
+    #     output="screen",
+    # )
 
     joint_broad_spawner = Node(
         package="controller_manager",
         executable="spawner",
         arguments=["joint_broad", "--controller-manager-timeout", "20"],
+        condition=IfCondition(LaunchConfiguration("use_ros2_control")),
+    )
+
+    steer_controller = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["steer_controller"],
+        condition=IfCondition(LaunchConfiguration("use_ros2_control")),
+    )
+
+    velocity_controller = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["velocity_controller"],
         condition=IfCondition(LaunchConfiguration("use_ros2_control")),
     )
 
@@ -161,12 +183,15 @@ def generate_launch_description():
             rviz,
             spawn_robot,
             gz_bridge,
-            # gz_sim,
+            #gz_sim,
+            control_4ws,
             environment,
             launch_world,
             ros_gz_image_bridge,
-            diff_drive_spawner,
+            steer_controller,
+            velocity_controller,
+            # diff_drive_spawner,
             joint_broad_spawner,
-            twist_mux,
+            #twist_mux,
         ]
     )
