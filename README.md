@@ -15,8 +15,8 @@
   </a>
 </p>
 
-[![CI – develop](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yaml?query=branch%3Adevelop)
-[![CI – main](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yml/badge.svgbranch=main)](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yaml?query=branch%3Amain)
+[![CI – develop](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yaml/badge.svg?branch=develop)](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yaml?query=branch%3Adevelop)
+[![CI – main](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yaml/badge.svgbranch=main)](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yaml?query=branch%3Amain)
 
 ---
 
