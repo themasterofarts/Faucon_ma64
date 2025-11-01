@@ -39,6 +39,42 @@
             <state_interface name="position"/>
         </joint>
 
+        <joint name="right_wheel_back_leg_joint">
+            <command_interface name="position">
+                <param name="min">-10</param>
+                <param name="max">10</param>
+            </command_interface>
+            <state_interface name="velocity"/>
+            <state_interface name="position"/>
+        </joint>
+
+        <joint name="left_wheel_back_leg_joint">
+            <command_interface name="position">
+                <param name="min">-10</param>
+                <param name="max">10</param>
+            </command_interface>
+            <state_interface name="velocity"/>
+            <state_interface name="position"/>
+        </joint>
+
+        <joint name="right_wheel_leg_joint">
+            <command_interface name="position">
+                <param name="min">-10</param>
+                <param name="max">10</param>
+            </command_interface>
+            <state_interface name="velocity"/>
+            <state_interface name="position"/>
+        </joint>
+
+        <joint name="left_wheel_leg_joint">
+            <command_interface name="position">
+                <param name="min">-10</param>
+                <param name="max">10</param>
+            </command_interface>
+            <state_interface name="velocity"/>
+            <state_interface name="position"/>
+        </joint>
+
     </ros2_control>
   
 
@@ -46,7 +82,7 @@
         <plugin name="gz_ros2_control::GazeboSimROS2ControlPlugin" filename="libgz_ros2_control-system.so">
             <robot_param>robot_description</robot_param>
             <robot_param_node>robot_state_publisher</robot_param_node>
-            <parameters>$(find faucon_base_desc)/config/my_controllers.yaml</parameters>
+            <parameters>$(find faucon_base_desc)/config/steer_controllers.yaml</parameters>
             <parameters>$(find faucon_base_desc)/config/gaz_ros2_ctl_use_sim.yaml</parameters>
         </plugin>
     </gazebo>

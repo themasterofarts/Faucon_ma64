@@ -1,0 +1,59 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 30
+    
+    joint_broad:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    steer_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+joint_broad:
+  ros__parameters: 
+
+    frame_id: base_footprint
+    joints:
+      - left_wheel_back_leg_joint
+      - right_wheel_back_leg_joint
+      - left_wheel_leg_joint
+      - right_wheel_leg_joint
+      - left_wheel_joint
+      - right_wheel_joint
+      - wheel_back_left_joint
+      - wheel_back_right_joint
+      
+      
+
+
+steer_controller:
+  ros__parameters:
+    joints:
+      - left_wheel_leg_joint
+      - right_wheel_leg_joint
+      - left_wheel_back_leg_joint
+      - right_wheel_back_leg_joint
+     
+
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+
+    state_publish_rate: 50.0
+    action_monitor_rate: 10.0
+
+velocity_controller:
+  ros__parameters:
+    joints:
+      - left_wheel_joint
+      - right_wheel_joint
+      - wheel_back_left_joint
+      - wheel_back_right_joint
+      
+      
+    interface_names: velocity
+      
