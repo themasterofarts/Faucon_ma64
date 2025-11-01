@@ -1,9 +1,9 @@
 # 🦅 Projet Faucon
 
 <p align="center">
-  <a href="https://github.com/themasterofarts/Faucon_ma64/actions">
+  <!-- <a href="https://github.com/themasterofarts/Faucon_ma64/actions">
     <img src="https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yml/badge.svg" alt="Build Status"/>
-  </a>
+  </a> -->
   <img src="https://img.shields.io/badge/ROS2-Jazzy-blue?logo=ros&logoColor=white" alt="ROS2 Jazzy"/>
   <img src="https://img.shields.io/badge/Simulator-Gazebo-orange?logo=ros&logoColor=white" alt="Gazebo"/>
   <img src="https://img.shields.io/badge/Control-PX4-blueviolet?logo=drone&logoColor=white" alt="PX4"/>
@@ -14,6 +14,9 @@
     <img src="https://img.shields.io/discord/000000000000000000?color=7289DA&label=Discord&logo=discord&logoColor=white" alt="Discord MH64 Robotics"/>
   </a>
 </p>
+
+[![CI – develop](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yaml?query=branch%3Adevelop)
+[![CI – main](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yml/badge.svgbranch=main)](https://github.com/themasterofarts/Faucon_ma64/actions/workflows/ci.yaml?query=branch%3Amain)
 
 ---
 
