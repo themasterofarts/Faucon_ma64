@@ -11,6 +11,7 @@
     <xacro:include filename="camera.xacro" />
     <xacro:include filename="imu.xacro" />
     <xacro:include filename="gps.xacro" />
+    <xacro:include filename="odom.xacro" />
     
     <!-- <xacro:include filename="gazebo_control.xacro" /> -->
     <xacro:if value="$(arg use_ros2_control)">
