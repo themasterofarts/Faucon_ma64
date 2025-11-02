@@ -34,12 +34,13 @@ def generate_launch_description():
         name="static_map_to_odom",
         output="screen",
         arguments=[
+            "0.0", "0.0", "0.0",        
             "0.0", "0.0", "0.0",  
-            "0.0", "0.0", "0.0",  
-            "base_link",
             "map",
+            "odom",
         ],
     )
+
 
     static_tf2 = Node(
         package="tf2_ros",
@@ -49,8 +50,8 @@ def generate_launch_description():
         arguments=[
             "0.0", "0.0", "0.0",  
             "0.0", "0.0", "0.0",  
-            "map",
-            "base_footprint",
+            "odom",
+            "base_link",
         ],
     )
 
@@ -103,6 +104,6 @@ def generate_launch_description():
                 }.items(),
             ),
             static_tf,
-            static_tf2,
+            #static_tf2,
         ]
     )
