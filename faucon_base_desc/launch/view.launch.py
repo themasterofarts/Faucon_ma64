@@ -128,13 +128,7 @@ def generate_launch_description():
 
     # Spawn ROS2 Control controllers
 
-    # diff_drive_spawner = Node(
-    #     package="controller_manager",
-    #     executable="spawner",
-    #     arguments=["diff_cont", "--controller-manager-timeout", "50"],
-    #     condition=IfCondition(LaunchConfiguration("use_ros2_control")),
-    #     output="screen",
-    # )
+
 
     joint_broad_spawner = Node(
         package="controller_manager",
