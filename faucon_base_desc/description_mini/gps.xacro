@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Joint fixe entre le châssis et le GNSS -->
+  <joint name="gnss_joint" type="fixed">
+    <parent link="chassis"/>
+    <child link="gnss_frame"/>
+    <!-- Positionne le GNSS (exemple au-dessus du châssis) -->
+    <origin xyz="0.10 0 0.80" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Lien du capteur GNSS (petit cylindre pour le visuel) -->
+  <link name="gnss_frame">
+    <!-- <visual>
+      <geometry>
+        <cylinder radius="0.03" length="0.02"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.03" length="0.02"/>
+      </geometry>
+    </collision>
+    <xacro:inertial_cylinder mass="0.05" length="0.02" radius="0.03">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cylinder> -->
+  </link>
+
+  <!-- Définition du capteur GNSS pour Gazebo Sim -->
+  <gazebo reference="gnss_frame">
+    <material>Gazebo/Black</material>
+
+    <!-- Capteur GNSS -->
+    <sensor name="gnss" type="navsat">
+      <pose>0 0 0 0 0 0</pose>
+      <!-- topic côté Gazebo ; tu peux changer -->
+      <topic>/gnss/fix</topic>
+      <!-- Frame publiée (utile pour le bridge ROS2) -->
+      <gz_frame_id>gnss_frame</gz_frame_id>
+      <update_rate>10</update_rate>
+
+      <navsat>
+        <!-- Modèle de bruit simple ; ajuste à ta convenance -->
+        
+        <position_sensing>
+          <horizontal>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.5</stddev>      <!-- ~0.5 m -->
+            </noise>
+          </horizontal>
+          <vertical>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>1.0</stddev>      <!-- ~1.0 m -->
+            </noise>
+          </vertical>
+        </position_sensing>
+        <velocity_sensing>
+          <noise type="gaussian">
+            <mean>0.0</mean>
+            <stddev>0.1</stddev>        <!-- optionnel -->
+          </noise>
+        </velocity_sensing>
+      </navsat>
+
+      <!-- Affichage dans l’UI de Gazebo (facultatif) -->
+      <visualize>true</visualize>
+    </sensor>
+  </gazebo>
+
+</robot>
