@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/BehaviorTree-CPP-green" alt="BehaviorTree.CPP"/>
   <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License"/>
   <img src="https://img.shields.io/badge/Contributions-Welcome-success" alt="Contributions Welcome"/>
-  <a href="https://discord.gg/a4hTAH4J">
+  <a href="https://discord.gg/CEVwVY9RJy">
     <img src="https://img.shields.io/discord/000000000000000000?color=7289DA&label=Discord&logo=discord&logoColor=white" alt="Discord MH64 Robotics"/>
   </a>
 </p>
@@ -67,6 +67,10 @@ cd Faucon_ma64
 sudo chmod +x ./faucon/launch_base.sh
 
 ./faucon/launch_base.sh
+```
+#### Lancement mini robot
+```bash
+./faucon/launch_base.sh  use_mini=false
 ```
 ---
 
