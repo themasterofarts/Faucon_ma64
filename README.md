@@ -70,7 +70,7 @@ sudo chmod +x ./faucon/launch_base.sh
 ```
 #### Lancement mini robot
 ```bash
-./faucon/launch_base.sh  use_mini=false
+./faucon/launch_base.sh  use_mini=true
 ```
 ---
 
