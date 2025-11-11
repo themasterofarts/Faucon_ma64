@@ -74,6 +74,12 @@ sudo chmod +x ./faucon/launch_base.sh
 ```
 ---
 
+#### Pilotage en manuel
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+---
+
 ### Contribuer au projet
 
 Nous accueillons toutes les contributions de la communauté !
