@@ -64,6 +64,10 @@ Faucon_ma64/
 git clone git@github.com:themasterofarts/Faucon_ma64.git
 cd Faucon_ma64
 
+rosdep update
+
+rosdep install --from-paths . --ignore-src -y
+
 sudo chmod +x ./faucon/launch_base.sh
 
 ./faucon/launch_base.sh
