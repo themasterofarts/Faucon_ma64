@@ -64,6 +64,10 @@ Faucon_ma64/
 git clone git@github.com:themasterofarts/Faucon_ma64.git
 cd Faucon_ma64
 
+rosdep update
+
+rosdep install --from-paths . --ignore-src -y
+
 sudo chmod +x ./faucon/launch_base.sh
 
 ./faucon/launch_base.sh
@@ -71,6 +75,12 @@ sudo chmod +x ./faucon/launch_base.sh
 #### Lancement mini robot
 ```bash
 ./faucon/launch_base.sh  use_mini=true
+```
+---
+
+#### Pilotage en manuel
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
 ---
 
