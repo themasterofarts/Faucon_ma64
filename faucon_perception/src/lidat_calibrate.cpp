@@ -25,7 +25,7 @@ LidarCalibrator::LidarCalibrator() : Node("lidar_calibrator")
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
   RCLCPP_INFO(this->get_logger(), "Lidar Ground Filter initialized - Method: %s",
-              "RANSAC" );
+              "RANSAC");
 }
 
 void LidarCalibrator::pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
@@ -37,32 +37,31 @@ void LidarCalibrator::pointCloudCallback(const sensor_msgs::msg::PointCloud2::Sh
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_no_ground;
   pcl::PointCloud<pcl::PointXYZ>::Ptr ground_cloud;
+  
+  auto filter = filterGroundRANSAC(pcl_cloud_);
 
-  cloud_no_ground = filterGroundRANSAC(pcl_cloud_, ground_cloud);
+  cloud_no_ground = filter.first;
+  ground_cloud = filter.second;
 
   sensor_msgs::msg::PointCloud2 output_msg;
   pcl::toROSMsg(*cloud_no_ground, output_msg);
   output_msg.header = cloud_robot.header;
   publisher_->publish(output_msg);
 
-  
-  if (ground_cloud && ground_publisher_->get_subscription_count() > 0)
-  {
-    sensor_msgs::msg::PointCloud2 ground_msg;
-    pcl::toROSMsg(*ground_cloud, ground_msg);
-    ground_msg.header = cloud_robot.header;
-    ground_publisher_->publish(ground_msg);
-  }
+  sensor_msgs::msg::PointCloud2 ground_msg;
+  pcl::toROSMsg(*ground_cloud, ground_msg);
+  ground_msg.header = cloud_robot.header;
+  ground_publisher_->publish(ground_msg);
 }
 
-
-
-pcl::PointCloud<pcl::PointXYZ>::Ptr LidarCalibrator::filterGroundRANSAC(
-    const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud,
-    pcl::PointCloud<pcl::PointXYZ>::Ptr &ground_cloud)
+std::pair<
+    pcl::PointCloud<pcl::PointXYZ>::Ptr,
+    pcl::PointCloud<pcl::PointXYZ>::Ptr>
+LidarCalibrator::filterGroundRANSAC(
+    const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud)
 {
-  
-  pcl::PointCloud<pcl::PointXYZ>::Ptr clean_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr clean_cloud(new pcl::PointCloud<pcl::PointXYZ>); // initialise avec un nuage vide
   for (const auto &pt : input_cloud->points)
   {
     if (std::isfinite(pt.x) && std::isfinite(pt.y) && std::isfinite(pt.z))
@@ -72,7 +71,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr LidarCalibrator::filterGroundRANSAC(
   clean_cloud->height = 1;
   clean_cloud->is_dense = true;
 
-  
   pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
   pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 
@@ -84,29 +82,26 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr LidarCalibrator::filterGroundRANSAC(
   seg.setDistanceThreshold(ransac_distance_threshold_);
 
   seg.setInputCloud(clean_cloud);
-  seg.segment(*inliers, *coefficients);
+  seg.segment(*inliers, *coefficients); // on recupere les inliers et les coefficients du plan
 
   if (inliers->indices.empty())
   {
     RCLCPP_WARN(this->get_logger(), "Could not detect ground plane");
-    return clean_cloud;
+    return std::make_pair(clean_cloud, clean_cloud);  
   }
 
-  
   pcl::ExtractIndices<pcl::PointXYZ> extract;
   extract.setInputCloud(clean_cloud);
   extract.setIndices(inliers);
-  extract.setNegative(true); 
+  extract.setNegative(true);
 
   auto filtered_cloud = pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   extract.filter(*filtered_cloud);
 
-  
-  if (ground_cloud)
-  {
-    extract.setNegative(false);
-    extract.filter(*ground_cloud);
-  }
+  auto ground_cloud_filter = pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  extract.setNegative(false);
+  extract.filter(*ground_cloud_filter);
+ 
 
   RCLCPP_DEBUG(this->get_logger(),
                "Ground removal: %zu points -> %zu objects, %zu ground",
@@ -114,7 +109,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr LidarCalibrator::filterGroundRANSAC(
                filtered_cloud->points.size(),
                inliers->indices.size());
 
-  return filtered_cloud;
+  return std::make_pair(filtered_cloud, ground_cloud_filter);  
 }
 
 sensor_msgs::msg::PointCloud2 LidarCalibrator::transformToRobotFrame(

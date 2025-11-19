@@ -36,12 +36,14 @@ private:
      * \param ground_cloud  Le nuage de points du sol détecté
      * \return Le nuage de points sans le sol
      */
-    pcl::PointCloud<pcl::PointXYZ>::Ptr filterGroundRANSAC(
-        const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud,
-        pcl::PointCloud<pcl::PointXYZ>::Ptr &ground_cloud);
+    std::pair<
+        pcl::PointCloud<pcl::PointXYZ>::Ptr,
+        pcl::PointCloud<pcl::PointXYZ>::Ptr >
+    filterGroundRANSAC(
+        const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud);
 
     std::string target_frame_ = "base_footprint";
-   
+
     double ransac_distance_threshold_;
     int ransac_max_iterations_;
 
