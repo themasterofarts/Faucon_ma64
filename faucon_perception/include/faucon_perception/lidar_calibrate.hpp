@@ -21,6 +21,7 @@ private:
 
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ground_publisher_;
 
     /**
      * \brief Transforme un nuage de points vers le repère du robot
@@ -29,18 +30,23 @@ private:
      */
     sensor_msgs::msg::PointCloud2 transformToRobotFrame(
         const sensor_msgs::msg::PointCloud2 &cloud_in);
+    /**
+     * \brief Filtre le sol d'un nuage de points en utilisant RANSAC
+     * \param input_cloud Le nuage de points d'entrée
+     * \param ground_cloud  Le nuage de points du sol détecté
+     * \return Le nuage de points sans le sol
+     */
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filterGroundRANSAC(
+        const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud,
+        pcl::PointCloud<pcl::PointXYZ>::Ptr &ground_cloud);
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr filterGround(
-        const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud);
-
-    std::string target_frame_ = "base_link"; 
-    double ground_min_z_ = -0.5; 
-    double ground_max_z_ = 0.3;  
+    std::string target_frame_ = "base_footprint";
+   
+    double ransac_distance_threshold_;
+    int ransac_max_iterations_;
 
     std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-
-
 };
 
 #endif // LIDAR_CALIBRATOR_HPP
