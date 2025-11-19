@@ -1,15 +1,60 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.16)
 project(faucon_perception)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+if(POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)
+endif()
+
+if(POLICY CMP0144)
+  cmake_policy(SET CMP0144 NEW)
+endif()
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common io)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_sensor_msgs REQUIRED)  
+
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
+
+set(PROJ_DEPS
+  rclcpp
+  sensor_msgs
+  pcl_conversions
+  pcl_ros
+  PCL
+  tf2_ros
+  tf2_sensor_msgs
+)
+
+include_directories(
+  include
+)
+
+
+install(
+  DIRECTORY include
+  DESTINATION include
+)
+add_executable(lidar_calibrator src/lidat_calibrate.cpp)
+ament_target_dependencies(lidar_calibrator ${PROJ_DEPS})
+
+target_link_libraries(lidar_calibrator
+  ${PCL_LIBRARIES}
+)
+install(TARGETS lidar_calibrator
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
