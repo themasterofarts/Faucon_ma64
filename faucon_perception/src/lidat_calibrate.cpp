@@ -4,6 +4,11 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
 
+#include <tf2/time.h>
+
+
+// TODO : projection et clustering pour detecter un rang 
+
 LidarCalibrator::LidarCalibrator() : Node("lidar_calibrator")
 {
 
@@ -115,27 +120,40 @@ LidarCalibrator::filterGroundRANSAC(
 sensor_msgs::msg::PointCloud2 LidarCalibrator::transformToRobotFrame(
     const sensor_msgs::msg::PointCloud2 &cloud_in)
 {
+  if (cloud_in.header.frame_id == target_frame_)
+  {
+    RCLCPP_DEBUG(this->get_logger(), 
+                 "Cloud already in target frame '%s'", target_frame_.c_str());
+    return cloud_in;
+  }
+
   geometry_msgs::msg::TransformStamped tf;
+
   try
   {
     tf = tf_buffer_->lookupTransform(
         target_frame_,
         cloud_in.header.frame_id,
-        tf2::TimePointZero);
+        tf2_ros::fromMsg(cloud_in.header.stamp));
   }
   catch (const tf2::TransformException &ex)
   {
-    RCLCPP_WARN(this->get_logger(),
-                "Cannot transform cloud from %s to %s: %s",
-                cloud_in.header.frame_id.c_str(),
-                target_frame_.c_str(),
-                ex.what());
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                         "Cannot transform cloud from '%s' to '%s': %s",
+                         cloud_in.header.frame_id.c_str(),
+                         target_frame_.c_str(),
+                         ex.what());
     return cloud_in;
   }
 
   sensor_msgs::msg::PointCloud2 cloud_out;
   tf2::doTransform(cloud_in, cloud_out, tf);
   cloud_out.header.frame_id = target_frame_;
+
+  RCLCPP_DEBUG(this->get_logger(), 
+               "Transformed cloud from '%s' to '%s'",
+               cloud_in.header.frame_id.c_str(),
+               target_frame_.c_str());
 
   return cloud_out;
 }

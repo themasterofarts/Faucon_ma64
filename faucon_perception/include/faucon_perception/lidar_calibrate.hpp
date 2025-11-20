@@ -42,7 +42,7 @@ private:
     filterGroundRANSAC(
         const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud);
 
-    std::string target_frame_ = "base_footprint";
+    std::string target_frame_ = "base_link";
 
     double ransac_distance_threshold_;
     int ransac_max_iterations_;
