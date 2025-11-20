@@ -106,6 +106,14 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
     )
 
+    ground_filter = Node(
+        package="faucon_perception",
+        executable="lidar_calibrator",
+        name="lidar_calibrator",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+    )
+
     
     rviz = Node(
         package="rviz2", 
@@ -219,7 +227,8 @@ def launch_setup(context, *args, **kwargs):
         velocity_controller,
         joint_broad_spawner,
         # twist_mux,
-        # gz_sim,  
+        #gz_sim,
+        ground_filter,  
     ]
 
 
