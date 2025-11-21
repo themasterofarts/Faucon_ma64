@@ -1,18 +1,23 @@
 #include "faucon_perception/lidar_calibrate.hpp"
 
 #include <pcl/memory.h>
-#include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+// #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
 #include <tf2/time.h>
 
-
-// TODO : projection et clustering pour detecter un rang 
+// TODO : projection et clustering pour detecter un rang
 
 LidarCalibrator::LidarCalibrator() : Node("lidar_calibrator")
 {
 
-  this->declare_parameter("ransac_distance_threshold", 0.04);
+  this->declare_parameter("ransac_distance_threshold", 0.05);
   this->declare_parameter("ransac_max_iterations", 100);
 
   ransac_distance_threshold_ = this->get_parameter("ransac_distance_threshold").as_double();
@@ -25,6 +30,8 @@ LidarCalibrator::LidarCalibrator() : Node("lidar_calibrator")
   publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/cloud_calib_out", 10);
 
   ground_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/ground_cloud", 10);
+
+  clusters_publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/row_clusters", 10);
 
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -42,7 +49,7 @@ void LidarCalibrator::pointCloudCallback(const sensor_msgs::msg::PointCloud2::Sh
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_no_ground;
   pcl::PointCloud<pcl::PointXYZ>::Ptr ground_cloud;
-  
+
   auto filter = filterGroundRANSAC(pcl_cloud_);
 
   cloud_no_ground = filter.first;
@@ -57,6 +64,108 @@ void LidarCalibrator::pointCloudCallback(const sensor_msgs::msg::PointCloud2::Sh
   pcl::toROSMsg(*ground_cloud, ground_msg);
   ground_msg.header = cloud_robot.header;
   ground_publisher_->publish(ground_msg);
+
+  auto clusters = clusterRows(cloud_no_ground);
+
+  if (clusters.empty())
+  {
+    RCLCPP_DEBUG(this->get_logger(), "No clusters found in cloud without ground");
+    return;
+  }
+
+  // 7) Construction d’un nuage RGB avec un couleur par cluster
+  auto clusters_msg = buildColoredClustersMsg(cloud_no_ground, clusters, cloud_robot.header);
+  clusters_publisher_->publish(clusters_msg);
+}
+
+std::vector<pcl::PointIndices>
+LidarCalibrator::clusterRows(const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud)
+{
+  if (input_cloud->empty())
+  {
+    return {};
+  }
+
+  // Optionnel : petit downsampling pour stabiliser l’extraction
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_down(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::VoxelGrid<pcl::PointXYZ> vg;
+  vg.setInputCloud(input_cloud);
+  vg.setLeafSize(0.05f, 0.05f, 0.05f); // à ajuster selon ta résolution
+  vg.filter(*cloud_down);
+
+  // Optionnel : filtrage en Z pour garder la végétation seulement
+  // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_crop(new pcl::PointCloud<pcl::PointXYZ>);
+  // pcl::PassThrough<pcl::PointXYZ> pass;
+  // pass.setInputCloud(cloud_down);
+  // pass.setFilterFieldName("z");
+  // pass.setFilterLimits(0.05, 2.0); // à ajuster
+  // pass.filter(*cloud_crop);  
+
+  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+  tree->setInputCloud(cloud_down);
+
+  std::vector<pcl::PointIndices> cluster_indices;
+  pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+  ec.setClusterTolerance(0.6); // distance intra-rang (à tuner)
+  ec.setMinClusterSize(200);   // éviter les petits bouts
+  ec.setMaxClusterSize(250000);
+  ec.setSearchMethod(tree);
+  ec.setInputCloud(cloud_down);
+  ec.extract(cluster_indices);
+
+  RCLCPP_DEBUG(this->get_logger(), "Found %zu clusters", cluster_indices.size());
+
+  return cluster_indices;
+}
+
+sensor_msgs::msg::PointCloud2
+LidarCalibrator::buildColoredClustersMsg(
+    const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud,
+    const std::vector<pcl::PointIndices> &clusters,
+    const std_msgs::msg::Header &header)
+{
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_rgb(new pcl::PointCloud<pcl::PointXYZRGB>);
+  cloud_rgb->points.reserve(input_cloud->points.size());
+
+  // Pour simplifier, on prend directement les points de input_cloud
+  // et on les colorise cluster par cluster
+  size_t cluster_id = 0;
+  for (const auto &indices : clusters)
+  {
+    // couleur pseudo-aléatoire mais déterministe
+    uint8_t r = (37 * cluster_id) % 255;
+    uint8_t g = (97 * cluster_id) % 255;
+    uint8_t b = (173 * cluster_id) % 255;
+    if (r == 0 && g == 0 && b == 0)
+      r = 255; // éviter noir
+
+    for (int idx : indices.indices)
+    {
+      if (idx < 0 || static_cast<size_t>(idx) >= input_cloud->points.size())
+        continue;
+
+      const auto &p = input_cloud->points[idx];
+      pcl::PointXYZRGB pt;
+      pt.x = p.x;
+      pt.y = p.y;
+      pt.z = p.z;
+      pt.r = r;
+      pt.g = g;
+      pt.b = b;
+      cloud_rgb->points.push_back(pt);
+    }
+
+    cluster_id++;
+  }
+
+  cloud_rgb->width = cloud_rgb->points.size();
+  cloud_rgb->height = 1;
+  cloud_rgb->is_dense = true;
+
+  sensor_msgs::msg::PointCloud2 msg_out;
+  pcl::toROSMsg(*cloud_rgb, msg_out);
+  msg_out.header = header;
+  return msg_out;
 }
 
 std::pair<
@@ -92,7 +201,7 @@ LidarCalibrator::filterGroundRANSAC(
   if (inliers->indices.empty())
   {
     RCLCPP_WARN(this->get_logger(), "Could not detect ground plane");
-    return std::make_pair(clean_cloud, clean_cloud);  
+    return std::make_pair(clean_cloud, clean_cloud);
   }
 
   pcl::ExtractIndices<pcl::PointXYZ> extract;
@@ -103,10 +212,14 @@ LidarCalibrator::filterGroundRANSAC(
   auto filtered_cloud = pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   extract.filter(*filtered_cloud);
 
+  // for (auto &p : filtered_cloud->points)
+  // {
+  //   p.z = 0.0f;
+  // }
+
   auto ground_cloud_filter = pcl::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   extract.setNegative(false);
   extract.filter(*ground_cloud_filter);
- 
 
   RCLCPP_DEBUG(this->get_logger(),
                "Ground removal: %zu points -> %zu objects, %zu ground",
@@ -114,7 +227,7 @@ LidarCalibrator::filterGroundRANSAC(
                filtered_cloud->points.size(),
                inliers->indices.size());
 
-  return std::make_pair(filtered_cloud, ground_cloud_filter);  
+  return std::make_pair(filtered_cloud, ground_cloud_filter);
 }
 
 sensor_msgs::msg::PointCloud2 LidarCalibrator::transformToRobotFrame(
@@ -122,7 +235,7 @@ sensor_msgs::msg::PointCloud2 LidarCalibrator::transformToRobotFrame(
 {
   if (cloud_in.header.frame_id == target_frame_)
   {
-    RCLCPP_DEBUG(this->get_logger(), 
+    RCLCPP_DEBUG(this->get_logger(),
                  "Cloud already in target frame '%s'", target_frame_.c_str());
     return cloud_in;
   }
@@ -150,7 +263,7 @@ sensor_msgs::msg::PointCloud2 LidarCalibrator::transformToRobotFrame(
   tf2::doTransform(cloud_in, cloud_out, tf);
   cloud_out.header.frame_id = target_frame_;
 
-  RCLCPP_DEBUG(this->get_logger(), 
+  RCLCPP_DEBUG(this->get_logger(),
                "Transformed cloud from '%s' to '%s'",
                cloud_in.header.frame_id.c_str(),
                target_frame_.c_str());

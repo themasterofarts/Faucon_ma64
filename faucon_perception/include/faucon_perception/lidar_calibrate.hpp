@@ -11,6 +11,9 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 
+#include <pcl/search/kdtree.h>
+#include <pcl/segmentation/extract_clusters.h>
+
 class LidarCalibrator : public rclcpp::Node
 {
 public:
@@ -22,6 +25,8 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr ground_publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr clusters_publisher_;
+  
 
     /**
      * \brief Transforme un nuage de points vers le repère du robot
@@ -38,9 +43,30 @@ private:
      */
     std::pair<
         pcl::PointCloud<pcl::PointXYZ>::Ptr,
-        pcl::PointCloud<pcl::PointXYZ>::Ptr >
+        pcl::PointCloud<pcl::PointXYZ>::Ptr>
     filterGroundRANSAC(
         const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud);
+
+    /**
+     * \brief Regroupe les points du nuage en lignes (rows) basées sur leur coordonnée Y
+     * \param input_cloud Le nuage de points d'entrée
+     * \return Clusters indices pour chaque ligne détectée
+     */
+    std::vector<pcl::PointIndices>
+    clusterRows(const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud);
+
+    /**
+     * \brief Construit un message PointCloud2 avec des couleurs différentes pour chaque cluster
+     * \param input_cloud Le nuage de points d'entrée
+     * \param clusters Les indices des clusters
+     * \param header L'en-tête du message
+     * \return Le message PointCloud2 coloré
+     */
+    sensor_msgs::msg::PointCloud2
+    buildColoredClustersMsg(
+        const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud,
+        const std::vector<pcl::PointIndices> &clusters,
+        const std_msgs::msg::Header &header);
 
     std::string target_frame_ = "base_link";
 
