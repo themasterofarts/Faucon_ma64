@@ -24,6 +24,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_sensor_msgs REQUIRED)  
+find_package(visualization_msgs REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -37,6 +38,7 @@ set(PROJ_DEPS
   PCL
   tf2_ros
   tf2_sensor_msgs
+  visualization_msgs
 )
 
 include_directories(
@@ -51,10 +53,20 @@ install(
 add_executable(lidar_calibrator src/lidat_calibrate.cpp)
 ament_target_dependencies(lidar_calibrator ${PROJ_DEPS})
 
+add_executable(crop_row_detector src/cluster_rows.cpp)
+ament_target_dependencies(crop_row_detector ${PROJ_DEPS})
+
 target_link_libraries(lidar_calibrator
   ${PCL_LIBRARIES}
 )
 install(TARGETS lidar_calibrator
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+target_link_libraries(crop_row_detector
+  ${PCL_LIBRARIES}
+)
+install(TARGETS crop_row_detector
   DESTINATION lib/${PROJECT_NAME}
 )
 
