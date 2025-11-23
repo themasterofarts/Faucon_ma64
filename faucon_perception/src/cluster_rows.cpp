@@ -15,29 +15,29 @@
 RowClusterer::RowClusterer() : Node("crop_row_detector")
 {
     // Déclaration des paramètres
-    this->declare_parameter("cluster_tolerance", 0.3);
+    this->declare_parameter("cluster_tolerance", 0.5);
     this->declare_parameter("min_cluster_size", 30);
     this->declare_parameter("max_cluster_size", 15000);
-    this->declare_parameter("ransac_distance_threshold", 0.05);
+    this->declare_parameter("ransac_distance_threshold", 0.03);
     this->declare_parameter("ransac_max_iterations", 1000);
     this->declare_parameter("row_detection_method", "euclidean"); // "euclidean" ou "region_growing"
     this->declare_parameter("min_row_length", 3.0);
-    this->declare_parameter("max_row_distance", 1.0); // Distance max entre rangs
+    this->declare_parameter("max_row_distance", 0.6); // Distance max entre rangs
 
     this->declare_parameter("use_roi", true);
     this->declare_parameter("roi_x_min", 0.0);
     this->declare_parameter("roi_x_max", 7.0);
-    this->declare_parameter("roi_y_min", -1.5);
-    this->declare_parameter("roi_y_max", 1.5);
+    this->declare_parameter("roi_y_min", -0.8);
+    this->declare_parameter("roi_y_max", 0.0);
     this->declare_parameter("roi_z_min", -0.5);
     this->declare_parameter("roi_z_max", 2.0);
 
-    this->declare_parameter("use_axis_constraint", false); // Contraindre la direction de la ligne
+    this->declare_parameter("use_axis_constraint", true); // Contraindre la direction de la ligne
     this->declare_parameter("principal_axis_x", 1.0);     // Direction principale des rangs
-    this->declare_parameter("principal_axis_y", 0.0);
+    this->declare_parameter("principal_axis_y", 1.0);
     this->declare_parameter("principal_axis_z", 0.0);
-    this->declare_parameter("axis_angle_tolerance", 20.0); // Degrés
-    this->declare_parameter("min_inlier_ratio", 0.2);      // Ratio minimum de points sur la ligne
+    this->declare_parameter("axis_angle_tolerance", 1.0); // Degrés
+    this->declare_parameter("min_inlier_ratio", 0.1);     // Ratio minimum de points sur la ligne
 
     use_axis_constraint_ = this->get_parameter("use_axis_constraint").as_bool();
     principal_axis_x_ = this->get_parameter("principal_axis_x").as_double();
@@ -96,8 +96,6 @@ void RowClusterer::pointCloudCallback(const sensor_msgs::msg::PointCloud2::Share
         return;
     }
 
-    // create a ROI crop box filter if needed
-
     if (use_roi_)
     {
         input_cloud = filterROICropBox(input_cloud);
@@ -105,7 +103,7 @@ void RowClusterer::pointCloudCallback(const sensor_msgs::msg::PointCloud2::Share
                      input_cloud->points.size(), input_cloud->points.size());
     }
 
-    // Étape 1: Clustering euclidien
+    //  Clustering euclidien (détection des groupes de plantes par une recherche spatiale)
     std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clusters =
         performEuclideanClustering(input_cloud);
 
@@ -117,7 +115,7 @@ void RowClusterer::pointCloudCallback(const sensor_msgs::msg::PointCloud2::Share
 
     RCLCPP_INFO(this->get_logger(), "Detected %zu clusters", clusters.size());
 
-    // Étape 2: Détecter les lignes (rangs) dans chaque cluster
+    //  Détecter les lignes dans chaque cluster
     std::vector<CropRow> crop_rows = detectCropRows(clusters);
 
     RCLCPP_INFO(this->get_logger(), "Detected %zu crop rows", crop_rows.size());
@@ -140,7 +138,6 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr RowClusterer::filterROICropBox(
     Eigen::Vector4f min_point(roi_x_min_, roi_y_min_, roi_z_min_, 1.0);
     Eigen::Vector4f max_point(roi_x_max_, roi_y_max_, roi_z_max_, 1.0);
 
-    // Créer et configurer le filtre CropBox
     pcl::CropBox<pcl::PointXYZ> crop_box;
     crop_box.setInputCloud(input_cloud);
     crop_box.setMin(min_point);
@@ -245,30 +242,56 @@ RowClusterer::detectCropRows(
             continue;
         }
 
-        // Vérifier que la ligne a assez d'inliers (au moins 50% des points)
-        double inlier_ratio = static_cast<double>(inliers->indices.size()) / cluster->points.size();
-        if (inlier_ratio < min_inlier_ratio_)
-        {
-            RCLCPP_DEBUG(this->get_logger(),
-                         "Cluster %zu: insufficient inliers (%.1f%% < %.1f%%)",
-                         i, inlier_ratio * 100, min_inlier_ratio_ * 100);
-            continue;
-        }
-
         // Créer l'objet CropRow
         CropRow row;
         row.cluster = cluster;
         row.coefficients = coefficients;
 
-        // Point de départ de la ligne (point sur la ligne le plus proche de l'origine)
-        row.start_point.x = coefficients->values[0];
-        row.start_point.y = coefficients->values[1];
-        row.start_point.z = coefficients->values[2];
+        Eigen::Vector3f p0(coefficients->values[0],
+                           coefficients->values[1],
+                           coefficients->values[2]);
+        Eigen::Vector3f dir(row.direction.x,
+                            row.direction.y,
+                            row.direction.z); // déjà unitaire
 
-        // Direction de la ligne
-        row.direction.x = coefficients->values[3];
-        row.direction.y = coefficients->values[4];
-        row.direction.z = coefficients->values[5];
+        double t_min = std::numeric_limits<double>::max();
+        double t_max = std::numeric_limits<double>::lowest();
+
+        for (int idx : inliers->indices)
+        {
+            const auto &pt = cluster->points[idx];
+            Eigen::Vector3f p(pt.x, pt.y, pt.z);
+
+            double t = (p - p0).dot(dir); // coordonnée le long de la ligne
+
+            if (t < t_min)
+                t_min = t;
+            if (t > t_max)
+                t_max = t;
+        }
+
+        double line_length = t_max - t_min; // en mètres si tes points sont en mètres
+        row.length = line_length;
+
+        Eigen::Vector3f start = p0 + t_min * dir;
+        row.start_point.x = start.x();
+        row.start_point.y = start.y();
+        row.start_point.z = start.z();
+
+        // Point de départ de la ligne (point sur la ligne le plus proche de l'origine)
+        // row.start_point.x = coefficients->values[0];
+        // row.start_point.y = coefficients->values[1];
+        // row.start_point.z = coefficients->values[2];
+
+        // Direction de la ligne (normaliser pour avoir un vecteur unitaire)
+        double dir_norm = std::sqrt(
+            coefficients->values[3] * coefficients->values[3] +
+            coefficients->values[4] * coefficients->values[4] +
+            coefficients->values[5] * coefficients->values[5]);
+
+        row.direction.x = coefficients->values[3] / dir_norm;
+        row.direction.y = coefficients->values[4] / dir_norm;
+        row.direction.z = coefficients->values[5] / dir_norm;
 
         // Calculer le centroïde du cluster
         Eigen::Vector4f centroid;
