@@ -27,16 +27,16 @@ RowClusterer::RowClusterer() : Node("crop_row_detector")
     this->declare_parameter("use_roi", true);
     this->declare_parameter("roi_x_min", 0.0);
     this->declare_parameter("roi_x_max", 7.0);
-    this->declare_parameter("roi_y_min", -0.8);
-    this->declare_parameter("roi_y_max", 0.0);
+    this->declare_parameter("roi_y_min", -1.5);
+    this->declare_parameter("roi_y_max", 1.5);
     this->declare_parameter("roi_z_min", -0.5);
     this->declare_parameter("roi_z_max", 2.0);
 
     this->declare_parameter("use_axis_constraint", true); // Contraindre la direction de la ligne
     this->declare_parameter("principal_axis_x", 1.0);     // Direction principale des rangs
-    this->declare_parameter("principal_axis_y", 1.0);
+    this->declare_parameter("principal_axis_y", 0.0);
     this->declare_parameter("principal_axis_z", 0.0);
-    this->declare_parameter("axis_angle_tolerance", 1.0); // Degrés
+    this->declare_parameter("axis_angle_tolerance", 5.0); // Degrés
     this->declare_parameter("min_inlier_ratio", 0.1);     // Ratio minimum de points sur la ligne
 
     use_axis_constraint_ = this->get_parameter("use_axis_constraint").as_bool();
@@ -215,12 +215,12 @@ RowClusterer::detectCropRows(
 
         pcl::SACSegmentation<pcl::PointXYZ> seg;
         seg.setOptimizeCoefficients(true);
-        seg.setModelType(pcl::SACMODEL_LINE);
+        seg.setModelType(pcl::SACMODEL_PARALLEL_LINE);
         seg.setMethodType(pcl::SAC_RANSAC);
         seg.setDistanceThreshold(ransac_distance_threshold_);
         seg.setMaxIterations(ransac_max_iterations_);
 
-        // Contrainte optionnelle sur la direction de la ligne
+        
         if (use_axis_constraint_)
         {
             Eigen::Vector3f axis(principal_axis_x_, principal_axis_y_, principal_axis_z_);
@@ -242,48 +242,17 @@ RowClusterer::detectCropRows(
             continue;
         }
 
-        // Créer l'objet CropRow
+        
         CropRow row;
         row.cluster = cluster;
         row.coefficients = coefficients;
 
-        Eigen::Vector3f p0(coefficients->values[0],
-                           coefficients->values[1],
-                           coefficients->values[2]);
-        Eigen::Vector3f dir(row.direction.x,
-                            row.direction.y,
-                            row.direction.z); // déjà unitaire
-
-        double t_min = std::numeric_limits<double>::max();
-        double t_max = std::numeric_limits<double>::lowest();
-
-        for (int idx : inliers->indices)
-        {
-            const auto &pt = cluster->points[idx];
-            Eigen::Vector3f p(pt.x, pt.y, pt.z);
-
-            double t = (p - p0).dot(dir); // coordonnée le long de la ligne
-
-            if (t < t_min)
-                t_min = t;
-            if (t > t_max)
-                t_max = t;
-        }
-
-        double line_length = t_max - t_min; // en mètres si tes points sont en mètres
-        row.length = line_length;
-
-        Eigen::Vector3f start = p0 + t_min * dir;
-        row.start_point.x = start.x();
-        row.start_point.y = start.y();
-        row.start_point.z = start.z();
-
         // Point de départ de la ligne (point sur la ligne le plus proche de l'origine)
-        // row.start_point.x = coefficients->values[0];
-        // row.start_point.y = coefficients->values[1];
-        // row.start_point.z = coefficients->values[2];
+        row.start_point.x = coefficients->values[0];
+        row.start_point.y = coefficients->values[1];
+        row.start_point.z = coefficients->values[2];
 
-        // Direction de la ligne (normaliser pour avoir un vecteur unitaire)
+        
         double dir_norm = std::sqrt(
             coefficients->values[3] * coefficients->values[3] +
             coefficients->values[4] * coefficients->values[4] +
@@ -293,7 +262,7 @@ RowClusterer::detectCropRows(
         row.direction.y = coefficients->values[4] / dir_norm;
         row.direction.z = coefficients->values[5] / dir_norm;
 
-        // Calculer le centroïde du cluster
+        
         Eigen::Vector4f centroid;
         pcl::compute3DCentroid(*cluster, centroid);
         row.centroid.x = centroid[0];
@@ -317,7 +286,7 @@ RowClusterer::groupParallelRows(const std::vector<CropRow> &crop_rows)
     if (crop_rows.empty())
         return row_groups;
 
-    // Algorithme simple de regroupement basé sur la position Y et l'orientation
+    
     std::vector<bool> assigned(crop_rows.size(), false);
 
     for (size_t i = 0; i < crop_rows.size(); ++i)
@@ -329,16 +298,16 @@ RowClusterer::groupParallelRows(const std::vector<CropRow> &crop_rows)
         group.push_back(crop_rows[i]);
         assigned[i] = true;
 
-        // Chercher les rangs parallèles proches
+        
         for (size_t j = i + 1; j < crop_rows.size(); ++j)
         {
             if (assigned[j])
                 continue;
 
-            // Vérifier la distance entre les centroïdes (perpendiculaire aux rangs)
+            
             double y_distance = std::abs(crop_rows[i].centroid.y - crop_rows[j].centroid.y);
 
-            // Vérifier le parallélisme (produit scalaire des directions)
+            
             double dot_product =
                 crop_rows[i].direction.x * crop_rows[j].direction.x +
                 crop_rows[i].direction.y * crop_rows[j].direction.y +
@@ -364,12 +333,12 @@ void RowClusterer::publishClusters(
     const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters,
     const std_msgs::msg::Header &header)
 {
-    // Créer un nuage avec des couleurs différentes pour chaque cluster
+
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr colored_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 
     for (size_t i = 0; i < clusters.size(); ++i)
     {
-        // Générer une couleur unique pour chaque cluster
+
         uint8_t r = (i * 50) % 255;
         uint8_t g = (i * 100) % 255;
         uint8_t b = (i * 150) % 255;
@@ -398,6 +367,7 @@ void RowClusterer::publishClusters(
     clusters_publisher_->publish(output_msg);
 }
 
+
 void RowClusterer::publishRowMarkers(
     const std::vector<CropRow> &crop_rows,
     const std_msgs::msg::Header &header)
@@ -408,29 +378,25 @@ void RowClusterer::publishRowMarkers(
     {
         const auto &row = crop_rows[i];
 
-        // Marker de ligne pour chaque rang
         visualization_msgs::msg::Marker line_marker;
         line_marker.header = header;
         line_marker.ns = "crop_rows";
         line_marker.id = i;
         line_marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
         line_marker.action = visualization_msgs::msg::Marker::ADD;
-        line_marker.scale.x = 0.05; // Épaisseur de la ligne
+        line_marker.scale.x = 0.05;
 
-        // Couleur unique pour chaque rang
         line_marker.color.r = (i * 0.3f);
         line_marker.color.g = (i * 0.5f);
         line_marker.color.b = 1.0f;
         line_marker.color.a = 1.0;
 
-        // Calculer les extrémités de la ligne
         geometry_msgs::msg::Point start_pt, end_pt;
 
-        // Prolonger la ligne dans les deux directions
         double extension = row.length / 2.0;
 
-        start_pt.x = row.start_point.x - row.direction.x * extension;
-        start_pt.y = row.start_point.y - row.direction.y * extension;
+        start_pt.x = row.start_point.x - row.direction.x;
+        start_pt.y = row.start_point.y - row.direction.y;
         start_pt.z = row.start_point.z;
 
         end_pt.x = row.start_point.x + row.direction.x * extension;
@@ -442,7 +408,6 @@ void RowClusterer::publishRowMarkers(
 
         marker_array.markers.push_back(line_marker);
 
-        // Marker de texte avec le numéro du rang
         visualization_msgs::msg::Marker text_marker;
         text_marker.header = header;
         text_marker.ns = "crop_row_labels";

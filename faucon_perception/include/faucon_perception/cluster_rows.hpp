@@ -26,6 +26,8 @@ public:
         int num_points;
     };
 
+    
+
 private:
     void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
@@ -44,10 +46,11 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr filterROICropBox(
         const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud);
 
-        // Méthodes de publication
-        void publishClusters(
-            const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters,
-            const std_msgs::msg::Header &header);
+
+    // Méthodes de publication
+    void publishClusters(
+        const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters,
+        const std_msgs::msg::Header &header);
 
     void publishRowMarkers(
         const std::vector<CropRow> &crop_rows,
@@ -80,7 +83,6 @@ private:
     double roi_y_max_;
     double roi_z_min_;
     double roi_z_max_;
-
 
     // Paramètres de contrainte d'axe
     bool use_axis_constraint_;
