@@ -15,6 +15,13 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
 
     package_name = "faucon_navigation"
+    
+    
+    ########"#### chemin du fichier navigation bringup_alleger #################
+    new_navigation_bringup = os.path.join(
+        get_package_share_directory(package_name),
+        "launch",
+        "navigation_bring_launch_alleger.py")
 
    
     nav2_params_path = os.path.join(
@@ -86,7 +93,8 @@ def generate_launch_description():
             # Launch the ROS 2 Navigation Stack
             launch.actions.IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                    os.path.join(launch_dir, "bringup_launch.py")
+                    new_navigation_bringup  
+                    #os.path.join(launch_dir, "bringup_launch.py"): décommenté  si voulez utiliser le  fichier bringup présent sur le github de nav2
                 ),
                 launch_arguments={
                     "use_sim_time": LaunchConfiguration("use_sim_time"),
