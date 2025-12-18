@@ -1,38 +1,36 @@
 import os
-
-from ament_index_python.packages import get_package_share_directory
-
 import launch
-from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-
+from launch  import LaunchDescription
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
-from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 
+from launch.conditions import IfCondition
+
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration,PathJoinSubstitution,command
+
+from ament_index_python import get_package_share_directory
 
 def generate_launch_description():
-
+    
+    
     package_name = "faucon_navigation"
     
     
-
-   
     nav2_params_path = os.path.join(
         get_package_share_directory(package_name), "config", "fauncon_nav2_params.yaml"
     )
     
-    
-
     bringup_dir = get_package_share_directory("nav2_bringup")
-
-    launch_dir = os.path.join(bringup_dir, "launch")
-
+    
     use_sim_time = LaunchConfiguration("use_sim_time")
     rviz_config_file = LaunchConfiguration("rviz_config_file")
+    params_file = LaunchConfiguration("params_file")
+    autostart = LaunchConfiguration("autostart")
     
-
+    
+    
+    
     static_tf = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -59,9 +57,8 @@ def generate_launch_description():
             "base_link",
         ],
     )
-
-
-    # Launch them all!
+    
+    
     return LaunchDescription(
         [
             launch.actions.DeclareLaunchArgument(
@@ -69,6 +66,7 @@ def generate_launch_description():
                 default_value="True",
                 description="Flag to enable use_sim_time",
             ),
+            
             launch.actions.DeclareLaunchArgument(
                 "rviz_config_file",
                 default_value=os.path.join(
@@ -78,37 +76,43 @@ def generate_launch_description():
             ),
             
             launch.actions.DeclareLaunchArgument(
-                name="params_file",
-                default_value=nav2_params_path,
-                description="Full path to the ROS2 parameters file to use for all launched nodes",
+                "params_file",
+                default_value= nav2_params_path,
+                description = "chemin vers le dossier de configuration"
             ),
+            
             launch.actions.DeclareLaunchArgument(
-                name="autostart",
-                default_value="true",
-                description="Automatically startup the nav2 stack",
+                "autostart",
+                default_value= "True",
+                description = "lancement automatique de la pile nav2"
             ),
-           
-            # Launch the ROS 2 Navigation Stack
+            
+            
+            #####   lancement de fichier de la pile de navigation nav2    ###########
+            
             launch.actions.IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                   os.path.join(launch_dir, "bringup_launch.py")  
+                    os.path.join(package_name,
+                             "launch",
+                             "navigation_launch.py")
                 ),
-                launch_arguments={
+                
+                launch_arguments= {
                     "use_sim_time": LaunchConfiguration("use_sim_time"),
                     "params_file": LaunchConfiguration("params_file"),
-                    "autostart": LaunchConfiguration("autostart"),
-                }.items(),
+                    "autostart": LaunchConfiguration("autostart")
+                }.items()              
             ),
+            
             launch.actions.IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                    os.path.join(launch_dir, "rviz_launch.py")
+                    os.path.join(bringup_dir, "launch", "rviz_launch.py")
                 ),
                 launch_arguments={
                     "use_sim_time": use_sim_time,
-                    "rviz_config": rviz_config_file,
-                }.items(),
+                    "rviz_config" : rviz_config_file
+                }.items()
             ),
-            static_tf,
-            #static_tf2,
+            static_tf
         ]
     )
