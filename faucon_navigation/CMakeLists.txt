@@ -17,6 +17,7 @@ install(
 # Install Python scripts
 install(PROGRAMS
   scripts/gnss_waypoint_collector.py
+  scripts/gnss_waypoint_logger.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
