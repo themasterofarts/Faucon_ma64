@@ -15,13 +15,13 @@
 RowClusterer::RowClusterer() : Node("crop_row_detector")
 {
     // Déclaration des paramètres
-    this->declare_parameter("cluster_tolerance", 0.5);
-    this->declare_parameter("min_cluster_size", 30);
+    this->declare_parameter("cluster_tolerance", 0.3);
+    this->declare_parameter("min_cluster_size", 10);
     this->declare_parameter("max_cluster_size", 15000);
     this->declare_parameter("ransac_distance_threshold", 0.03);
     this->declare_parameter("ransac_max_iterations", 1000);
     this->declare_parameter("row_detection_method", "euclidean"); // "euclidean" ou "region_growing"
-    this->declare_parameter("min_row_length", 3.0);
+    this->declare_parameter("min_row_length", 1.0);
     this->declare_parameter("max_row_distance", 0.6); // Distance max entre rangs
 
     this->declare_parameter("use_roi", true);
@@ -120,11 +120,6 @@ void RowClusterer::pointCloudCallback(const sensor_msgs::msg::PointCloud2::Share
 
     RCLCPP_INFO(this->get_logger(), "Detected %zu crop rows", crop_rows.size());
 
-    // Étape 3: Grouper les rangs parallèles
-    std::vector<std::vector<CropRow>> row_groups = groupParallelRows(crop_rows);
-
-    RCLCPP_INFO(this->get_logger(), "Grouped into %zu row groups", row_groups.size());
-
     publishClusters(clusters, msg->header);
     publishRowMarkers(crop_rows, msg->header);
 }
@@ -184,92 +179,150 @@ RowClusterer::performEuclideanClustering(
     return clusters;
 }
 
+// Utilitaire: refit ligne par PCA sur un nuage (idéalement inliers)
+static void fitLinePCA_XY(
+    const pcl::PointCloud<pcl::PointXYZ> &cloud,
+    Eigen::Vector3f &point_on_line,
+    Eigen::Vector3f &direction_unit)
+{
+    // Centroïde
+    Eigen::Vector4f centroid4;
+    pcl::compute3DCentroid(cloud, centroid4);
+    Eigen::Vector3f c(centroid4.x(), centroid4.y(), centroid4.z());
+
+    // Covariance
+    Eigen::Matrix3f cov;
+    pcl::computeCovarianceMatrixNormalized(cloud, centroid4, cov);
+
+    // On force le fit en XY si vous voulez une ligne "au sol"
+    // (optionnel : si vous voulez tenir compte de Z, ne touchez pas cov)
+    cov(2, 0) = cov(0, 2) = 0.f;
+    cov(2, 1) = cov(1, 2) = 0.f;
+    cov(2, 2) = 1e-6f; // éviter singularité
+
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> es(cov);
+    // plus grande valeur propre = direction principale
+    Eigen::Vector3f dir = es.eigenvectors().col(2);
+    dir.normalize();
+
+    point_on_line = c;
+    direction_unit = dir;
+}
+
 std::vector<RowClusterer::CropRow>
-RowClusterer::detectCropRows(
-    const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters)
+RowClusterer::detectCropRows(const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters)
 {
     std::vector<CropRow> crop_rows;
 
     for (size_t i = 0; i < clusters.size(); ++i)
     {
         const auto &cluster = clusters[i];
+        if (!cluster || cluster->empty())
+            continue;
 
-        // Vérifier que le cluster est assez long pour être un rang
+        // 1) Longueur "grossière" (OK, mais on fera mieux après avec tmin/tmax)
         pcl::PointXYZ min_pt, max_pt;
         pcl::getMinMax3D(*cluster, min_pt, max_pt);
-
-        double length = std::sqrt(
-            std::pow(max_pt.x - min_pt.x, 2) +
-            std::pow(max_pt.y - min_pt.y, 2));
-
-        if (length < min_row_length_)
-        {
-            RCLCPP_DEBUG(this->get_logger(),
-                         "Cluster %zu too short (%.2f m), skipping", i, length);
+        double length_xy = std::hypot(max_pt.x - min_pt.x, max_pt.y - min_pt.y);
+        if (length_xy < min_row_length_)
             continue;
-        }
 
-        // Ajuster une ligne avec RANSAC
+        // 2) Direction initiale PCA (sur le cluster complet) => contrainte locale
+        Eigen::Vector3f pca_p0, pca_dir;
+        fitLinePCA_XY(*cluster, pca_p0, pca_dir);
+
+        // 3) RANSAC : trouve les inliers
         pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
         pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 
         pcl::SACSegmentation<pcl::PointXYZ> seg;
         seg.setOptimizeCoefficients(true);
-        seg.setModelType(pcl::SACMODEL_PARALLEL_LINE);
         seg.setMethodType(pcl::SAC_RANSAC);
-        seg.setDistanceThreshold(ransac_distance_threshold_);
         seg.setMaxIterations(ransac_max_iterations_);
+        seg.setDistanceThreshold(ransac_distance_threshold_);
+        seg.setProbability(0.99);
 
-        
-        if (use_axis_constraint_)
-        {
-            Eigen::Vector3f axis(principal_axis_x_, principal_axis_y_, principal_axis_z_);
-            axis.normalize();
-            seg.setAxis(axis);
-            seg.setEpsAngle(axis_angle_tolerance_ * M_PI / 180.0); // Convertir en radians
-
-            RCLCPP_DEBUG(this->get_logger(),
-                         "Using axis constraint: (%.2f, %.2f, %.2f) ±%.1f°",
-                         axis[0], axis[1], axis[2], axis_angle_tolerance_);
-        }
+        // Contrainte locale autour de la direction PCA
+        seg.setModelType(pcl::SACMODEL_PARALLEL_LINE);
+        Eigen::Vector3f axis(principal_axis_x_, principal_axis_y_, principal_axis_z_);
+        axis.normalize();
+        seg.setAxis(axis);
+        seg.setEpsAngle(axis_angle_tolerance_ * M_PI / 180.0);
 
         seg.setInputCloud(cluster);
         seg.segment(*inliers, *coefficients);
 
         if (inliers->indices.empty())
-        {
-            RCLCPP_DEBUG(this->get_logger(), "No line found in cluster %zu", i);
             continue;
-        }
 
-        
+        // 4) Gating simple: ratio d’inliers
+        const double inlier_ratio = static_cast<double>(inliers->indices.size()) / cluster->size();
+        if (inlier_ratio < min_inlier_ratio_) // ex: 0.3 à 0.6
+            continue;
+
+        // 5) Extraire les inliers et refit PCA (stabilisation)
+        pcl::ExtractIndices<pcl::PointXYZ> ex;
+        ex.setInputCloud(cluster);
+        ex.setIndices(inliers);
+        ex.setNegative(false);
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr inlier_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        ex.filter(*inlier_cloud);
+
+        Eigen::Vector3f p0, dir;
+        fitLinePCA_XY(*inlier_cloud, p0, dir);
+
+        // 6) Calcul segment stable via tmin/tmax sur les inliers
+        float tmin = std::numeric_limits<float>::infinity();
+        float tmax = -std::numeric_limits<float>::infinity();
+        for (const auto &pt : inlier_cloud->points)
+        {
+            Eigen::Vector3f p(pt.x, pt.y, pt.z);
+            float t = dir.dot(p - p0);
+            tmin = std::min(tmin, t);
+            tmax = std::max(tmax, t);
+        }
+        const double length_along = static_cast<double>(tmax - tmin);
+        if (length_along < min_row_length_)
+            continue;
+
+        Eigen::Vector3f start = p0 + tmin * dir;
+        Eigen::Vector3f end = p0 + tmax * dir;
+
+        // 7) Remplir CropRow
         CropRow row;
         row.cluster = cluster;
-        row.coefficients = coefficients;
 
-        // Point de départ de la ligne (point sur la ligne le plus proche de l'origine)
-        row.start_point.x = coefficients->values[0];
-        row.start_point.y = coefficients->values[1];
-        row.start_point.z = coefficients->values[2];
+        // coefficients "propres" (p0 + dir)
+        row.coefficients.reset(new pcl::ModelCoefficients);
+        row.coefficients->values.resize(6);
+        row.coefficients->values[0] = p0.x();
+        row.coefficients->values[1] = p0.y();
+        row.coefficients->values[2] = p0.z();
+        row.coefficients->values[3] = dir.x();
+        row.coefficients->values[4] = dir.y();
+        row.coefficients->values[5] = dir.z();
 
-        
-        double dir_norm = std::sqrt(
-            coefficients->values[3] * coefficients->values[3] +
-            coefficients->values[4] * coefficients->values[4] +
-            coefficients->values[5] * coefficients->values[5]);
+        row.start_point.x = start.x();
+        row.start_point.y = start.y();
+        row.start_point.z = start.z();
 
-        row.direction.x = coefficients->values[3] / dir_norm;
-        row.direction.y = coefficients->values[4] / dir_norm;
-        row.direction.z = coefficients->values[5] / dir_norm;
+        // Je vous conseille d’ajouter row.end_point dans votre struct
+        // row.end_point.x = end.x();
+        // row.end_point.y = end.y();
+        // row.end_point.z = end.z();
 
-        
+        row.direction.x = dir.x();
+        row.direction.y = dir.y();
+        row.direction.z = dir.z();
+
         Eigen::Vector4f centroid;
         pcl::compute3DCentroid(*cluster, centroid);
         row.centroid.x = centroid[0];
         row.centroid.y = centroid[1];
         row.centroid.z = centroid[2];
 
-        row.length = length;
+        row.length = length_along;
         row.num_points = cluster->points.size();
 
         crop_rows.push_back(row);
@@ -278,56 +331,102 @@ RowClusterer::detectCropRows(
     return crop_rows;
 }
 
-std::vector<std::vector<RowClusterer::CropRow>>
-RowClusterer::groupParallelRows(const std::vector<CropRow> &crop_rows)
-{
-    std::vector<std::vector<CropRow>> row_groups;
+// std::vector<RowClusterer::CropRow>
+// RowClusterer::detectCropRows(
+//     const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters)
+// {
+//     std::vector<CropRow> crop_rows;
 
-    if (crop_rows.empty())
-        return row_groups;
+//     for (size_t i = 0; i < clusters.size(); ++i)
+//     {
+//         const auto &cluster = clusters[i];
 
-    
-    std::vector<bool> assigned(crop_rows.size(), false);
+//         // Vérifier que le cluster est assez long pour être un rang
+//         pcl::PointXYZ min_pt, max_pt;
+//         pcl::getMinMax3D(*cluster, min_pt, max_pt);
 
-    for (size_t i = 0; i < crop_rows.size(); ++i)
-    {
-        if (assigned[i])
-            continue;
+//         double length = std::sqrt(
+//             std::pow(max_pt.x - min_pt.x, 2) +
+//             std::pow(max_pt.y - min_pt.y, 2));
 
-        std::vector<CropRow> group;
-        group.push_back(crop_rows[i]);
-        assigned[i] = true;
+//         if (length < min_row_length_)
+//         {
+//             RCLCPP_DEBUG(this->get_logger(),
+//                          "Cluster %zu too short (%.2f m), skipping", i, length);
+//             continue;
+//         }
 
-        
-        for (size_t j = i + 1; j < crop_rows.size(); ++j)
-        {
-            if (assigned[j])
-                continue;
+//         // Detecter une ligne avec RANSAC
+//         pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+//         pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
 
-            
-            double y_distance = std::abs(crop_rows[i].centroid.y - crop_rows[j].centroid.y);
+//         pcl::SACSegmentation<pcl::PointXYZ> seg;
+//         seg.setOptimizeCoefficients(true);
+//         seg.setModelType(pcl::SACMODEL_PARALLEL_LINE); // SACMODEL_PARALLEL_LINE
+//         seg.setMethodType(pcl::SAC_RANSAC);
+//         seg.setDistanceThreshold(ransac_distance_threshold_);
+//         seg.setMaxIterations(ransac_max_iterations_);
+//         seg.setProbability(0.99);
 
-            
-            double dot_product =
-                crop_rows[i].direction.x * crop_rows[j].direction.x +
-                crop_rows[i].direction.y * crop_rows[j].direction.y +
-                crop_rows[i].direction.z * crop_rows[j].direction.z;
+//         if (use_axis_constraint_)
+//         {
+//             Eigen::Vector3f axis(principal_axis_x_, principal_axis_y_, principal_axis_z_);
+//             axis.normalize();
+//             seg.setAxis(axis);
+//             seg.setEpsAngle(axis_angle_tolerance_ * M_PI / 180.0); // Convertir en radians
 
-            double angle_diff = std::acos(std::abs(dot_product)) * 180.0 / M_PI;
+//             RCLCPP_DEBUG(this->get_logger(),
+//                          "Using axis constraint: (%.2f, %.2f, %.2f) ±%.1f°",
+//                          axis[0], axis[1], axis[2], axis_angle_tolerance_);
+//         }
+//         else
+//         {
+//             seg.setModelType(pcl::SACMODEL_LINE);
+//         }
 
-            // Si les rangs sont parallèles (angle < 15°) et proches
-            if (y_distance < max_row_distance_ && angle_diff < 15.0)
-            {
-                group.push_back(crop_rows[j]);
-                assigned[j] = true;
-            }
-        }
+//         seg.setInputCloud(cluster);
+//         seg.segment(*inliers, *coefficients);
 
-        row_groups.push_back(group);
-    }
+//         if (inliers->indices.empty())
+//         {
+//             RCLCPP_DEBUG(this->get_logger(), "No line found in cluster %zu", i);
+//             continue;
+//         }
 
-    return row_groups;
-}
+//         CropRow row;
+//         row.cluster = cluster;
+//         row.coefficients = coefficients;
+
+//         // Point de départ de la ligne (point sur la ligne le plus proche de l'origine)
+//         row.start_point.x = coefficients->values[0];
+//         row.start_point.y = coefficients->values[1];
+//         row.start_point.z = coefficients->values[2];
+
+//         double dir_norm = std::sqrt(
+//             coefficients->values[3] * coefficients->values[3] +
+//             coefficients->values[4] * coefficients->values[4] +
+//             coefficients->values[5] * coefficients->values[5]);
+
+//         row.direction.x = coefficients->values[3] / dir_norm;
+//         row.direction.y = coefficients->values[4] / dir_norm;
+//         row.direction.z = coefficients->values[5] / dir_norm;
+
+//         Eigen::Vector4f centroid;
+//         pcl::compute3DCentroid(*cluster, centroid);
+//         row.centroid.x = centroid[0];
+//         row.centroid.y = centroid[1];
+//         row.centroid.z = centroid[2];
+
+//         row.length = length;
+//         row.num_points = cluster->points.size();
+
+//         crop_rows.push_back(row);
+//     }
+
+//     return crop_rows;
+// }
+
+
 
 void RowClusterer::publishClusters(
     const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters,
@@ -366,7 +465,6 @@ void RowClusterer::publishClusters(
 
     clusters_publisher_->publish(output_msg);
 }
-
 
 void RowClusterer::publishRowMarkers(
     const std::vector<CropRow> &crop_rows,

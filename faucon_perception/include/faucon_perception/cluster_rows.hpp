@@ -39,10 +39,6 @@ private:
     std::vector<CropRow> detectCropRows(
         const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters);
 
-    // Méthode 3: Groupement des rangs parallèles
-    std::vector<std::vector<CropRow>> groupParallelRows(
-        const std::vector<CropRow> &crop_rows);
-
     pcl::PointCloud<pcl::PointXYZ>::Ptr filterROICropBox(
         const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud);
 
