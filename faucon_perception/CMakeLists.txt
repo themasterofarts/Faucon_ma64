@@ -50,11 +50,34 @@ install(
   DIRECTORY include
   DESTINATION include
 )
+
+add_library(row_pipeline
+  src/pcl/row_pipeline.cpp
+)
+
+target_include_directories(row_pipeline PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${PCL_INCLUDE_DIRS}
+)
+
+# Pipeline = pas de ROS ici : uniquement PCL / Eigen
+target_link_libraries(row_pipeline
+  ${PCL_LIBRARIES}
+)
+
 add_executable(lidar_calibrator src/lidat_calibrate.cpp)
 ament_target_dependencies(lidar_calibrator ${PROJ_DEPS})
 
 add_executable(crop_row_detector src/cluster_rows.cpp)
 ament_target_dependencies(crop_row_detector ${PROJ_DEPS})
+
+add_executable(crop_row src/row_clusterer_node.cpp)
+ament_target_dependencies(crop_row ${PROJ_DEPS})
+target_link_libraries(crop_row
+  row_pipeline
+  ${PCL_LIBRARIES}
+)
 
 target_link_libraries(lidar_calibrator
   ${PCL_LIBRARIES}
@@ -67,6 +90,13 @@ target_link_libraries(crop_row_detector
   ${PCL_LIBRARIES}
 )
 install(TARGETS crop_row_detector
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+target_link_libraries(crop_row
+  ${PCL_LIBRARIES}
+)
+install(TARGETS crop_row
   DESTINATION lib/${PROJECT_NAME}
 )
 
