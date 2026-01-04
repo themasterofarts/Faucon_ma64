@@ -3,6 +3,9 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <visualization_msgs/msg/marker.hpp>
 
+#include <rclcpp/rclcpp.hpp>
+
+
 namespace faucon::ros
 {
 
@@ -25,13 +28,24 @@ namespace faucon::ros
         if (!cloud || cloud->empty())
             return;
 
+        auto clock = this->get_clock();
         const auto result = pipeline_.process(cloud);
+
+        RCLCPP_INFO_THROTTLE(
+            this->get_logger(),
+            *clock, 2000,
+            "clusters=%zu rows=%zu",
+            result.metrics.cluster_count,
+            result.metrics.rows_count
+
+        );
+        
 
         publishClusters(result.clusters, msg->header);
         publishMarkers(result.rows, msg->header);
     }
 
-    faucon::pclrow::RowDetectionConfig RowClustererNode::loadConfig() 
+    faucon::pclrow::RowDetectionConfig RowClustererNode::loadConfig()
     {
         using namespace faucon::pclrow;
         RowDetectionConfig cfg;
@@ -46,7 +60,7 @@ namespace faucon::ros
 
         declare_parameter("row_detection_method", cfg.method);
         declare_parameter("min_row_length", cfg.row_filter.min_row_length);
-        //declare_parameter("max_row_distance", cfg.row_filter.max_row_distance);
+        // declare_parameter("max_row_distance", cfg.row_filter.max_row_distance);
 
         declare_parameter("use_roi", cfg.roi.enabled);
         declare_parameter("roi_x_min", cfg.roi.x_min);
@@ -73,7 +87,7 @@ namespace faucon::ros
 
         cfg.method = get_parameter("row_detection_method").as_string();
         cfg.row_filter.min_row_length = get_parameter("min_row_length").as_double();
-        //cfg.row_filter.max_row_distance = get_parameter("max_row_distance").as_double();
+        // cfg.row_filter.max_row_distance = get_parameter("max_row_distance").as_double();
 
         cfg.roi.enabled = get_parameter("use_roi").as_bool();
         cfg.roi.x_min = get_parameter("roi_x_min").as_double();
@@ -199,13 +213,13 @@ namespace faucon::ros
 
 } // namespace faucon::ros
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-  rclcpp::init(argc, argv);
+    rclcpp::init(argc, argv);
 
-  auto node = std::make_shared<faucon::ros::RowClustererNode>();
-  rclcpp::spin(node);
+    auto node = std::make_shared<faucon::ros::RowClustererNode>();
+    rclcpp::spin(node);
 
-  rclcpp::shutdown();
-  return 0;
+    rclcpp::shutdown();
+    return 0;
 }

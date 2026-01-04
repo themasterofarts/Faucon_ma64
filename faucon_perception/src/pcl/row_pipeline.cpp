@@ -25,7 +25,10 @@ namespace faucon::pclrow
 
         auto filtered = applyRoi(input);
         out.clusters = clusterize(filtered);
+        out.metrics.cluster_count = out.clusters.size();
         out.rows = detectRows(out.clusters);
+        out.metrics.rows_count = out.rows.size();
+
         return out;
     }
 
@@ -87,17 +90,17 @@ namespace faucon::pclrow
             if (!cluster || cluster->empty())
                 continue;
 
-            // 1) Gating longueur grossière XY
+            
             pcl::PointXYZ min_pt, max_pt;
             pcl::getMinMax3D(*cluster, min_pt, max_pt);
             const double length_xy = std::hypot(max_pt.x - min_pt.x, max_pt.y - min_pt.y);
             if (length_xy < cfg_.row_filter.min_row_length)
                 continue;
 
-            // 2) RANSAC ligne
+            // Appliquer RANSAC pour ajuster une ligne
             pcl::SACSegmentation<pcl::PointXYZ> seg;
             seg.setOptimizeCoefficients(true);
-            seg.setModelType(pcl::SACMODEL_LINE);
+            seg.setModelType(pcl::SACMODEL_PARALLEL_LINE);   //SACMODEL_PARALLEL_LINE  SACMODEL_LINE
             seg.setMethodType(pcl::SAC_RANSAC);
             seg.setMaxIterations(cfg_.ransac.max_iterations);
             seg.setDistanceThreshold(cfg_.ransac.distance_threshold);

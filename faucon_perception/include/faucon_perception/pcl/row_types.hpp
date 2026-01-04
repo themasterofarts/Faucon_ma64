@@ -37,7 +37,7 @@ namespace faucon::pclrow
 
     struct RansacConfig
     {
-        double distance_threshold{0.03};
+        double distance_threshold{0.09};
         int max_iterations{1000};
         double min_inlier_ratio{0.1};
     };
@@ -45,7 +45,7 @@ namespace faucon::pclrow
     struct RowFilterConfig
     {
         double min_row_length{1.0};
-        //double max_row_distance{0.6};   // to remove 
+        // double max_row_distance{0.6};   // to remove
     };
 
     struct RowDetectionConfig
@@ -73,10 +73,26 @@ namespace faucon::pclrow
         int inlier_count{0};
     };
 
+    struct RowPipelineStats
+    {
+        size_t cluster_count;
+        size_t rows_count;
+    };
+
     struct RowPipelineResult
     {
         std::vector<CloudPtr> clusters;
         std::vector<CropRow> rows;
+        RowPipelineStats metrics;
     };
+
+    
+
+    // struct IRowDetector
+    // {
+    //     virtual ~IRowDetector() = default;
+    //     virtual std::vector<CropRow> detect(
+    //         const std::vector<CloudPtr> &clusters) const = 0;
+    // };
 
 } // namespace faucon::pclrow
