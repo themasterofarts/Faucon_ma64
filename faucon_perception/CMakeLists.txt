@@ -25,6 +25,8 @@ find_package(PCL REQUIRED COMPONENTS common io)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_sensor_msgs REQUIRED)  
 find_package(visualization_msgs REQUIRED)
+find_package(OpenCV REQUIRED)
+
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -39,6 +41,7 @@ set(PROJ_DEPS
   tf2_ros
   tf2_sensor_msgs
   visualization_msgs
+  OpenCV
 )
 
 include_directories(
@@ -53,17 +56,20 @@ install(
 
 add_library(row_pipeline
   src/pcl/row_pipeline.cpp
+  src/pcl/hough_method.cpp
 )
 
 target_include_directories(row_pipeline PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
   ${PCL_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 # Pipeline = pas de ROS ici : uniquement PCL / Eigen
 target_link_libraries(row_pipeline
   ${PCL_LIBRARIES}
+  ${OpenCV_LIBRARIES}
 )
 
 add_executable(lidar_calibrator src/lidat_calibrate.cpp)

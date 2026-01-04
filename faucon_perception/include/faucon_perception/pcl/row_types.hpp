@@ -16,7 +16,7 @@ namespace faucon::pclrow
     struct RoiBox
     {
         bool enabled{true};
-        double x_min{0.0}, x_max{7.0};
+        double x_min{0.0}, x_max{5.0};
         double y_min{-1.5}, y_max{1.5};
         double z_min{-0.5}, z_max{2.0};
     };
@@ -86,13 +86,5 @@ namespace faucon::pclrow
         RowPipelineStats metrics;
     };
 
-    
-
-    // struct IRowDetector
-    // {
-    //     virtual ~IRowDetector() = default;
-    //     virtual std::vector<CropRow> detect(
-    //         const std::vector<CloudPtr> &clusters) const = 0;
-    // };
-
+   
 } // namespace faucon::pclrow

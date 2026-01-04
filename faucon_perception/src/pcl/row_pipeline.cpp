@@ -12,6 +12,9 @@
 #include <limits>
 #include <cmath>
 
+#include "faucon_perception/pcl/hough_method.hpp"
+
+
 namespace faucon::pclrow
 {
 
@@ -23,10 +26,13 @@ namespace faucon::pclrow
         if (!input || input->empty())
             return out;
 
+        //HoughLineDetector hough_detector; // Utilisation de la méthode de Hough
+        
         auto filtered = applyRoi(input);
         out.clusters = clusterize(filtered);
         out.metrics.cluster_count = out.clusters.size();
         out.rows = detectRows(out.clusters);
+        //out.rows = hough_detector.detectLines(out.clusters); // Détection des lignes avec Hough
         out.metrics.rows_count = out.rows.size();
 
         return out;
