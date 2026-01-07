@@ -3,6 +3,7 @@
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <Eigen/Core>
 
 #include <string>
 #include <vector>
@@ -30,8 +31,8 @@ namespace faucon::pclrow
 
     struct ClusteringConfig
     {
-        double tolerance{0.3};
-        int min_size{10};
+        double tolerance{0.4};
+        int min_size{500};
         int max_size{15000};
     };
 
@@ -86,5 +87,4 @@ namespace faucon::pclrow
         RowPipelineStats metrics;
     };
 
-   
 } // namespace faucon::pclrow

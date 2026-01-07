@@ -31,11 +31,11 @@ public:
 private:
     void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
 
-    // Méthode 1: Clustering euclidien (détection des groupes de plantes)
+    //  Clustering euclidien (détection des groupes de plantes)
     std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> performEuclideanClustering(
         const pcl::PointCloud<pcl::PointXYZ>::Ptr &input_cloud);
 
-    // Méthode 2: Détection des lignes (RANSAC) dans chaque cluster
+    //  Détection des lignes (RANSAC) dans chaque cluster
     std::vector<CropRow> detectCropRows(
         const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> &clusters);
 

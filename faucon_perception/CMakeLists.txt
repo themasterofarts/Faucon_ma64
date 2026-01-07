@@ -66,7 +66,7 @@ target_include_directories(row_pipeline PUBLIC
   ${OpenCV_INCLUDE_DIRS}
 )
 
-# Pipeline = pas de ROS ici : uniquement PCL / Eigen
+
 target_link_libraries(row_pipeline
   ${PCL_LIBRARIES}
   ${OpenCV_LIBRARIES}

@@ -19,6 +19,7 @@ namespace faucon::ros
 
         pub_clusters_ = create_publisher<sensor_msgs::msg::PointCloud2>("/crop_clusters", 10);
         pub_markers_ = create_publisher<visualization_msgs::msg::MarkerArray>("/crop_row_markers", 10);
+        
     }
 
     void RowClustererNode::onCloud(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
@@ -39,10 +40,10 @@ namespace faucon::ros
             result.metrics.rows_count
 
         );
-        
 
         publishClusters(result.clusters, msg->header);
         publishMarkers(result.rows, msg->header);
+        
     }
 
     faucon::pclrow::RowDetectionConfig RowClustererNode::loadConfig()
@@ -110,8 +111,6 @@ namespace faucon::ros
         const std::vector<faucon::pclrow::CloudPtr> &clusters,
         const std_msgs::msg::Header &header) const
     {
-        // similaire à ton publishClusters actuel, mais sans accès à des membres “algo”.
-        // Tu peux soit publier chaque cluster séparément, soit concaténer.
 
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr colored_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 
@@ -150,8 +149,6 @@ namespace faucon::ros
         const std::vector<faucon::pclrow::CropRow> &rows,
         const std_msgs::msg::Header &header) const
     {
-        // similaire à ton publishRowMarkers, mais basé sur row.start_point/end_point
-        // et sans logique PCL interne.
 
         visualization_msgs::msg::MarkerArray marker_array;
 
@@ -211,6 +208,7 @@ namespace faucon::ros
         pub_markers_->publish(marker_array);
     }
 
+    
 } // namespace faucon::ros
 
 int main(int argc, char **argv)

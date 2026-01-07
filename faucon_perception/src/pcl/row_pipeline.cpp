@@ -14,7 +14,6 @@
 
 #include "faucon_perception/pcl/hough_method.hpp"
 
-
 namespace faucon::pclrow
 {
 
@@ -26,13 +25,14 @@ namespace faucon::pclrow
         if (!input || input->empty())
             return out;
 
-        //HoughLineDetector hough_detector; // Utilisation de la méthode de Hough
-        
+        // HoughLineDetector hough_detector; // Utilisation de la méthode de Hough
+
         auto filtered = applyRoi(input);
         out.clusters = clusterize(filtered);
         out.metrics.cluster_count = out.clusters.size();
         out.rows = detectRows(out.clusters);
-        //out.rows = hough_detector.detectLines(out.clusters); // Détection des lignes avec Hough
+
+        // out.rows = hough_detector.detectLines(out.clusters); // Détection des lignes avec Hough
         out.metrics.rows_count = out.rows.size();
 
         return out;
@@ -96,7 +96,6 @@ namespace faucon::pclrow
             if (!cluster || cluster->empty())
                 continue;
 
-            
             pcl::PointXYZ min_pt, max_pt;
             pcl::getMinMax3D(*cluster, min_pt, max_pt);
             const double length_xy = std::hypot(max_pt.x - min_pt.x, max_pt.y - min_pt.y);
@@ -106,7 +105,7 @@ namespace faucon::pclrow
             // Appliquer RANSAC pour ajuster une ligne
             pcl::SACSegmentation<pcl::PointXYZ> seg;
             seg.setOptimizeCoefficients(true);
-            seg.setModelType(pcl::SACMODEL_PARALLEL_LINE);   //SACMODEL_PARALLEL_LINE  SACMODEL_LINE
+            seg.setModelType(pcl::SACMODEL_PARALLEL_LINE); // SACMODEL_PARALLEL_LINE  SACMODEL_LINE
             seg.setMethodType(pcl::SAC_RANSAC);
             seg.setMaxIterations(cfg_.ransac.max_iterations);
             seg.setDistanceThreshold(cfg_.ransac.distance_threshold);
