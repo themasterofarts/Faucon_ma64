@@ -106,6 +106,19 @@ install(TARGETS crop_row
   DESTINATION lib/${PROJECT_NAME}
 )
 
+## Algo RANSAC node
+add_executable(ransac_node src/ransac_node.cpp src/algo/ransac_method.cpp)
+ament_target_dependencies(ransac_node ${PROJ_DEPS})
+target_link_libraries(ransac_node
+  ${PCL_LIBRARIES}
+)
+install(TARGETS ransac_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+##
+
+
 ## setup pour les fichiers python
 
 ament_python_install_package(${PROJECT_NAME})
