@@ -5,6 +5,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import NavSatFix, Imu
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Quaternion
 
 import utm
 import math
@@ -55,24 +56,30 @@ class GnssToLocal(Node):
             self.y0 = northing 
             self.origin_set= True
             
+            self.get_logger().info(f"origine local: zone={zone}, letter={letter}")
+            
+            #return
+            
         
         #### convertion de utm en local ####
         
         x_local = easting - self.x0
         y_local = northing - self.y0
         
+        self.get_logger().info(f"position local: x={x_local:.2f} m, y={y_local:.2f} m" )
         
-        ###### publier les coordonné local sur l'odom de nav2 ######
+        
+        ###### publier les coordonné local sur l'odom  ######
         
         odome = Odometry()
         
         odome.header.stamp = self.get_clock().now().to_msg()
-        odome.header.frame_id = "odom"
+        odome.header.frame_id = "map"
         odome.child_frame_id = "base_link"
         
         odome.pose.pose.position.x = x_local
         odome.pose.pose.position.y = y_local
-        odome.pose.pose.position.z = msg.altitude
+        odome.pose.pose.position.z = 0.0
         
         ##### Orientation depuis IMU #####
         
@@ -91,9 +98,9 @@ class GnssToLocal(Node):
             
             q = msg.orientation
             
-            self.yam = self.quaternion_to_yaw(q)
+            self.yaw = self.quaternion_to_yaw(q)
             
-             # ---------- Utils ----------
+        ### fonction pour la convertion de quaternion à yaw : c'est convertir la rotation defini sur ros en rotation autour de l'axe z (angle d'euler vue que rons ne connais pas ces angles)
     def quaternion_to_yaw(self, q):
         siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
@@ -101,7 +108,9 @@ class GnssToLocal(Node):
         return math.atan2(siny_cosp, cosy_cosp)   
         
     def yaw_to_quaternion(self, yaw):
-        q = Odometry().pose.pose.orientation
+        q = Quaternion()
+        q.x = 0.0
+        q.y = 0.0
         q.z = math.sin(yaw / 2.0)
         q.w = math.cos(yaw / 2.0)
         return q  
