@@ -34,7 +34,7 @@ class GnssToLocal(Node):
         
         ##### publier au topic /odom #####
         
-        self.odom_pub = self.create_publisher(Odometry, "/odom", 10)
+        self.odom_pub = self.create_publisher(Odometry, "/odom_enu", 10)
         
     
     def gnss_to_local_callback(self, msg):
@@ -67,6 +67,9 @@ class GnssToLocal(Node):
         y_local = northing - self.y0
         
         self.get_logger().info(f"position local: x={x_local:.2f} m, y={y_local:.2f} m" )
+        
+        self.get_logger().info(f"position initial: x0={self.x0:.2f} m, y0={self.y0:.2f} m" )
+
         
         
         ###### publier les coordonné local sur l'odom  ######
@@ -126,24 +129,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-            
-            
-            
-            
-        
-        
-
-
-

@@ -22,7 +22,7 @@
     <sensor name="gnss" type="navsat">
       <pose>0 0 0 0 0 0</pose>
      
-      <topic>/gnss/fix</topic>
+      <topic>/gnss/fix6</topic>
       
       <gz_frame_id>gnss_frame</gz_frame_id>
       <update_rate>10</update_rate>
@@ -34,20 +34,20 @@
           <horizontal>
             <noise type="gaussian">
               <mean>0.0</mean>
-              <stddev>0.5</stddev>      
+              <stddev>0.0</stddev>      
             </noise>
           </horizontal>
           <vertical>
             <noise type="gaussian">
               <mean>0.0</mean>
-              <stddev>1.0</stddev>      
+              <stddev>0.0</stddev>      
             </noise>
           </vertical>
         </position_sensing>
         <velocity_sensing>
           <noise type="gaussian">
             <mean>0.0</mean>
-            <stddev>0.1</stddev>        
+            <stddev>0.0</stddev>        
           </noise>
         </velocity_sensing>
       </navsat>
