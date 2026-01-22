@@ -22,7 +22,7 @@
     <sensor name="gnss" type="navsat">
       <pose>0 0 0 0 0 0</pose>
      
-      <topic>/gnss/fix6</topic>
+      <topic>/gnss/fix</topic>
       
       <gz_frame_id>gnss_frame</gz_frame_id>
       <update_rate>10</update_rate>
