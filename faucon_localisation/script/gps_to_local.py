@@ -7,8 +7,9 @@ from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Quaternion
 
-import utm
 import math
+
+from local_frame import LocalFrame
 
 
 
@@ -18,11 +19,16 @@ class GnssToLocal(Node):
         self.get_logger().info("Node convertion gnss to local started")
         
         #### initialisation des coordonné local ###
+        self.conver_gnss_local_frame = LocalFrame()
         
+        """ j'ai commenter ces lignes car je le prend en compte dans la librairi LocalFrame qui sert de convertion
+        gnss_to_local
+        """
+        # self.origin_set = False
+        # self.x0 = 0.0   
+        # self.y0 = 0.0
         
-        self.origin_set = False
-        self.x0 = 0.0
-        self.y0 = 0.0
+        # utiliser pour l'imu
         self.yaw = 0.0
         
         
@@ -40,35 +46,38 @@ class GnssToLocal(Node):
     def gnss_to_local_callback(self, msg):
         
         lat = msg.latitude
-        long = msg.longitude
+        lon = msg.longitude
         
         
-        #### conversion de gnss en global(utm) en metre ####
+        ### ici j'utilise une librairi que j'ai ecrie pour faire tous les calcule pour faire la convertion gnss_to_local
+        x_local, y_local = self.conver_gnss_local_frame.gnss_to_local(lat,lon)
+                
+        # #### conversion de gnss en global(utm) en metre ####
         
-        easting, northing, zone, letter = utm.from_latlon(lat, long)
+        # easting, northing, zone, letter = utm.from_latlon(lat, lon)
         
         
-        #### definition de l'origine local ####
+        # #### definition de l'origine local ####
         
-        if not self.origin_set:
+        # if not self.origin_set:
             
-            self.x0 = easting
-            self.y0 = northing 
-            self.origin_set= True
+        #     self.x0 = easting
+        #     self.y0 = northing 
+        #     self.origin_set= True
             
-            self.get_logger().info(f"origine local: zone={zone}, letter={letter}")
+        #     self.get_logger().info(f"origine local: zone={zone}, letter={letter}")
             
-            #return
+        #     #return
             
         
-        #### convertion de utm en local ####
+        # #### convertion de utm en local ####
         
-        x_local = easting - self.x0
-        y_local = northing - self.y0
+        # x_local = easting - self.x0
+        # y_local = northing - self.y0
         
         self.get_logger().info(f"position local: x={x_local:.2f} m, y={y_local:.2f} m" )
         
-        self.get_logger().info(f"position initial: x0={self.x0:.2f} m, y0={self.y0:.2f} m" )
+        # self.get_logger().info(f"position initial: x0={self.x0:.2f} m, y0={self.y0:.2f} m" )
 
         
         
