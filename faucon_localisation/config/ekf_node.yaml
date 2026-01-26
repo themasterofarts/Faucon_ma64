@@ -13,16 +13,16 @@ ekf_filter_node:
     world_frame: odom
 
     odom0: /odom
-    odom0_config: [false, false, false,
-               false, false, false,
-               true, true, false,
-               false, false, true,
+    odom0_config: [true, true, false,  #### position x,y,z
+               false, false, true,     ### rotation selon l'axe z( RZ= yaw en 2D)
+               true, true, false,      ### vitesse lineaire selon vx, vy
+               false, false, true,     ### vitesse de rotation  selon z
                false, false, false]
 
-    imu0: imu/data
-    imu0_config: [false, false, false,
-              false,  false,  false,
-              false, false, false,
-              false,  false,  true,
-              false,  false,  false]
+    imu0: /imu/data
+    imu0_config: [false, false, false, #### pas de position
+              false,  false,  true,   ### mesure la rotation selon z (yam)
+              false, false, false,    #### pas de vitesse lineaire 
+              false,  false,  true,  ## vitesse angulaire selon x et y
+              true,  true,  true]    #### accélération     
 
