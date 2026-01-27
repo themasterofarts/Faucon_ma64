@@ -118,6 +118,18 @@ install(TARGETS ransac_node
 
 ##
 
+## Algo cluster node
+add_executable(cluster_node src/cluster_method_node.cpp src/algo/cluster_method.cpp)
+ament_target_dependencies(cluster_node ${PROJ_DEPS})
+target_link_libraries(cluster_node
+  ${PCL_LIBRARIES}
+)
+install(TARGETS cluster_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+##
+
 
 ## setup pour les fichiers python
 

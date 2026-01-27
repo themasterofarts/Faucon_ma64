@@ -3,9 +3,6 @@
 namespace faucon::filter
 {
 
-    // RansacFilter::RansacFilter(RansacConfig cfg) : cfg_(std::move(cfg))
-    // {
-    // }
 
     RansacResult RansacFilter::apply(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud) const
     {
