@@ -26,8 +26,12 @@ def generate_launch_description():
     
 
     bringup_dir = get_package_share_directory("nav2_bringup")
+    localization_dir = get_package_share_directory("faucon_localisation")
 
     launch_dir = os.path.join(bringup_dir, "launch")
+    launch_dir_localization = os.path.join(
+        localization_dir, "launch"
+    )
 
     use_sim_time = LaunchConfiguration("use_sim_time")
     rviz_config_file = LaunchConfiguration("rviz_config_file")
@@ -58,6 +62,12 @@ def generate_launch_description():
             "odom",
             "base_link",
         ],
+    )
+
+    #robot localization nodes 
+    robot_localization_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(launch_dir_localization, 'dual_ekf_navsat.launch.py'))
     )
 
 
@@ -110,5 +120,6 @@ def generate_launch_description():
             ),
             static_tf,
             #static_tf2,
+            robot_localization_cmd,
         ]
     )
