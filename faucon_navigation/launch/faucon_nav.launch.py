@@ -43,8 +43,8 @@ def generate_launch_description():
         name="static_map_to_odom",
         output="screen",
         arguments=[
-            "0.0", "0.0", "0.0",        
-            "0.0", "0.0", "0.0",  
+            "-2.28", "-3.83", "0.0",        
+            "-0.01", "-0.03", "-1.52",  
             "map",
             "odom",
         ],
@@ -58,7 +58,7 @@ def generate_launch_description():
         output="screen",
         arguments=[
             "0.0", "0.0", "0.0",  
-            "0.0", "0.0", "0.0",  
+            "0.0", "0.0", "-1.52",  
             "odom",
             "base_link",
         ],
@@ -118,7 +118,7 @@ def generate_launch_description():
                     "rviz_config": rviz_config_file,
                 }.items(),
             ),
-            static_tf,
+            #static_tf,
             #static_tf2,
             robot_localization_cmd,
         ]
