@@ -7,6 +7,8 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
 
 # Install config and launch directories
 install(
@@ -16,8 +18,7 @@ install(
 
 # Install Python scripts
 install(PROGRAMS
-  scripts/gnss_waypoint_collector.py
-  scripts/gnss_waypoint_logger.py
+  scripts/gps_waypoint_logger.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
