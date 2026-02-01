@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import NavSatFix, Imu
@@ -21,6 +23,9 @@ class GpsGuiLogger(tk.Tk, Node):
         self.title("GPS Waypoint Logger")
 
         self.logging_file_path = logging_file_path
+        
+        # Liste pour stocker les waypoints en mémoire
+        self.waypoints_list = []
 
         self.gps_pose_label = tk.Label(self, text="Current Coordinates:")
         self.gps_pose_label.pack()
@@ -47,8 +52,7 @@ class GpsGuiLogger(tk.Tk, Node):
         )
         self.last_heading = 0.0
 
-
-    def euler_from_quaternion(self,q: Quaternion):
+    def euler_from_quaternion(self, q: Quaternion):
         """
         Convert a quaternion into euler angles
         taken from: https://automaticaddison.com/how-to-convert-a-quaternion-into-euler-angles-in-python/
@@ -93,58 +97,54 @@ class GpsGuiLogger(tk.Tk, Node):
         """
         Function to save a new waypoint to a file
         """
-        # read existing waypoints
-        try:
-            with open(self.logging_file_path, 'r') as yaml_file:
-                existing_data = yaml.safe_load(yaml_file)
-        # in case the file does not exist, create with the new wps
-        except FileNotFoundError:
-            existing_data = {"waypoints": []}
-        # if other exception, raise the warining
-        except Exception as ex:
-            messagebox.showerror(
-                "Error", f"Error logging position: {str(ex)}")
-            return
-
-        # build new waypoint object
+        # Build new waypoint object
         data = {
             "latitude": self.last_gps_position.latitude,
             "longitude": self.last_gps_position.longitude,
             "yaw": self.last_heading
         }
-        existing_data["waypoints"].append(data)
+        
+        # Add to in-memory list
+        self.waypoints_list.append(data)
 
-        # write updated waypoints
+        # Write all waypoints from this session to file
         try:
             with open(self.logging_file_path, 'w') as yaml_file:
-                yaml.dump(existing_data, yaml_file, default_flow_style=False)
+                yaml.dump({"waypoints": self.waypoints_list}, yaml_file, 
+                         default_flow_style=False)
         except Exception as ex:
             messagebox.showerror(
                 "Error", f"Error logging position: {str(ex)}")
             return
 
-        messagebox.showinfo("Info", "Waypoint logged succesfully")
+        messagebox.showinfo("Info", 
+            f"Waypoint logged successfully ({len(self.waypoints_list)} total)")
 
 
 def main(args=None):
     rclpy.init(args=args)
 
-    # allow to pass the logging path as an argument
-    default_yaml_file_path = os.path.expanduser("~/gps_waypoints.yaml")
+    # Determine the file path
     if len(sys.argv) > 1:
+        # Custom path provided as argument
         yaml_file_path = sys.argv[1]
     else:
-        yaml_file_path = default_yaml_file_path
-
+        # Default path: faucon_navigation/config/gps_waypoints.yaml (source directory)
+        workspace_path = os.path.expanduser('~/Faucon_ma64')
+        yaml_file_path = os.path.join(workspace_path, 'faucon_navigation', 'config', 'gps_waypoints.yaml')
+    
     gps_gui_logger = GpsGuiLogger(yaml_file_path)
 
-    while rclpy.ok():
-        # we spin both the ROS system and the interface
-        rclpy.spin_once(gps_gui_logger, timeout_sec=0.1)  # Run ros2 callbacks
-        gps_gui_logger.update()  # Update the tkinter interface
-
-    rclpy.shutdown()
-
-
+    try:
+        while rclpy.ok():
+            # Spin both the ROS system and the interface
+            rclpy.spin_once(gps_gui_logger, timeout_sec=0.1)  # Run ROS2 callbacks
+            gps_gui_logger.update()  # Update the tkinter interface
+    except KeyboardInterrupt:
+        pass  
+    finally:
+        gps_gui_logger.destroy()
+        if rclpy.ok():
+            rclpy.shutdown()
 if __name__ == '__main__':
     main()
