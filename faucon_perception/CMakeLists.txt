@@ -24,6 +24,9 @@ find_package(sensor_msgs REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_sensor_msgs REQUIRED)  
+find_package(visualization_msgs REQUIRED)
+find_package(OpenCV REQUIRED)
+
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -37,6 +40,8 @@ set(PROJ_DEPS
   PCL
   tf2_ros
   tf2_sensor_msgs
+  visualization_msgs
+  OpenCV
 )
 
 include_directories(
@@ -48,8 +53,37 @@ install(
   DIRECTORY include
   DESTINATION include
 )
+
+add_library(row_pipeline
+  src/pcl/row_pipeline.cpp
+  src/pcl/hough_method.cpp
+)
+
+target_include_directories(row_pipeline PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+  ${PCL_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+)
+
+
+target_link_libraries(row_pipeline
+  ${PCL_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+)
+
 add_executable(lidar_calibrator src/lidat_calibrate.cpp)
 ament_target_dependencies(lidar_calibrator ${PROJ_DEPS})
+
+add_executable(crop_row_detector src/cluster_rows.cpp)
+ament_target_dependencies(crop_row_detector ${PROJ_DEPS})
+
+add_executable(crop_row src/row_clusterer_node.cpp)
+ament_target_dependencies(crop_row ${PROJ_DEPS})
+target_link_libraries(crop_row
+  row_pipeline
+  ${PCL_LIBRARIES}
+)
 
 target_link_libraries(lidar_calibrator
   ${PCL_LIBRARIES}
@@ -57,6 +91,45 @@ target_link_libraries(lidar_calibrator
 install(TARGETS lidar_calibrator
   DESTINATION lib/${PROJECT_NAME}
 )
+
+target_link_libraries(crop_row_detector
+  ${PCL_LIBRARIES}
+)
+install(TARGETS crop_row_detector
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+target_link_libraries(crop_row
+  ${PCL_LIBRARIES}
+)
+install(TARGETS crop_row
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+## Algo RANSAC node
+add_executable(ransac_node src/ransac_node.cpp src/algo/ransac_method.cpp)
+ament_target_dependencies(ransac_node ${PROJ_DEPS})
+target_link_libraries(ransac_node
+  ${PCL_LIBRARIES}
+)
+install(TARGETS ransac_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+##
+
+## Algo cluster node
+add_executable(cluster_node src/cluster_method_node.cpp src/algo/cluster_method.cpp)
+ament_target_dependencies(cluster_node ${PROJ_DEPS})
+target_link_libraries(cluster_node
+  ${PCL_LIBRARIES}
+)
+install(TARGETS cluster_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+##
+
 
 ## setup pour les fichiers python
 
