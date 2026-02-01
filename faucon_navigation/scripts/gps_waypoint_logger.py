@@ -9,7 +9,9 @@ import sys
 import tkinter as tk
 from tkinter import messagebox
 import math
+from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import Quaternion
+
 
 
 class GpsGuiLogger(tk.Tk, Node):
@@ -129,9 +131,9 @@ def main(args=None):
         # Custom path provided as argument
         yaml_file_path = sys.argv[1]
     else:
-        # Default path: faucon_navigation/config/gps_waypoints.yaml (source directory)
-        workspace_path = os.path.expanduser('~/Faucon_ma64')
-        yaml_file_path = os.path.join(workspace_path, 'faucon_navigation', 'config', 'gps_waypoints.yaml')
+        # Default path: faucon_navigation/config/gps_waypoints.yaml
+        package_path = get_package_share_directory('faucon_navigation')
+        yaml_file_path = os.path.join(package_path, 'config', 'gps_waypoints.yaml')
     
     gps_gui_logger = GpsGuiLogger(yaml_file_path)
 
@@ -141,10 +143,12 @@ def main(args=None):
             rclpy.spin_once(gps_gui_logger, timeout_sec=0.1)  # Run ROS2 callbacks
             gps_gui_logger.update()  # Update the tkinter interface
     except KeyboardInterrupt:
-        pass  
+        pass  # Arrêt propre avec Ctrl+C
     finally:
         gps_gui_logger.destroy()
         if rclpy.ok():
             rclpy.shutdown()
+
+
 if __name__ == '__main__':
     main()
