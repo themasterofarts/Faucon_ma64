@@ -13,7 +13,7 @@ class LocalFrame():
     ### constructeur 
     
     def __init__(self) :
-        self.origin_set = False
+        #self.origin_set = False
         self.x0 = 0.0
         self.y0 = 0.0
         
@@ -21,18 +21,28 @@ class LocalFrame():
     
     #### Methode qui recupere les coordonée gps ####
     
-    def gnss_to_local(self, lat, lon):
+    def gnss_to_local(self, lat, lon,lat0, lon0):
+        
+        
+        
+        ##### coversion en utm de lat0 et lon0
+        
+        easting0, northing0, zone0, center0 = utm.from_latlon(lat0,lon0)
+        
+        
+        
         
         
         #### convertion des cordonnées gps en utm ###
         
         easting, northing, zone, center = utm.from_latlon(lat,lon)
         
+        
         #### fixation de l'origine local
-        if not self.origin_set:
-            self.x0 = easting
-            self.y0 = northing
-            self.origin_set = True
+        #if not self.origin_set:
+        self.x0 = easting0
+        self.y0 = northing0
+        #self.origin_set = True
         
     
     #### methode pour la conversion en utm        

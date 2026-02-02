@@ -24,9 +24,9 @@ class GnssToLocal(Node):
         """ j'ai commenter ces lignes car je le prend en compte dans la librairi LocalFrame qui sert de convertion
         gnss_to_local
         """
-        # self.origin_set = False
-        # self.x0 = 0.0   
-        # self.y0 = 0.0
+        self.origin_set = False
+        self.lat0 = 0.0  
+        self.lon0 = 0.0
         
         # utiliser pour l'imu
         self.yaw = 0.0
@@ -34,9 +34,9 @@ class GnssToLocal(Node):
         
         #### abonner au topic gnss et Imu ####
         
-        self.subscriber_1 = self.create_subscription(NavSatFix,"gnss/fix", self.gnss_to_local_callback,10)
+        self.subscriber_1 = self.create_subscription(NavSatFix,"/gnss/fix", self.gnss_to_local_callback,10)
         
-        self.subcriber_2 = self.create_subscription(Imu, "imu/data", self.imu_callback, 10)
+        self.subcriber_2 = self.create_subscription(Imu, "/imu/data", self.imu_callback, 10)
         
         ##### publier au topic /odom #####
         
@@ -48,9 +48,18 @@ class GnssToLocal(Node):
         lat = msg.latitude
         lon = msg.longitude
         
+        if not self.origin_set:
+            self.lat0 = lat  
+            self.lon0 = lon
+            self.origin_set = True
+        
+        
+        
+        
         
         ### ici j'utilise une librairi que j'ai ecrie pour faire tous les calcule pour faire la convertion gnss_to_local
-        x_local, y_local = self.conver_gnss_local_frame.gnss_to_local(lat,lon)
+        if self.origin_set:
+            x_local, y_local = self.conver_gnss_local_frame.gnss_to_local(lat,lon,self.lat0,self.lon0)
                 
         # #### conversion de gnss en global(utm) en metre ####
         
