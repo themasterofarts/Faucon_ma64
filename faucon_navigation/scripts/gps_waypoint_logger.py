@@ -136,7 +136,7 @@ def main(args=None):
         yaml_file_path = sys.argv[1]
         print(f"Using custom path: {yaml_file_path}")
     else:
-        yaml_file_path = os.path.expanduser('~/Faucon_ma64/faucon_navigation/config/gps_waypoints.yaml')
+        yaml_file_path = os.path.expanduser('~/Faucon_ma64/config_point/gps_waypoints.yaml')
         print(f"Waypoints will be saved to: {yaml_file_path}")
 
     # Créer le répertoire config s'il n'existe pas
