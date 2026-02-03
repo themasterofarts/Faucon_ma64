@@ -66,12 +66,6 @@ namespace faucon::algorithm
     }
 
 
-
-
-
-      
-
-
 }      
 
 // namespace faucon::algorithm
