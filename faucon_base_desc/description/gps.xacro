@@ -25,7 +25,7 @@
       <topic>/gnss/fix</topic>
       
       <gz_frame_id>gnss_frame</gz_frame_id>
-      <update_rate>10</update_rate>
+      <update_rate>1</update_rate>
 
       <navsat>
        
