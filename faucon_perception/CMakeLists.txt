@@ -57,6 +57,7 @@ install(
 add_library(row_pipeline
   src/pcl/row_pipeline.cpp
   src/pcl/hough_method.cpp
+  src/pcl/model_detect.cpp
 )
 
 target_include_directories(row_pipeline PUBLIC
@@ -85,6 +86,13 @@ target_link_libraries(crop_row
   ${PCL_LIBRARIES}
 )
 
+add_executable(detect_point src/detect_point_node.cpp)
+ament_target_dependencies(detect_point ${PROJ_DEPS})
+target_link_libraries(detect_point
+row_pipeline
+  ${PCL_LIBRARIES}
+)
+
 target_link_libraries(lidar_calibrator
   ${PCL_LIBRARIES}
 )
@@ -103,6 +111,13 @@ target_link_libraries(crop_row
   ${PCL_LIBRARIES}
 )
 install(TARGETS crop_row
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+target_link_libraries(detect_point
+  ${PCL_LIBRARIES}
+)
+install(TARGETS detect_point
   DESTINATION lib/${PROJECT_NAME}
 )
 

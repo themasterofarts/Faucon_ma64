@@ -12,6 +12,8 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/crop_box.h>
 
+// Note : ce code une vielle version de notre code.
+
 RowClusterer::RowClusterer() : Node("crop_row_detector")
 {
     // Déclaration des paramètres
