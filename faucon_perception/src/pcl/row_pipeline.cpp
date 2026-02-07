@@ -229,4 +229,8 @@ namespace faucon::pclrow
         return angle <= cfg_.axis_constraint.angle_tolerance_deg || (180.0 - angle) <= cfg_.axis_constraint.angle_tolerance_deg;
     }
 
+    RowDetectionConfig RowPipeline::getConfig() const
+    {
+        return cfg_;
+    }
 } // namespace faucon::pclrow

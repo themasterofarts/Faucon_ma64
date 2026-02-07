@@ -17,8 +17,8 @@ namespace faucon::pclrow
     struct RoiBox
     {
         bool enabled{true};
-        double x_min{0.0}, x_max{5.0};
-        double y_min{-1.5}, y_max{1.5};
+        double x_min{1.75}, x_max{5.0};
+        double y_min{-0.75}, y_max{0.75};
         double z_min{-0.5}, z_max{2.0};
     };
 
@@ -33,7 +33,7 @@ namespace faucon::pclrow
     {
         double tolerance{0.4};
         int min_size{500};
-        int max_size{15000};
+        int max_size{1500000};
     };
 
     struct RansacConfig

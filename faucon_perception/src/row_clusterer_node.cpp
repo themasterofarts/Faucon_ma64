@@ -19,6 +19,7 @@ namespace faucon::ros
 
         pub_clusters_ = create_publisher<sensor_msgs::msg::PointCloud2>("/crop_clusters", 10);
         pub_markers_ = create_publisher<visualization_msgs::msg::MarkerArray>("/crop_row_markers", 10);
+        pub_polygons_roi_ = create_publisher<visualization_msgs::msg::Marker>("/roi_box_polygon", 10);
         
     }
 
@@ -43,6 +44,7 @@ namespace faucon::ros
 
         publishClusters(result.clusters, msg->header);
         publishMarkers(result.rows, msg->header);
+        publishPolygonsROI(pipeline_.getConfig().roi, msg->header);
         
     }
 
@@ -208,7 +210,40 @@ namespace faucon::ros
         pub_markers_->publish(marker_array);
     }
 
+    void RowClustererNode::publishPolygonsROI(
+        const faucon::pclrow::RoiBox &roi,
+        const std_msgs::msg::Header &header) const
+    {
+        visualization_msgs::msg::Marker polygon_marker;
+        polygon_marker.header = header;
+        polygon_marker.ns = "roi_box_polygon";
+        polygon_marker.id = 0;
+        polygon_marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+        polygon_marker.action = visualization_msgs::msg::Marker::ADD;
+        polygon_marker.scale.x = 0.05;
+        polygon_marker.color.r = 1.0f;
+        polygon_marker.color.g = 0.0f;
+        polygon_marker.color.b = 0.0f;
+        polygon_marker.color.a = 1.0;
+        geometry_msgs::msg::Point p1, p2, p3, p4, p5;
+        float z = 0.15;
+        p1.x = roi.x_min; p1.y = roi.y_min; p1.z = z;
+        p2.x = roi.x_max; p2.y = roi.y_min; p2.z = z;
+        p3.x = roi.x_max; p3.y = roi.y_max; p3.z = z;
+        p4.x = roi.x_min; p4.y = roi.y_max; p4.z = z;
+        p5.x = roi.x_min; p5.y = roi.y_min; p5.z = z;
+        polygon_marker.points.push_back(p1);
+        polygon_marker.points.push_back(p2);
+        polygon_marker.points.push_back(p3);
+        polygon_marker.points.push_back(p4);
+        polygon_marker.points.push_back(p5);  
+        
     
+        pub_polygons_roi_->publish(polygon_marker);
+
+
+    }
+
 } // namespace faucon::ros
 
 int main(int argc, char **argv)
