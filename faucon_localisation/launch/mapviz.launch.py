@@ -22,7 +22,7 @@ def generate_launch_description():
             executable="initialize_origin.py",
             name="initialize_origin",
             remappings=[
-                ("fix", "gnss/fix"),
+                ("fix", "/gnss/fix"),
             ],
         ),
         launch_ros.actions.Node(
