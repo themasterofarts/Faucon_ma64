@@ -1,0 +1,17 @@
+tile_map:
+  ros__parameters:
+    # Cache disque : évite de re-télécharger à chaque fois
+    cache_directory: "/tmp/tile_map_cache"
+
+    # Source de tuiles (OSM standard). Tu peux remplacer par un serveur interne si besoin.
+    base_url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+
+    # User-Agent: certains serveurs le demandent (bonnes pratiques)
+    user_agent: "ros2-mapviz-tile_map"
+
+    # Réseau
+    timeout: 10.0
+    retries: 3
+
+    # Taille de tuile (OSM standard)
+    tile_size: 256
