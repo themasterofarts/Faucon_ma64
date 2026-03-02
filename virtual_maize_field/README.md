@@ -46,7 +46,49 @@ You can call the script using
 ```bash
 ros2 run virtual_maize_field generate_world
 ```
-The resulting file will be placed in `$ROS_HOME/virtual_maize_field/generated.world`. 
+The resulting file will be placed in `$ROS_HOME/virtual_maize_field/generated.world`.
+
+### Spawning litter and obstacles in Gazebo
+
+A companion node is provided to inject random objects (stones, coke cans, etc.)
+into a running Gazebo world. It is installed as the `spawn_litter` executable:
+
+```bash
+ros2 run virtual_maize_field spawn_litter
+```
+
+By default it will spawn five items in a rectangle 1–5 m ahead of the robot; you
+can override any of the parameters at launch, e.g.: 
+
+```bash
+ros2 run virtual_maize_field spawn_litter --ros-args \
+  -p count:=10 -p zone_x_min:=2.0 -p zone_x_max:=8.0 -p zone_y_min:=-2.0 -p zone_y_max:=2.0 \
+  -p z:=0.2725 -p z_min:=0.2725
+```
+
+Useful `spawn_litter` parameters:
+- `count`: number of objects to spawn
+- `models`: list of model names to use (e.g. `stone_01`, `stone_02`, `coke_can`)
+- `zone_x_min`, `zone_x_max`: forward spawn range in robot frame
+- `zone_y_min`, `zone_y_max`: lateral spawn range in robot frame
+- `z`: requested spawn altitude
+- `z_min`: minimum spawn altitude safeguard (`final_z = max(z, z_min)`)
+- `random_yaw`: randomize object yaw
+- `autostart`: spawn automatically on node startup
+
+The node also advertises a service `/spawn_litter/spawn` (``std_srvs/Trigger``)
+that triggers a fresh set of objects when invoked. It will retry automatically
+until the Gazebo spawn service becomes available, and falls back to invoking
+`ros2 run ros_gz_sim create` if needed.
+
+For manual testing, you may still run the lightweight script directly:
+
+```bash
+python3 scripts/spawn_litter.py
+```
+
+(identical behaviour, but requires sourcing the workspace so that the
+`virtual_maize_field` package is on the Python path.)
 
 You can use this script by one of the defined config files or specifying the parameters below:
 <details>
@@ -207,7 +249,7 @@ ros2 run virtual_maize_field generate_world fre22_task_navigation_mini
 ```
 
 ## Launching and using generated worlds
-The launch file to launch the worlds is called `simulation.launch`. You can launch the launch file by running `ros2 launch virtual_maize_field simulation.launch.py`. By default the launch file will launch `generated_world.world`. You can launch any world by using the `world_name` arg. e.g. `ros2 launch virtual_maize_field simulation.launch.py world_name:=simple_row_level_1.world`. The generated world will be saved in `$ROS_HOME/virtual_maize_field` (usually, this will be `~/.ros/virtual_maize_field`).
+The launch file to launch the worlds is called `simulation.launch`. You can launch the launch file by running `ros2 launch virtual_maize_field simulation.launch.py`. By default the launch file will launch `generated.world`. You can launch any world by using the `world_name` arg. e.g. `ros2 launch virtual_maize_field simulation.launch.py world_name:=simple_row_level_1.world`. The generated world will be saved in `$ROS_HOME/virtual_maize_field` (usually, this will be `~/.ros/virtual_maize_field`).
 
 To add your own robot in the world, use the generated `robot_spawner.launch.py`. This launches your robot at the correct position in the generated world. Your launch file to launch your robot should look like (replace `<<robot_name>>` with your robot name):
 

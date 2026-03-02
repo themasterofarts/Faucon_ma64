@@ -1,3 +1,4 @@
+#include <Eigen/Eigenvalues>
 #include "faucon_perception/cluster_rows.hpp"
 
 #include <pcl/filters/extract_indices.h>

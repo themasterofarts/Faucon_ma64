@@ -23,3 +23,14 @@ def test_predefinded_worlds(config_file: str) -> None:
 
     process = run(["ros2", "run", "virtual_maize_field", "generate_world", config_file])
     assert process.returncode == 0, f"Cannot create {config_file}!"
+
+
+def test_spawn_litter_import():
+    # simple import/instantiation check for the new spawn node
+    from virtual_maize_field.spawn_litter import SpawnLitterNode
+    import rclpy
+    rclpy.init()
+    node = SpawnLitterNode()
+    assert node is not None
+    node.destroy_node()
+    rclpy.shutdown()

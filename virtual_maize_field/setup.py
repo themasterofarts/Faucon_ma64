@@ -56,6 +56,7 @@ setup(
     entry_points={
         "console_scripts": [
             "generate_world = virtual_maize_field.generate_world:main",
+            "spawn_litter = virtual_maize_field.spawn_litter:main",
         ],
     },
 )
