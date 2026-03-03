@@ -15,6 +15,7 @@ def launch_setup(context, *args, **kwargs):
     pkg_path = get_package_share_directory("faucon_base_desc")
     pkg_ros_gz_sim = get_package_share_directory("ros_gz_sim")
     pkg_maize_field = get_package_share_directory("virtual_maize_field")
+    pkg_faucon_ihm = get_package_share_directory("faucon_ihm")  
     
     xacro_file = os.path.join(pkg_path, "description", "robot.urdf.xacro")
     xacro_file_mini = os.path.join(pkg_path, "description_mini", "robot.urdf.xacro")
@@ -66,6 +67,15 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             "world_path": os.path.join(pkg_path, "worlds", "virtual_maize_field"),
             "world_name": "generated.world",
+        }.items(),
+    )
+
+    faucon_ihm = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(pkg_faucon_ihm, "launch", "ihm_launch.py")
+        ),
+        launch_arguments={
+            "use_sim_time": use_sim_time,
         }.items(),
     )
 
@@ -228,7 +238,8 @@ def launch_setup(context, *args, **kwargs):
         joint_broad_spawner,
         # twist_mux,
         #gz_sim,
-        ground_filter,  
+        ground_filter, 
+        faucon_ihm, 
     ]
 
 
