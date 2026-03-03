@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+
+  <gazebo >
+    <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher"> 
+     <odom_topic>/odom </odom_topic>
+     <odom_frame>odom</odom_frame>
+    <robot_base_frame>base_link</robot_base_frame>
+    <publish_rate>30.0</publish_rate>
+    <tf_topic>/tf</tf_topic>
+    <use_sim_time>true</use_sim_time>
+    <odom_noise>
+        <linear>
+            <x>
+            <mean>0.0</mean>
+            <stddev>0.0</stddev>
+            </x>
+            <y>
+            <mean>0.0</mean>
+            <stddev>0.0</stddev>
+            </y>
+            <z>
+            <mean>0.0</mean>
+            <stddev>0.0</stddev>
+            </z>
+        </linear>
+        <angular>
+            <roll>
+            <mean>0.0</mean>
+            <stddev>0.0</stddev>
+            </roll>
+            <pitch>
+            <mean>0.0</mean>
+            <stddev>0.0</stddev>
+            </pitch>
+            <yaw>
+            <mean>0.0</mean>
+            <stddev>0.0</stddev>
+            </yaw>
+        </angular>
+    </odom_noise>
+    </plugin>
+  </gazebo>
+
+</robot>
