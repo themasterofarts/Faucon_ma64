@@ -55,7 +55,7 @@ class SpawnLitterNode(Node):
         self.declare_parameter('zone_y_min', -1.0)
         self.declare_parameter('zone_y_max', 1.0)
         self.declare_parameter('z', 0.0)
-        self.declare_parameter('z_min', 0.2)
+        self.declare_parameter('z_min', 0.2155)
         self.declare_parameter('random_yaw', True)
         self.declare_parameter('autostart', True)
         self.declare_parameter('package_name', 'virtual_maize_field')

@@ -1,6 +1,8 @@
 #include <Eigen/Eigenvalues>
 #include "faucon_perception/cluster_rows.hpp"
 
+
+#include <Eigen/Eigenvalues>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/kdtree/kdtree.h>
