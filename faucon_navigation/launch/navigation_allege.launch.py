@@ -92,7 +92,7 @@ def generate_launch_description():
             
             launch.actions.IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                    os.path.join(package_name,
+                    os.path.join(get_package_share_directory(package_name),
                              "launch",
                              "navigation_launch.py")
                 ),

@@ -12,7 +12,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 # Install config and launch directories
 install(
-  DIRECTORY config launch
+  DIRECTORY  config launch scripts
   DESTINATION share/${PROJECT_NAME}
 )
 
