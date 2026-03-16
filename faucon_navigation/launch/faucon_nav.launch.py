@@ -15,18 +15,27 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
 
     package_name = "faucon_navigation"
+    
+    
 
    
     nav2_params_path = os.path.join(
         get_package_share_directory(package_name), "config", "fauncon_nav2_params.yaml"
     )
+    
+    
 
     bringup_dir = get_package_share_directory("nav2_bringup")
+    localization_dir = get_package_share_directory("faucon_localisation")
 
     launch_dir = os.path.join(bringup_dir, "launch")
+    launch_dir_localization = os.path.join(
+        localization_dir, "launch"
+    )
 
     use_sim_time = LaunchConfiguration("use_sim_time")
     rviz_config_file = LaunchConfiguration("rviz_config_file")
+    
 
     static_tf = Node(
         package="tf2_ros",
@@ -34,8 +43,8 @@ def generate_launch_description():
         name="static_map_to_odom",
         output="screen",
         arguments=[
-            "0.0", "0.0", "0.0",        
-            "0.0", "0.0", "0.0",  
+            "-2.28", "-3.83", "0.0",        
+            "-0.01", "-0.03", "-1.52",  
             "map",
             "odom",
         ],
@@ -49,10 +58,16 @@ def generate_launch_description():
         output="screen",
         arguments=[
             "0.0", "0.0", "0.0",  
-            "0.0", "0.0", "0.0",  
+            "0.0", "0.0", "-1.52",  
             "odom",
             "base_link",
         ],
+    )
+
+    #robot localization nodes 
+    robot_localization_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(launch_dir_localization, 'dual_ekf_navsat.launch.py'))
     )
 
 
@@ -86,7 +101,7 @@ def generate_launch_description():
             # Launch the ROS 2 Navigation Stack
             launch.actions.IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                    os.path.join(launch_dir, "bringup_launch.py")
+                   os.path.join(launch_dir, "bringup_launch.py")  
                 ),
                 launch_arguments={
                     "use_sim_time": LaunchConfiguration("use_sim_time"),
@@ -103,7 +118,8 @@ def generate_launch_description():
                     "rviz_config": rviz_config_file,
                 }.items(),
             ),
-            static_tf,
+            #static_tf,
             #static_tf2,
+            robot_localization_cmd,
         ]
     )

@@ -7,6 +7,7 @@
     <xacro:include filename="lidar.xacro" />
     <xacro:include filename="camera.xacro" />
     <xacro:include filename="gps.xacro" />
+    <xacro:include filename="odom.xacro" />
 
     <xacro:include filename="gazebo_control_04.xacro" />
 

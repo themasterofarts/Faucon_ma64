@@ -8,6 +8,7 @@
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>faucon_control</buildtool_depend>
 
   <exec_depend>virtual_maize_field</exec_depend>
   <exec_depend>ros2_controllers</exec_depend>
