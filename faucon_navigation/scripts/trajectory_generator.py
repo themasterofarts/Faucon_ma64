@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -543,6 +544,64 @@ def write_trajectory_yaml(
     return out_data
 
 
+def _build_plot_path(output_yaml_path: str) -> str:
+    root, _ = os.path.splitext(output_yaml_path)
+    return f"{root}.png"
+
+
+def visualize_trajectory(
+    input_points: Sequence[Point2D],
+    trajectory_points: Sequence[Point2D],
+    output_png_path: str,
+    x_key: str,
+    y_key: str,
+    title: str,
+) -> str:
+    """Create a PNG visualization of input points and generated trajectory."""
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError as exc:
+        raise RuntimeError(
+            "matplotlib is required for --visualize. Install with: pip install matplotlib"
+        ) from exc
+
+    # Human-friendly map-like view for lat/lon inputs.
+    map_like = x_key.lower() == "latitude" and y_key.lower() == "longitude"
+    if map_like:
+        in_x = [p[1] for p in input_points]      # longitude on x-axis
+        in_y = [p[0] for p in input_points]      # latitude on y-axis
+        tr_x = [p[1] for p in trajectory_points]
+        tr_y = [p[0] for p in trajectory_points]
+        x_label, y_label = "longitude", "latitude"
+    else:
+        in_x = [p[0] for p in input_points]
+        in_y = [p[1] for p in input_points]
+        tr_x = [p[0] for p in trajectory_points]
+        tr_y = [p[1] for p in trajectory_points]
+        x_label, y_label = x_key, y_key
+
+    plt.figure(figsize=(10, 8))
+    plt.plot(tr_x, tr_y, "-", linewidth=2.0, color="#d62728", label=f"trajectory ({len(trajectory_points)} pts)")
+    plt.plot(in_x, in_y, "o", color="black", markersize=6, label=f"input ({len(input_points)} pts)")
+
+    plt.scatter([in_x[0]], [in_y[0]], color="green", s=70, label="start", zorder=5)
+    plt.scatter([in_x[-1]], [in_y[-1]], color="purple", s=70, label="end", zorder=5)
+
+    for idx, (xv, yv) in enumerate(zip(in_x, in_y), start=1):
+        plt.annotate(str(idx), (xv, yv), textcoords="offset points", xytext=(4, 4), fontsize=8)
+
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.axis("equal")
+    plt.tight_layout()
+    plt.savefig(output_png_path, dpi=220)
+    plt.close()
+    return output_png_path
+
+
 def generate_trajectory_yaml(input_yaml_path: str, output_yaml_path: str, config: TrajectoryConfig) -> Dict:
     """Complete pipeline: read -> generate -> write."""
     if config.use_input_yaw:
@@ -610,6 +669,8 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--yaw-key", default="yaw")
     parser.add_argument("--use-input-yaw", action="store_true", help="Enable pose-to-pose Dubins mode using input yaw")
     parser.add_argument("--no-yaw", action="store_true", help="Do not write yaw in output YAML")
+    parser.add_argument("--visualize", action="store_true", help="Generate a PNG preview plot")
+    parser.add_argument("--plot-output", default=None, help="PNG output path (default: same as --output with .png)")
     return parser
 
 
@@ -629,8 +690,29 @@ def main() -> None:
         include_yaw=not args.no_yaw,
         use_input_yaw=args.use_input_yaw,
     )
-    generate_trajectory_yaml(args.input, args.output, config)
+    out_data = generate_trajectory_yaml(args.input, args.output, config)
     print(f"Trajectory generated: {args.output}")
+
+    if args.visualize:
+        input_points = read_input_points(
+            input_yaml_path=args.input,
+            list_key=config.list_key_in,
+            x_key=config.x_key,
+            y_key=config.y_key,
+        )
+        raw_traj = out_data[config.list_key_out]
+        trajectory_points = [(float(p[config.x_key]), float(p[config.y_key])) for p in raw_traj]
+        plot_path = args.plot_output if args.plot_output else _build_plot_path(args.output)
+        mode_label = "Dubins" if config.use_input_yaw else "Legacy"
+        visualize_trajectory(
+            input_points=input_points,
+            trajectory_points=trajectory_points,
+            output_png_path=plot_path,
+            x_key=config.x_key,
+            y_key=config.y_key,
+            title=f"{mode_label} trajectory",
+        )
+        print(f"Plot generated: {plot_path}")
 
 
 if __name__ == "__main__":
