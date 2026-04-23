@@ -4,96 +4,103 @@
 
 Le script est independant de ROS/Nav2:
 - pas de publication de topics
-- pas de conversion de coordonnees
-- il fait uniquement du `read -> generate -> write`
+- conversion GNSS->local->GNSS active par defaut
+- `read -> generate -> write`
 
-## 1) Ce que fait l'outil
+## 1) Mode unique
 
-Deux modes:
+Le script fonctionne uniquement en mode rangs:
+- segments 1->2, 3->4, 5->6... en ligne droite
+- segments 2->3, 4->5... en virages Dubins
 
-1. `legacy` (par defaut): arrondi geometrique local `ligne + arc`
-2. `dubins`: pose-a-pose avec yaw d'entree (`--use-input-yaw`)
+Format attendu:
+- points ordonnes comme `[entree_rang1, sortie_rang1, entree_rang2, sortie_rang2, ...]`
+- nombre pair de points
+
+Important:
+- ce mode ne lit pas les `yaw` d'entree
+- `step` et `turn-radius` sont en metres (quand GNSS->local est actif, defaut)
 
 ## 2) Format YAML attendu
 
-Exemple entree:
+Exemple:
 
 ```yaml
 waypoints:
   - latitude: 43.8999785
     longitude: 3.1999708
-    yaw: 0.02617
   - latitude: 43.9000184
     longitude: 3.1999718
-    yaw: 1.55216
 ```
 
 Par defaut:
-- liste d'entree: `waypoints`
-- cles points: `latitude`, `longitude`
-- cle yaw: `yaw`
+- liste entree: `waypoints`
+- cles: `latitude`, `longitude`
 
-Tu peux changer ces noms via options CLI.
+## 3) Parametres CLI
 
-## 3) Parametres importants
+- `--step`: pas d'echantillonnage (m)
+- `--turn-radius`: rayon de virage (m)
+- `--origin-lat`, `--origin-lon`: origine locale optionnelle (sinon 1er waypoint)
+- `--no-gnss-to-local`: desactive la conversion GNSS->local->GNSS
+- `--earth-radius-m`: rayon terrestre pour la conversion (defaut `6378137.0`)
+- `--no-yaw`: ne pas ecrire le yaw de sortie
+- `--visualize`: genere un PNG
+- `--plot-output`: chemin PNG
 
-- `--step`: pas d'echantillonnage
-- `--turn-radius`: rayon de virage
-- `--use-input-yaw`: active le mode Dubins pose-a-pose
+## 4) Exemples
 
-Important:
-- `step` et `turn-radius` doivent etre dans la meme unite que les coordonnees.
-- Si coordonnees GNSS (degres), utiliser de petites valeurs (ex `1e-6`, `3e-6`).
-- Si coordonnees locales en metres, utiliser des valeurs en metres (ex `0.1`, `5`).
-
-## 4) Exemples d'execution
-
-### Legacy
+### Generation trajectoire (recommande)
 
 ```bash
 python3 trajectory_generator.py \
   --input gps_waypoints_sent.yaml \
-  --output path_legacy.yaml \
-  --step 0.01 \
-  --turn-radius 5
+  --output path_turns.yaml \
+  --step 0.1 \
+  --turn-radius 1.0
 ```
 
-### Dubins (avec yaw d'entree)
+### Avec visualisation
 
 ```bash
 python3 trajectory_generator.py \
   --input gps_waypoints_sent.yaml \
-  --output path_dubins.yaml \
-  --step 0.01 \
-  --turn-radius 5 \
-  --use-input-yaw
-```
-
-### Avec visualisation PNG
-
-```bash
-python3 trajectory_generator.py \
-  --input gps_waypoints_sent.yaml \
-  --output path_dubins.yaml \
-  --step 0.01 \
-  --turn-radius 5 \
-  --use-input-yaw \
+  --output path_turns.yaml \
+  --step 0.1 \
+  --turn-radius 1.0 \
   --visualize
 ```
 
-Le plot sera ecrit par defaut a cote du YAML de sortie:
-- `path_dubins.png`
-
-Tu peux forcer le chemin:
+### Avec origine locale explicite
 
 ```bash
---plot-output trajectory_preview.png
+python3 trajectory_generator.py \
+  --input gps_waypoints_sent.yaml \
+  --output path_turns.yaml \
+  --step 0.1 \
+  --turn-radius 1.0 \
+  --origin-lat 43.8999785 \
+  --origin-lon 3.1999708
+```
+
+### Cles YAML personnalisees
+
+```bash
+python3 trajectory_generator.py \
+  --input my_points.yaml \
+  --output my_traj.yaml \
+  --step 0.1 \
+  --turn-radius 1.0 \
+  --input-list-key points \
+  --output-list-key path \
+  --x-key lat \
+  --y-key lon \
+  --yaw-key heading
 ```
 
 ## 5) Sortie YAML
 
 Par defaut:
 - liste sortie: `trajectory`
-- cles points: memes cles que l'entree (`latitude`, `longitude` par defaut)
-- yaw inclus (desactive avec `--no-yaw`)
-
+- cles: `latitude`, `longitude`
+- `yaw` inclus (sauf `--no-yaw`)

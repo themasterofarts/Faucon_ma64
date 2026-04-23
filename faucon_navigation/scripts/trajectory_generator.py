@@ -5,11 +5,13 @@ This module is ROS/Nav2 agnostic:
 - Input: YAML containing ordered waypoints
 - Output: YAML containing sampled intermediate trajectory points
 
-Two generation modes are supported:
-1) Legacy geometric corner rounding (line + tangent arc)
-2) Pose-to-pose Dubins mode using input yaw values
+Single generation mode:
+- rows as straight lines + Dubins turns only between rows
 
-No coordinate conversion is performed here.
+Pipeline:
+- GNSS lat/lon -> local metric frame
+- trajectory generation in meters
+- local metric frame -> GNSS lat/lon
 """
 
 from __future__ import annotations
@@ -36,29 +38,20 @@ class Pose2D:
 class TrajectoryConfig:
     step: float
     turn_radius: float
-    min_turn_angle_deg: float = 8.0
     list_key_in: str = "waypoints"
     list_key_out: str = "trajectory"
     x_key: str = "latitude"
     y_key: str = "longitude"
     yaw_key: str = "yaw"
     include_yaw: bool = True
-    use_input_yaw: bool = False
-
-
-def _clamp(value: float, low: float, high: float) -> float:
-    return max(low, min(high, value))
+    gnss_to_local: bool = True
+    origin_lat: Optional[float] = None
+    origin_lon: Optional[float] = None
+    earth_radius_m: float = 6378137.0
 
 
 def _distance(a: Point2D, b: Point2D) -> float:
     return math.hypot(b[0] - a[0], b[1] - a[1])
-
-
-def _normalize(vx: float, vy: float) -> Optional[Point2D]:
-    norm = math.hypot(vx, vy)
-    if norm < 1e-12:
-        return None
-    return (vx / norm, vy / norm)
 
 
 def _mod2pi(angle: float) -> float:
@@ -70,6 +63,114 @@ def _wrap_pi(angle: float) -> float:
     if wrapped <= -math.pi:
         wrapped += 2.0 * math.pi
     return wrapped
+
+
+def _resolve_origin(
+    points_latlon: Sequence[Point2D],
+    origin_lat: Optional[float],
+    origin_lon: Optional[float],
+) -> Point2D:
+    if origin_lat is None and origin_lon is None:
+        return points_latlon[0]
+    if origin_lat is None or origin_lon is None:
+        raise ValueError("Both origin_lat and origin_lon must be provided together")
+    return (float(origin_lat), float(origin_lon))
+
+
+def _latlon_to_local_xy(
+    latitude: float,
+    longitude: float,
+    origin_lat: float,
+    origin_lon: float,
+    earth_radius_m: float,
+) -> Point2D:
+    # Local tangent plane approximation:
+    # x axis = north (latitude direction), y axis = east (longitude direction).
+    lat0_rad = math.radians(origin_lat)
+    dlat = math.radians(latitude - origin_lat)
+    dlon = math.radians(longitude - origin_lon)
+    x_north = earth_radius_m * dlat
+    y_east = earth_radius_m * math.cos(lat0_rad) * dlon
+    return (x_north, y_east)
+
+
+def _local_xy_to_latlon(
+    x_local: float,
+    y_local: float,
+    origin_lat: float,
+    origin_lon: float,
+    earth_radius_m: float,
+) -> Point2D:
+    lat0_rad = math.radians(origin_lat)
+    cos_lat0 = math.cos(lat0_rad)
+    if abs(cos_lat0) < 1e-12:
+        raise ValueError("Invalid origin latitude for conversion (cos(latitude) too close to zero)")
+
+    latitude = origin_lat + math.degrees(x_local / earth_radius_m)
+    longitude = origin_lon + math.degrees(y_local / (earth_radius_m * cos_lat0))
+    return (latitude, longitude)
+
+
+def _points_latlon_to_local(
+    points_latlon: Sequence[Point2D],
+    origin_lat: float,
+    origin_lon: float,
+    earth_radius_m: float,
+) -> List[Point2D]:
+    return [
+        _latlon_to_local_xy(lat, lon, origin_lat, origin_lon, earth_radius_m)
+        for lat, lon in points_latlon
+    ]
+
+
+def _points_local_to_latlon(
+    points_local: Sequence[Point2D],
+    origin_lat: float,
+    origin_lon: float,
+    earth_radius_m: float,
+) -> List[Point2D]:
+    return [
+        _local_xy_to_latlon(x, y, origin_lat, origin_lon, earth_radius_m)
+        for x, y in points_local
+    ]
+
+
+def _poses_latlon_to_local(
+    poses_latlon: Sequence[Pose2D],
+    origin_lat: float,
+    origin_lon: float,
+    earth_radius_m: float,
+) -> List[Pose2D]:
+    out: List[Pose2D] = []
+    for pose in poses_latlon:
+        x_local, y_local = _latlon_to_local_xy(
+            pose.x,
+            pose.y,
+            origin_lat,
+            origin_lon,
+            earth_radius_m,
+        )
+        out.append(Pose2D(x_local, y_local, pose.yaw))
+    return out
+
+
+def _poses_local_to_latlon(
+    poses_local: Sequence[Pose2D],
+    origin_lat: float,
+    origin_lon: float,
+    earth_radius_m: float,
+) -> List[Pose2D]:
+    out: List[Pose2D] = []
+    for pose in poses_local:
+        lat, lon = _local_xy_to_latlon(
+            pose.x,
+            pose.y,
+            origin_lat,
+            origin_lon,
+            earth_radius_m,
+        )
+        out.append(Pose2D(lat, lon, pose.yaw))
+    return out
 
 
 def _interpolate_line(start: Point2D, goal: Point2D, step: float, include_start: bool) -> List[Point2D]:
@@ -87,14 +188,6 @@ def _interpolate_line(start: Point2D, goal: Point2D, step: float, include_start:
     return pts
 
 
-def _dedupe_points(points: Sequence[Point2D], eps: float = 1e-10) -> List[Point2D]:
-    out: List[Point2D] = []
-    for point in points:
-        if not out or _distance(out[-1], point) > eps:
-            out.append(point)
-    return out
-
-
 def _dedupe_poses(poses: Sequence[Pose2D], eps: float = 1e-10) -> List[Pose2D]:
     out: List[Pose2D] = []
     for pose in poses:
@@ -108,142 +201,7 @@ def _dedupe_poses(poses: Sequence[Pose2D], eps: float = 1e-10) -> List[Pose2D]:
 
 
 # ---------------------------------------------------------------------------
-# Legacy mode: geometric corner rounding
-# ---------------------------------------------------------------------------
-
-def _compute_rounded_corner(
-    p_prev: Point2D,
-    p_corner: Point2D,
-    p_next: Point2D,
-    desired_radius: float,
-    step: float,
-    min_turn_angle_rad: float,
-) -> Optional[Tuple[Point2D, List[Point2D], Point2D]]:
-    in_vec = (p_corner[0] - p_prev[0], p_corner[1] - p_prev[1])
-    out_vec = (p_next[0] - p_corner[0], p_next[1] - p_corner[1])
-    len_in = math.hypot(in_vec[0], in_vec[1])
-    len_out = math.hypot(out_vec[0], out_vec[1])
-    if len_in < 1e-12 or len_out < 1e-12:
-        return None
-
-    u_in = _normalize(in_vec[0], in_vec[1])
-    u_out = _normalize(out_vec[0], out_vec[1])
-    if u_in is None or u_out is None:
-        return None
-
-    dot_uv = _clamp(u_in[0] * u_out[0] + u_in[1] * u_out[1], -1.0, 1.0)
-    turn_angle = math.acos(dot_uv)
-    if turn_angle < min_turn_angle_rad or turn_angle > math.radians(170.0):
-        return None
-
-    trim = desired_radius * math.tan(turn_angle / 2.0)
-    trim = min(trim, 0.45 * min(len_in, len_out))
-    if trim < 1e-12:
-        return None
-
-    radius = trim / math.tan(turn_angle / 2.0)
-    p_tan_in = (p_corner[0] - u_in[0] * trim, p_corner[1] - u_in[1] * trim)
-    p_tan_out = (p_corner[0] + u_out[0] * trim, p_corner[1] + u_out[1] * trim)
-
-    bisector = _normalize(-u_in[0] + u_out[0], -u_in[1] + u_out[1])
-    if bisector is None:
-        return None
-
-    center_distance = radius / math.sin(turn_angle / 2.0)
-    center = (p_corner[0] + bisector[0] * center_distance, p_corner[1] + bisector[1] * center_distance)
-
-    cross_z = u_in[0] * u_out[1] - u_in[1] * u_out[0]
-    if abs(cross_z) < 1e-12:
-        return None
-
-    a0 = math.atan2(p_tan_in[1] - center[1], p_tan_in[0] - center[0])
-    a1 = math.atan2(p_tan_out[1] - center[1], p_tan_out[0] - center[0])
-    if cross_z > 0.0:
-        while a1 <= a0:
-            a1 += 2.0 * math.pi
-    else:
-        while a1 >= a0:
-            a1 -= 2.0 * math.pi
-
-    sweep = a1 - a0
-    arc_length = abs(sweep) * radius
-    n_arc = max(2, int(math.ceil(arc_length / step)))
-
-    arc_points: List[Point2D] = []
-    for i in range(n_arc + 1):
-        t = i / n_arc
-        angle = a0 + t * sweep
-        arc_points.append((center[0] + radius * math.cos(angle), center[1] + radius * math.sin(angle)))
-
-    arc_points[0] = p_tan_in
-    arc_points[-1] = p_tan_out
-    return p_tan_in, arc_points, p_tan_out
-
-
-def generate_trajectory_points(points: Sequence[Point2D], step: float, turn_radius: float, min_turn_angle_deg: float = 8.0) -> List[Point2D]:
-    """Legacy mode: trajectory with local corner rounding (line + arc)."""
-    if len(points) < 2:
-        raise ValueError("At least 2 points are required")
-    if step <= 0.0:
-        raise ValueError("step must be > 0")
-    if turn_radius <= 0.0:
-        raise ValueError("turn_radius must be > 0")
-
-    if len(points) == 2:
-        return _interpolate_line(points[0], points[1], step, include_start=True)
-
-    min_turn_angle_rad = math.radians(min_turn_angle_deg)
-    path_points: List[Point2D] = []
-    segment_start = points[0]
-
-    for i in range(1, len(points) - 1):
-        p_prev, p_corner, p_next = points[i - 1], points[i], points[i + 1]
-        corner = _compute_rounded_corner(
-            p_prev,
-            p_corner,
-            p_next,
-            desired_radius=turn_radius,
-            step=step,
-            min_turn_angle_rad=min_turn_angle_rad,
-        )
-
-        if corner is None:
-            path_points.extend(
-                _interpolate_line(
-                    segment_start,
-                    p_corner,
-                    step=step,
-                    include_start=(len(path_points) == 0),
-                )
-            )
-            segment_start = p_corner
-            continue
-
-        p_tan_in, arc_points, p_tan_out = corner
-        path_points.extend(
-            _interpolate_line(
-                segment_start,
-                p_tan_in,
-                step=step,
-                include_start=(len(path_points) == 0),
-            )
-        )
-        path_points.extend(arc_points[1:])
-        segment_start = p_tan_out
-
-    path_points.extend(
-        _interpolate_line(
-            segment_start,
-            points[-1],
-            step=step,
-            include_start=(len(path_points) == 0),
-        )
-    )
-    return _dedupe_points(path_points)
-
-
-# ---------------------------------------------------------------------------
-# Pose-aware Dubins mode
+# Dubins primitives
 # ---------------------------------------------------------------------------
 
 def _dubins_lsl(alpha: float, beta: float, d: float) -> Optional[Tuple[float, float, float]]:
@@ -397,30 +355,68 @@ def _fallback_pose_line(start: Pose2D, goal: Pose2D, step: float) -> List[Pose2D
     return [Pose2D(x, y, yaws[i]) for i, (x, y) in enumerate(pts)]
 
 
-def generate_dubins_poses(input_poses: Sequence[Pose2D], step: float, turn_radius: float) -> List[Pose2D]:
-    """Generate trajectory using shortest Dubins path for each consecutive pose pair."""
-    if len(input_poses) < 2:
-        raise ValueError("At least 2 poses are required")
+def _heading(start: Point2D, goal: Point2D) -> float:
+    return math.atan2(goal[1] - start[1], goal[0] - start[0])
+
+
+def _line_segment_poses(start: Point2D, goal: Point2D, step: float, include_start: bool) -> List[Pose2D]:
+    pts = _interpolate_line(start, goal, step=step, include_start=include_start)
+    if not pts:
+        return []
+    yaw = _wrap_pi(_heading(start, goal))
+    return [Pose2D(x, y, yaw) for x, y in pts]
+
+
+def generate_turns_only_dubins_poses(points: Sequence[Point2D], step: float, turn_radius: float) -> List[Pose2D]:
+    """Rows are straight lines; only inter-row connectors are Dubins turns.
+
+    Expected input order: [row1_in, row1_out, row2_in, row2_out, ...].
+    """
+    if len(points) < 2:
+        raise ValueError("At least 2 points are required")
+    if len(points) % 2 != 0:
+        raise ValueError("This row-based mode requires an even number of points (entry/exit per row)")
     if step <= 0.0:
         raise ValueError("step must be > 0")
     if turn_radius <= 0.0:
         raise ValueError("turn_radius must be > 0")
 
+    if len(points) == 2:
+        return _line_segment_poses(points[0], points[1], step=step, include_start=True)
+
+    rows = [(points[i], points[i + 1]) for i in range(0, len(points), 2)]
     out: List[Pose2D] = []
-    for i in range(len(input_poses) - 1):
-        start = input_poses[i]
-        goal = input_poses[i + 1]
-        best = _dubins_shortest_parameters(start, goal, turn_radius)
+
+    for row_idx, (row_start, row_end) in enumerate(rows):
+        line_poses = _line_segment_poses(
+            row_start,
+            row_end,
+            step=step,
+            include_start=(len(out) == 0),
+        )
+        if line_poses:
+            out.extend(line_poses)
+
+        if row_idx == len(rows) - 1:
+            continue
+
+        next_start, next_end = rows[row_idx + 1]
+        yaw_start = _wrap_pi(_heading(row_start, row_end))
+        yaw_goal = _wrap_pi(_heading(next_start, next_end))
+        turn_start = Pose2D(row_end[0], row_end[1], yaw_start)
+        turn_goal = Pose2D(next_start[0], next_start[1], yaw_goal)
+
+        best = _dubins_shortest_parameters(turn_start, turn_goal, turn_radius)
         if best is None:
-            pair_poses = _fallback_pose_line(start, goal, step)
+            turn_poses = _fallback_pose_line(turn_start, turn_goal, step)
         else:
             mode, params = best
-            pair_poses = _sample_dubins_pair(start, goal, mode, params, turn_radius, step)
+            turn_poses = _sample_dubins_pair(turn_start, turn_goal, mode, params, turn_radius, step)
 
         if not out:
-            out.extend(pair_poses)
+            out.extend(turn_poses)
         else:
-            out.extend(pair_poses[1:])
+            out.extend(turn_poses[1:])
 
     return _dedupe_poses(out)
 
@@ -453,43 +449,6 @@ def read_input_points(
             raise ValueError(f"Invalid point #{idx}: missing '{x_key}'/'{y_key}'")
         points.append((float(item[x_key]), float(item[y_key])))
     return points
-
-
-def read_input_poses(
-    input_yaml_path: str,
-    list_key: str = "waypoints",
-    x_key: str = "latitude",
-    y_key: str = "longitude",
-    yaw_key: str = "yaw",
-    require_yaw: bool = True,
-) -> List[Pose2D]:
-    """Read ordered poses (x, y, yaw) from YAML."""
-    with open(input_yaml_path, "r", encoding="utf-8") as stream:
-        data = yaml.safe_load(stream)
-
-    if not isinstance(data, dict):
-        raise ValueError(f"Invalid YAML: {input_yaml_path}")
-    raw_points = data.get(list_key)
-    if not isinstance(raw_points, list) or len(raw_points) < 2:
-        raise ValueError(f"YAML must contain at least 2 points in '{list_key}'")
-
-    poses: List[Pose2D] = []
-    for idx, item in enumerate(raw_points, start=1):
-        if not isinstance(item, dict):
-            raise ValueError(f"Invalid point #{idx}: dict expected")
-        if x_key not in item or y_key not in item:
-            raise ValueError(f"Invalid point #{idx}: missing '{x_key}'/'{y_key}'")
-        if require_yaw and yaw_key not in item:
-            raise ValueError(f"Invalid point #{idx}: missing yaw key '{yaw_key}'")
-
-        x = float(item[x_key])
-        y = float(item[y_key])
-        if yaw_key in item:
-            yaw = _wrap_pi(float(item[yaw_key]))
-        else:
-            yaw = 0.0
-        poses.append(Pose2D(x, y, yaw))
-    return poses
 
 
 def _compute_yaws(points: Sequence[Point2D]) -> List[float]:
@@ -604,45 +563,47 @@ def visualize_trajectory(
 
 def generate_trajectory_yaml(input_yaml_path: str, output_yaml_path: str, config: TrajectoryConfig) -> Dict:
     """Complete pipeline: read -> generate -> write."""
-    if config.use_input_yaw:
-        input_poses = read_input_poses(
-            input_yaml_path=input_yaml_path,
-            list_key=config.list_key_in,
-            x_key=config.x_key,
-            y_key=config.y_key,
-            yaw_key=config.yaw_key,
-            require_yaw=True,
-        )
-        trajectory_poses = generate_dubins_poses(
-            input_poses=input_poses,
-            step=config.step,
-            turn_radius=config.turn_radius,
-        )
-        trajectory_points: List[Point2D] = [(p.x, p.y) for p in trajectory_poses]
-        trajectory_yaws = [p.yaw for p in trajectory_poses]
-        return write_trajectory_yaml(
-            output_yaml_path=output_yaml_path,
-            trajectory_points=trajectory_points,
-            list_key=config.list_key_out,
-            x_key=config.x_key,
-            y_key=config.y_key,
-            include_yaw=config.include_yaw,
-            trajectory_yaws=trajectory_yaws if config.include_yaw else None,
-            yaw_key=config.yaw_key,
-        )
-
-    input_points = read_input_points(
+    input_points_raw = read_input_points(
         input_yaml_path=input_yaml_path,
         list_key=config.list_key_in,
         x_key=config.x_key,
         y_key=config.y_key,
     )
-    trajectory_points = generate_trajectory_points(
-        points=input_points,
+
+    if config.gnss_to_local:
+        origin_lat, origin_lon = _resolve_origin(
+            input_points_raw,
+            config.origin_lat,
+            config.origin_lon,
+        )
+        input_points_local = _points_latlon_to_local(
+            points_latlon=input_points_raw,
+            origin_lat=origin_lat,
+            origin_lon=origin_lon,
+            earth_radius_m=config.earth_radius_m,
+        )
+    else:
+        input_points_local = list(input_points_raw)
+
+    trajectory_poses_local = generate_turns_only_dubins_poses(
+        points=input_points_local,
         step=config.step,
         turn_radius=config.turn_radius,
-        min_turn_angle_deg=config.min_turn_angle_deg,
     )
+
+    if config.gnss_to_local:
+        trajectory_poses_out = _poses_local_to_latlon(
+            poses_local=trajectory_poses_local,
+            origin_lat=origin_lat,
+            origin_lon=origin_lon,
+            earth_radius_m=config.earth_radius_m,
+        )
+    else:
+        trajectory_poses_out = trajectory_poses_local
+
+    trajectory_points: List[Point2D] = [(p.x, p.y) for p in trajectory_poses_out]
+    trajectory_yaws = [p.yaw for p in trajectory_poses_out]
+
     return write_trajectory_yaml(
         output_yaml_path=output_yaml_path,
         trajectory_points=trajectory_points,
@@ -650,7 +611,7 @@ def generate_trajectory_yaml(input_yaml_path: str, output_yaml_path: str, config
         x_key=config.x_key,
         y_key=config.y_key,
         include_yaw=config.include_yaw,
-        trajectory_yaws=None,
+        trajectory_yaws=trajectory_yaws if config.include_yaw else None,
         yaw_key=config.yaw_key,
     )
 
@@ -659,15 +620,21 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Independent trajectory generator")
     parser.add_argument("--input", required=True, help="Input YAML path")
     parser.add_argument("--output", required=True, help="Output YAML path")
-    parser.add_argument("--step", required=True, type=float, help="Sampling step (same unit as coordinates)")
-    parser.add_argument("--turn-radius", required=True, type=float, help="Turn radius (same unit as coordinates)")
-    parser.add_argument("--min-turn-angle-deg", default=8.0, type=float, help="Legacy mode: minimum corner angle for arc creation")
+    parser.add_argument("--step", required=True, type=float, help="Sampling step in meters (default GNSS->local pipeline)")
+    parser.add_argument("--turn-radius", required=True, type=float, help="Turn radius in meters (default GNSS->local pipeline)")
     parser.add_argument("--input-list-key", default="waypoints")
     parser.add_argument("--output-list-key", default="trajectory")
     parser.add_argument("--x-key", default="latitude")
     parser.add_argument("--y-key", default="longitude")
     parser.add_argument("--yaw-key", default="yaw")
-    parser.add_argument("--use-input-yaw", action="store_true", help="Enable pose-to-pose Dubins mode using input yaw")
+    parser.add_argument(
+        "--no-gnss-to-local",
+        action="store_true",
+        help="Disable GNSS->local->GNSS conversion (only if your input is already in local metric coordinates)",
+    )
+    parser.add_argument("--origin-lat", type=float, default=None, help="Optional origin latitude for GNSS->local conversion")
+    parser.add_argument("--origin-lon", type=float, default=None, help="Optional origin longitude for GNSS->local conversion")
+    parser.add_argument("--earth-radius-m", type=float, default=6378137.0, help="Earth radius used by GNSS<->local conversion")
     parser.add_argument("--no-yaw", action="store_true", help="Do not write yaw in output YAML")
     parser.add_argument("--visualize", action="store_true", help="Generate a PNG preview plot")
     parser.add_argument("--plot-output", default=None, help="PNG output path (default: same as --output with .png)")
@@ -681,14 +648,16 @@ def main() -> None:
     config = TrajectoryConfig(
         step=args.step,
         turn_radius=args.turn_radius,
-        min_turn_angle_deg=args.min_turn_angle_deg,
         list_key_in=args.input_list_key,
         list_key_out=args.output_list_key,
         x_key=args.x_key,
         y_key=args.y_key,
         yaw_key=args.yaw_key,
         include_yaw=not args.no_yaw,
-        use_input_yaw=args.use_input_yaw,
+        gnss_to_local=not args.no_gnss_to_local,
+        origin_lat=args.origin_lat,
+        origin_lon=args.origin_lon,
+        earth_radius_m=args.earth_radius_m,
     )
     out_data = generate_trajectory_yaml(args.input, args.output, config)
     print(f"Trajectory generated: {args.output}")
@@ -703,14 +672,13 @@ def main() -> None:
         raw_traj = out_data[config.list_key_out]
         trajectory_points = [(float(p[config.x_key]), float(p[config.y_key])) for p in raw_traj]
         plot_path = args.plot_output if args.plot_output else _build_plot_path(args.output)
-        mode_label = "Dubins" if config.use_input_yaw else "Legacy"
         visualize_trajectory(
             input_points=input_points,
             trajectory_points=trajectory_points,
             output_png_path=plot_path,
             x_key=config.x_key,
             y_key=config.y_key,
-            title=f"{mode_label} trajectory",
+            title="Dubins turns-only trajectory",
         )
         print(f"Plot generated: {plot_path}")
 
