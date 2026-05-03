@@ -39,6 +39,15 @@ Le projet sert à la fois de **plateforme de recherche**, de **base d’expérim
 | **Python / C++** | Langages principaux utilisés |
 
 ---
+### 🆕 Nouveautés récentes
+
+- **IHM web ROS2 intégrée (`faucon_ihm`)** : dashboard React (GPS, IMU, caméra, télémétrie, contrôle manuel) désormais inclus dans le workspace et lancé automatiquement avec la simulation principale.
+- **Support Mapviz/OpenStreetMap (`faucon_localisation`)** : ajout d’un lancement dédié pour visualiser la position GNSS sur carte.
+- **Mode mini robot amélioré** : argument `use_mini` pris en charge dans le script de lancement global et dans le launch principal (adaptation du modèle/contrôle).
+- **Mises à jour capteurs mini** : ajustements caméra/GPS et plugin odométrie pour une simulation plus cohérente en configuration mini.
+
+---
+
 
 ### 🧩 Architecture du projet
 ```bash 
@@ -49,6 +58,7 @@ Faucon_ma64/
 ├── faucon_control/ # Contrôleurs 4WS, plugins ROS2 Control
 ├── faucon_drone/ # Intégration et simulation du drone PX4
 ├── faucon_localisation/ # Fusion GPS, IMU, odométrie
+├── faucon_ihm/ # Interface web (dashboard + commande manuelle)
 ├── faucon_navigation/ # Stack Nav2 et configuration
 ├── faucon_perception/ # Traitement des capteurs et vision
 ├── virtual_maize_field/ # Environnement de simulation agricole
@@ -77,6 +87,15 @@ sudo chmod +x ./faucon/launch_base.sh
 ./faucon/launch_base.sh  use_mini=true
 ```
 ---
+#### Lancer Mapviz (visualisation GPS)
+```bash
+ros2 launch faucon_localisation mapviz.launch.py
+```
+
+#### Lancer uniquement l'IHM (hors lancement global)
+```bash
+ros2 launch faucon_ihm ihm_launch.py
+```
 
 #### Pilotage en manuel
 ```bash

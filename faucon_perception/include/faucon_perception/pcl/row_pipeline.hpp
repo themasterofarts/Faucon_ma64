@@ -13,6 +13,7 @@ namespace faucon::pclrow
 
         // input: cloud PCL (XYZ)
         RowPipelineResult process(const CloudPtr &input) const;
+        RowDetectionConfig getConfig() const;
 
     private:
         RowDetectionConfig cfg_;
