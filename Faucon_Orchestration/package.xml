@@ -3,7 +3,7 @@
 <package format="3">
   <name>faucon_orchestration</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Behavior tree orchestration for autonomous task management on the Faucon agricultural robot</description>
   <maintainer email="kleinfy51@gmail.com">klein</maintainer>
   <license>Apache-2.0</license>
 

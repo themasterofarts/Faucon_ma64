@@ -37,7 +37,7 @@ def launch_setup(context, *args, **kwargs):
         use_ros2_control_value = LaunchConfiguration("use_ros2_control").perform(context)
 
     twist_mux_params = os.path.join(
-        get_package_share_directory("faucon_base_desc"), "config", "twrist_mux.yaml"
+        get_package_share_directory("faucon_base_desc"), "config", "twist_mux.yaml"
     )
 
    
