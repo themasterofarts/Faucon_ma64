@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Faucon – Robot Agricole Autonome | MA64 Robotics</title>
+  <meta name="description" content="Faucon est un projet open source de la communauté MA64 Robotics : collaboration robot mobile + drone pour l'agriculture autonome. ROS2, Nav2, PX4, BehaviorTree." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0a0e17;
+      --bg2:       #111827;
+      --bg3:       #1a2236;
+      --surface:   #1e2d40;
+      --border:    #2a3a52;
+      --green:     #22c55e;
+      --green-dim: #16a34a;
+      --blue:      #3b82f6;
+      --blue-dim:  #1d4ed8;
+      --amber:     #f59e0b;
+      --text:      #e2e8f0;
+      --text-muted:#94a3b8;
+      --code-bg:   #0d1117;
+      --radius:    12px;
+      --radius-lg: 20px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem;
+      height: 64px;
+      background: rgba(10,14,23,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.5px; }
+    .nav-logo span { color: var(--green); }
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      color: var(--text-muted); text-decoration: none; font-size: 0.9rem;
+      font-weight: 500; transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      background: var(--green); color: #000; padding: .45rem 1.2rem;
+      border-radius: 6px; font-weight: 600; font-size: .875rem;
+      text-decoration: none; transition: background .2s;
+    }
+    .nav-cta:hover { background: var(--green-dim); }
+
+    /* ── SECTIONS ── */
+    section { padding: 6rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .section-full { max-width: 100%; }
+    .section-label {
+      font-size: .75rem; font-weight: 700; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--green); margin-bottom: 1rem;
+    }
+    h2 {
+      font-size: clamp(1.75rem, 4vw, 2.75rem);
+      font-weight: 800; line-height: 1.15; letter-spacing: -1px;
+      margin-bottom: 1.5rem;
+    }
+    h2 em { font-style: normal; color: var(--green); }
+    p.lead {
+      font-size: 1.125rem; color: var(--text-muted); max-width: 700px;
+      line-height: 1.8;
+    }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: center;
+      padding-top: 100px;
+      max-width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 60% 40%, rgba(34,197,94,.07) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 80% at 10% 80%, rgba(59,130,246,.06) 0%, transparent 60%);
+    }
+    .hero-grid {
+      position: absolute; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 80%);
+      opacity: .35;
+    }
+    .hero-inner {
+      position: relative; z-index: 1;
+      max-width: 1200px; margin: 0 auto; padding: 0 2rem;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3);
+      color: var(--green); padding: .35rem 1rem; border-radius: 100px;
+      font-size: .8rem; font-weight: 600; letter-spacing: .5px;
+      margin-bottom: 1.5rem;
+    }
+    .hero-badge span { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .hero-title {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 900; letter-spacing: -2px; line-height: 1.05;
+      margin-bottom: 1.5rem;
+    }
+    .hero-title .highlight { color: var(--green); }
+    .hero-title .sub { color: var(--text-muted); font-weight: 300; }
+    .hero-desc {
+      font-size: 1.1rem; color: var(--text-muted); margin-bottom: 2.5rem;
+      max-width: 520px; line-height: 1.8;
+    }
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 3rem; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--green); color: #000; padding: .75rem 1.75rem;
+      border-radius: 8px; font-weight: 700; font-size: .95rem;
+      text-decoration: none; transition: all .2s;
+    }
+    .btn-primary:hover { background: var(--green-dim); transform: translateY(-1px); }
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: .5rem;
+      border: 1px solid var(--border); color: var(--text); padding: .75rem 1.75rem;
+      border-radius: 8px; font-weight: 600; font-size: .95rem;
+      text-decoration: none; transition: all .2s; background: transparent;
+    }
+    .btn-outline:hover { border-color: var(--green); color: var(--green); }
+    .badges { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .badges img { height: 22px; border-radius: 4px; }
+
+    .hero-visual {
+      position: relative; display: flex; justify-content: center; align-items: center;
+    }
+    .hero-img-frame {
+      border-radius: var(--radius-lg); overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 40px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(34,197,94,.1);
+      width: 100%; max-width: 540px;
+    }
+    .hero-img-frame img { width: 100%; display: block; }
+    .hero-float {
+      position: absolute; bottom: -1.5rem; left: -1.5rem;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .75rem 1.25rem;
+      display: flex; align-items: center; gap: .75rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    }
+    .hero-float .dot { width: 10px; height: 10px; background: var(--green); border-radius: 50%; animation: pulse 2s infinite; }
+    .hero-float strong { font-size: .85rem; display: block; }
+    .hero-float span { font-size: .75rem; color: var(--text-muted); }
+
+    /* ── STATS ── */
+    .stats-bar {
+      background: var(--bg2);
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+    }
+    .stats-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; text-align: center;
+    }
+    .stat-num { font-size: 2.5rem; font-weight: 900; color: var(--green); letter-spacing: -1px; }
+    .stat-label { font-size: .85rem; color: var(--text-muted); margin-top: .25rem; }
+
+    /* ── VISION ── */
+    #vision {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center;
+    }
+    .vision-text h2 { margin-bottom: 1.25rem; }
+    .vision-text p { color: var(--text-muted); margin-bottom: 1.25rem; }
+    .vision-cards { display: flex; flex-direction: column; gap: 1rem; }
+    .vision-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem 1.5rem;
+      display: flex; gap: 1rem; align-items: flex-start;
+      transition: border-color .2s;
+    }
+    .vision-card:hover { border-color: var(--green); }
+    .vision-card .icon {
+      font-size: 1.5rem; flex-shrink: 0;
+      width: 44px; height: 44px; background: rgba(34,197,94,.1);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    }
+    .vision-card strong { display: block; margin-bottom: .25rem; }
+    .vision-card p { color: var(--text-muted); font-size: .9rem; margin: 0; }
+
+    /* ── COLLABORATION ── */
+    #collaboration { text-align: center; }
+    #collaboration .lead { margin: 0 auto 3.5rem; }
+    .collab-grid {
+      display: grid; grid-template-columns: 1fr auto 1fr; gap: 2rem; align-items: center;
+    }
+    .entity-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 2.5rem; text-align: left;
+    }
+    .entity-card.robot { border-top: 3px solid var(--green); }
+    .entity-card.drone { border-top: 3px solid var(--blue); }
+    .entity-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .entity-card h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: .75rem; }
+    .entity-card ul { list-style: none; padding: 0; }
+    .entity-card ul li {
+      padding: .4rem 0; color: var(--text-muted); font-size: .9rem;
+      border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: .5rem;
+    }
+    .entity-card ul li:last-child { border-bottom: none; }
+    .entity-card ul li::before { content: '→'; color: var(--green); font-weight: 700; }
+    .entity-card.drone ul li::before { color: var(--blue); }
+    .collab-connector {
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+    }
+    .connector-line {
+      width: 2px; height: 80px;
+      background: linear-gradient(to bottom, var(--green), var(--blue));
+      border-radius: 2px;
+    }
+    .connector-dot {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--bg3); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .connector-tag {
+      font-size: .7rem; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-muted);
+      background: var(--bg2); padding: .3rem .6rem; border-radius: 4px;
+      border: 1px solid var(--border); white-space: nowrap;
+    }
+
+    /* ── FEATURES ── */
+    #features { background: none; }
+    .features-header { text-align: center; margin-bottom: 3rem; }
+    .features-header .lead { margin: 0 auto; }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.75rem;
+      transition: all .2s; position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--green), transparent);
+      opacity: 0; transition: opacity .2s;
+    }
+    .feature-card:hover { border-color: rgba(34,197,94,.4); transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,.3); }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-icon { font-size: 1.75rem; margin-bottom: 1rem; }
+    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .5rem; }
+    .feature-card p { font-size: .875rem; color: var(--text-muted); line-height: 1.6; }
+    .feature-tag {
+      display: inline-block; font-size: .7rem; font-weight: 600;
+      background: rgba(34,197,94,.1); color: var(--green);
+      border: 1px solid rgba(34,197,94,.2); border-radius: 4px;
+      padding: .2rem .5rem; margin-top: 1rem; letter-spacing: .5px;
+    }
+
+    /* ── ARCHITECTURE ── */
+    #architecture { max-width: 100%; padding-left: 0; padding-right: 0; }
+    .arch-inner { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+    .arch-img-wrap {
+      margin: 3rem 0;
+      border-radius: var(--radius-lg); overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    }
+    .arch-img-wrap img { width: 100%; display: block; }
+    .packages-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 2.5rem;
+    }
+    .pkg-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1rem 1.25rem;
+    }
+    .pkg-card .pkg-name {
+      font-family: 'JetBrains Mono', monospace; font-size: .75rem;
+      color: var(--green); font-weight: 600; margin-bottom: .4rem;
+    }
+    .pkg-card p { font-size: .8rem; color: var(--text-muted); line-height: 1.5; }
+    .pkg-badge {
+      display: inline-block; font-size: .65rem; font-weight: 700;
+      border-radius: 4px; padding: .15rem .5rem; margin-top: .5rem;
+    }
+    .pkg-badge.done { background: rgba(34,197,94,.1); color: var(--green); }
+    .pkg-badge.wip { background: rgba(245,158,11,.1); color: var(--amber); }
+
+    /* ── TECH STACK ── */
+    #tech { text-align: center; }
+    .tech-grid {
+      display: flex; flex-wrap: wrap; justify-content: center;
+      gap: 1rem; margin-top: 2.5rem;
+    }
+    .tech-pill {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 100px; padding: .6rem 1.5rem;
+      font-size: .875rem; font-weight: 500; color: var(--text);
+      display: flex; align-items: center; gap: .6rem;
+      transition: all .2s;
+    }
+    .tech-pill:hover { border-color: var(--green); color: var(--green); transform: translateY(-2px); }
+    .tech-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-green { background: var(--green); }
+    .dot-blue { background: var(--blue); }
+    .dot-amber { background: var(--amber); }
+    .dot-purple { background: #a855f7; }
+    .dot-red { background: #ef4444; }
+
+    /* ── GALLERY ── */
+    #demo .gallery {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2.5rem;
+    }
+    .gallery-item {
+      border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border);
+      position: relative; transition: transform .2s;
+    }
+    .gallery-item:hover { transform: scale(1.01); }
+    .gallery-item.wide { grid-column: 1 / -1; }
+    .gallery-item img { width: 100%; display: block; }
+    .gallery-caption {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,.8));
+      padding: 1.5rem 1rem .75rem;
+      font-size: .8rem; font-weight: 600; color: var(--text);
+    }
+
+    /* ── QUICKSTART ── */
+    #start .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 2rem; margin-top: 2.5rem; }
+    .step { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem; }
+    .step-num {
+      width: 36px; height: 36px; background: rgba(34,197,94,.1);
+      border: 1px solid rgba(34,197,94,.3); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: var(--green); font-size: .9rem;
+      margin-bottom: 1rem;
+    }
+    .step h3 { font-size: 1rem; margin-bottom: .75rem; }
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1rem; font-family: 'JetBrains Mono', monospace;
+      font-size: .78rem; color: #a3e635; overflow-x: auto;
+      line-height: 1.7; margin-top: .75rem;
+    }
+    pre .comment { color: #4b5563; }
+
+    /* ── CONTRIBUTE ── */
+    #contribute {
+      background: linear-gradient(135deg, rgba(34,197,94,.05), rgba(59,130,246,.05));
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      text-align: center; max-width: 800px;
+    }
+    #contribute h2 { color: var(--text); }
+    #contribute .lead { margin: 0 auto 2.5rem; }
+    .contribute-actions { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
+    .btn-blue {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--blue); color: #fff; padding: .75rem 1.75rem;
+      border-radius: 8px; font-weight: 700; font-size: .95rem;
+      text-decoration: none; transition: all .2s;
+    }
+    .btn-blue:hover { background: var(--blue-dim); transform: translateY(-1px); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border); padding: 3rem 2rem;
+      text-align: center; color: var(--text-muted); font-size: .875rem;
+    }
+    footer .footer-logo { font-size: 1.5rem; font-weight: 900; margin-bottom: .75rem; }
+    footer .footer-logo span { color: var(--green); }
+    footer p { margin-bottom: .5rem; }
+    footer a { color: var(--green); text-decoration: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-visual { display: none; }
+      #vision { grid-template-columns: 1fr; gap: 3rem; }
+      .collab-grid { grid-template-columns: 1fr; }
+      .collab-connector { flex-direction: row; }
+      .connector-line { width: 80px; height: 2px; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .packages-grid { grid-template-columns: 1fr 1fr; }
+      #start .steps { grid-template-columns: 1fr; }
+      .stats-inner { grid-template-columns: repeat(2,1fr); }
+      .nav-links { display: none; }
+      #demo .gallery { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .packages-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">🦅 <span>Faucon</span></div>
+  <ul class="nav-links">
+    <li><a href="#vision">Vision</a></li>
+    <li><a href="#collaboration">Robot & Drone</a></li>
+    <li><a href="#features">Fonctionnalités</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#start">Démarrer</a></li>
+    <li><a href="#contribute">Contribuer</a></li>
+  </ul>
+  <a class="nav-cta" href="https://github.com/themasterofarts/Faucon_ma64" target="_blank">GitHub →</a>
+</nav>
+
+<!-- HERO -->
+<div id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span></span>
+        Open Source · MA64 Robotics Community
+      </div>
+      <h1 class="hero-title">
+        Robotique agricole<br/>
+        <span class="highlight">autonome</span> &amp;<br/>
+        <span class="sub">collaborative</span>
+      </h1>
+      <p class="hero-desc">
+        Faucon est une plateforme open source qui met en collaboration un <strong>robot mobile</strong> et un <strong>drone</strong> pour accomplir des missions agricoles autonomes et une opportunité pour chaque passionné de robotique de s'impliquer sur un cas réel.
+      </p>
+      <div class="hero-actions">
+        <a class="btn-primary" href="https://github.com/themasterofarts/Faucon_ma64" target="_blank">
+          ★ Voir sur GitHub
+        </a>
+        <a class="btn-outline" href="#vision">
+          Découvrir le projet ↓
+        </a>
+        <a class="btn-outline" href="https://discord.gg/CEVwVY9RJy" target="_blank">
+          Discord
+        </a>
+      </div>
+      <div class="badges">
+        <img src="https://img.shields.io/badge/ROS2-Jazzy-blue?logo=ros&logoColor=white" alt="ROS2 Jazzy"/>
+        <img src="https://img.shields.io/badge/Simulator-Gazebo-orange" alt="Gazebo"/>
+        <img src="https://img.shields.io/badge/PX4-Drone-blueviolet" alt="PX4"/>
+        <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT"/>
+        <img src="https://img.shields.io/badge/Contributions-Welcome-success" alt="Contributions Welcome"/>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-img-frame">
+        <img src="assets/screenshot_sim.png" alt="Simulation Gazebo – Faucon dans un champ de maïs" />
+      </div>
+      <div class="hero-float">
+        <div class="dot"></div>
+        <div>
+          <strong>Simulation active</strong>
+          <span>ROS2 Jazzy · Gazebo Sim</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div>
+      <div class="stat-num">10+</div>
+      <div class="stat-label">Packages ROS2</div>
+    </div>
+    <div>
+      <div class="stat-num">2</div>
+      <div class="stat-label">Entités (robot + drone)</div>
+    </div>
+    <div>
+      <div class="stat-num">6+</div>
+      <div class="stat-label">Briques développées</div>
+    </div>
+    <div>
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Contributeurs bienvenus</div>
+    </div>
+  </div>
+</div>
+
+<!-- VISION -->
+<section id="vision">
+  <div class="vision-text">
+    <div class="section-label">Notre Vision</div>
+    <h2>Un projet <em>réel</em>,<br/>une communauté<br/>passionnée</h2>
+    <p>
+      Faucon est né d'une conviction simple : apprendre la robotique est plus enrichissant sur un <strong>projet concret</strong>, avec de vraies contraintes d'ingénierie, plutôt que sur des exercices déconnectés.
+    </p>
+    <p>
+      La communauté <strong>MA64 Robotics</strong> réunit des passionnés autour d'un défi ambitieux : faire collaborer un robot mobile et un drone dans un contexte agricole réel, en s'appuyant sur les technologies les plus modernes de la robotique open source.
+    </p>
+    <p>
+      Que tu sois débutant ou expert, le projet Faucon est conçu pour que tu puisses <strong>contribuer, apprendre et progresser</strong> à ton rythme sur un cas d'usage industriel.
+    </p>
+  </div>
+  <div class="vision-cards">
+    <div class="vision-card">
+      <div class="icon">🎯</div>
+      <div>
+        <strong>Cas d'usage réel</strong>
+        <p>Agriculture autonome : traitement des plantes, détection de déchets, cartographie de champs.</p>
+      </div>
+    </div>
+    <div class="vision-card">
+      <div class="icon">🧩</div>
+      <div>
+        <strong>Architecture modulaire</strong>
+        <p>Des briques indépendantes pour naviguer, percevoir, décider et coordonner — chacune contribuable.</p>
+      </div>
+    </div>
+    <div class="vision-card">
+      <div class="icon">🤝</div>
+      <div>
+        <strong>Open & Communautaire</strong>
+        <p>MIT License. Chaque PR est bienvenue. Des réunions régulières pour accueillir les nouveaux contributeurs.</p>
+      </div>
+    </div>
+    <div class="vision-card">
+      <div class="icon">📈</div>
+      <div>
+        <strong>En évolution constante</strong>
+        <p>Le projet grandit sprint après sprint, de la simulation au robot physique.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COLLABORATION -->
+<section id="collaboration">
+  <div class="section-label">Au cœur du projet</div>
+  <h2>La collaboration <em>Robot × Drone</em></h2>
+  <p class="lead">
+    L'enjeu central de Faucon : orchestrer deux entités autonomes complémentaires pour maximiser la connaissance du terrain et l'efficacité des missions agricoles.
+  </p>
+  <div class="collab-grid">
+    <div class="entity-card robot">
+      <div class="entity-icon">🤖</div>
+      <h3>Robot Mobile (Faucon Ground)</h3>
+      <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1rem;">Opère au niveau du sol dans les rangs du champ</p>
+      <ul>
+        <li>Navigation autonome avec Nav2 dans l'environnement agricole</li>
+        <li>Détection des rangs de maïs par nuage de points LiDAR</li>
+        <li>Équipement de pulvérisation pour le traitement des plantes</li>
+        <li>Contrôle 4WS (4 roues directrices) pour la manœuvrabilité</li>
+        <li>Deux configurations : Full et Mini</li>
+        <li>Détection de déchets dans le champ</li>
+      </ul>
+    </div>
+    <div class="collab-connector">
+      <div class="connector-line"></div>
+      <div class="connector-dot">⟷</div>
+      <div class="connector-tag">Orchestration<br/>BehaviorTree</div>
+      <div class="connector-dot">🛰</div>
+      <div class="connector-line"></div>
+    </div>
+    <div class="entity-card drone">
+      <div class="entity-icon">🚁</div>
+      <h3>Drone (Faucon Air)</h3>
+      <p style="color:var(--text-muted);font-size:.9rem;margin-bottom:1rem;">Vue aérienne et missions de surveillance</p>
+      <ul>
+        <li>Cartographie du champ depuis les airs</li>
+        <li>Surveillance aérienne à la demande</li>
+        <li>Commande de vol via PX4 SITL</li>
+        <li>Partage d'informations avec le robot au sol</li>
+        <li>Caméra embarquée + IMU</li>
+        <li>Mission planning coordonné</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="features-header">
+    <div class="section-label">Ce que nous avons construit</div>
+    <h2>Des briques pour chaque <em>couche</em> du système</h2>
+    <p class="lead">Chaque fonctionnalité est un module indépendant sur lequel tu peux contribuer ou t'appuyer pour apprendre.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🗺</div>
+      <h3>Génération de trajectoire</h3>
+      <p>Interface graphique (GUI) pour définir et générer des trajectoires de navigation dans le champ. Export en YAML compatible Nav2.</p>
+      <span class="feature-tag">faucon_path_planning</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧭</div>
+      <h3>Navigation autonome</h3>
+      <p>Stack Nav2 configurée pour les environnements agricoles. Suivi de trajectoire GPS waypoints, local planner, planificateur global.</p>
+      <span class="feature-tag">faucon_navigation</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👁</div>
+      <h3>Détection de rangs de maïs</h3>
+      <p>Algorithme de segmentation des rangs depuis les nuages de points 3D du LiDAR. Filtrage au sol et extraction des lignes de culture.</p>
+      <span class="feature-tag">faucon_perception</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📍</div>
+      <h3>Localisation & Fusion capteurs</h3>
+      <p>Fusion GPS/IMU/odométrie avec double EKF (robot_localization). Conversion LLH↔ENU, intégration MapViz pour la visualisation sur carte.</p>
+      <span class="feature-tag">faucon_localisation</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌐</div>
+      <h3>Interface de contrôle (IHM)</h3>
+      <p>Dashboard web React embarqué : GPS temps réel, feed caméra, IMU, télémétrie, contrôle manuel et stop d'urgence.</p>
+      <span class="feature-tag">faucon_ihm</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌳</div>
+      <h3>Orchestration BehaviorTree</h3>
+      <p>Coordination des comportements robot + drone via BehaviorTree.CPP : gestion de mission, vérification système, dispatch drone à la demande.</p>
+      <span class="feature-tag">Faucon_Orchestration</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎮</div>
+      <h3>Contrôle 4WS</h3>
+      <p>Contrôleur dédié pour la cinématique 4-roues directrices. Gestion des angles de braquage et des vitesses de chaque roue indépendamment.</p>
+      <span class="feature-tag">faucon_control</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌽</div>
+      <h3>Environnement de simulation</h3>
+      <p>Champ de maïs procédural dans Gazebo Sim. Végétation 3D réaliste, terrain texturé, obstacles (déchets) et marqueurs QR.</p>
+      <span class="feature-tag">virtual_maize_field</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🤖</div>
+      <h3>Description robot URDF</h3>
+      <p>Modèle complet Xacro du robot (Full &amp; Mini) avec capteurs simulés : caméra RGB-D, LiDAR, GPS, IMU, intégration ros2_control.</p>
+      <span class="feature-tag">faucon_base_desc</span>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture" class="section-full">
+  <div class="arch-inner">
+    <div class="section-label">Architecture</div>
+    <h2>Une architecture en <em>couches</em></h2>
+    <p class="lead">Le projet est structuré en packages indépendants qui communiquent via les topics et services ROS2, organisés en couches fonctionnelles clairement séparées.</p>
+    <div class="arch-img-wrap">
+      <img src="assets/architecture.png" alt="Diagramme d'architecture Faucon" />
+    </div>
+    <div class="packages-grid">
+      <div class="pkg-card">
+        <div class="pkg-name">faucon_base_desc</div>
+        <p>Description URDF/Xacro, configuration Gazebo, launch principal</p>
+        <span class="pkg-badge done">Opérationnel</span>
+      </div>
+      <div class="pkg-card">
+        <div class="pkg-name">faucon_control</div>
+        <p>Contrôleur 4WS, bridges ros2_control, gestion cinématique</p>
+        <span class="pkg-badge done">Opérationnel</span>
+      </div>
+      <div class="pkg-card">
+        <div class="pkg-name">faucon_navigation</div>
+        <p>Stack Nav2, suivi de trajectoire GPS, configuration planners</p>
+        <span class="pkg-badge done">Opérationnel</span>
+      </div>
+      <div class="pkg-card">
+        <div class="pkg-name">faucon_localisation</div>
+        <p>Dual EKF, fusion GPS/IMU/odom, visualisation MapViz</p>
+        <span class="pkg-badge done">Opérationnel</span>
+      </div>
+      <div class="pkg-card">
+        <div class="pkg-name">faucon_perception</div>
+        <p>Détection de rangs, segmentation LiDAR, traitement caméra</p>
+        <span class="pkg-badge done">Opérationnel</span>
+      </div>
+      <div class="pkg-card">
+        <div class="pkg-name">faucon_ihm</div>
+        <p>Interface web React, rosbridge, télémétrie, contrôle manuel</p>
+        <span class="pkg-badge done">Opérationnel</span>
+      </div>
+      <div class="pkg-card">
+        <div class="pkg-name">faucon_path_planning</div>
+        <p>GUI de génération de trajectoires, export YAML Nav2</p>
+        <span class="pkg-badge done">Opérationnel</span>
+      </div>
+      <div class="pkg-card">
+        <div class="pkg-name">Faucon_Orchestration</div>
+        <p>BehaviorTree C++, coordination mission robot + drone</p>
+        <span class="pkg-badge wip">En cours</span>
+      </div>
+      <div class="pkg-card">
+        <div class="pkg-name">faucon_drone</div>
+        <p>Intégration PX4 SITL, missions aériennes, cartographie</p>
+        <span class="pkg-badge wip">En cours</span>
+      </div>
+      <div class="pkg-card">
+        <div class="pkg-name">virtual_maize_field</div>
+        <p>Environnement de simulation agricole Gazebo (procédural)</p>
+        <span class="pkg-badge done">Opérationnel</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section id="tech">
+  <div class="section-label">Stack Technique</div>
+  <h2>Construit sur des <em>technologies</em> open source éprouvées</h2>
+  <div class="tech-grid">
+    <div class="tech-pill"><span class="dot dot-blue"></span>ROS2 Jazzy</div>
+    <div class="tech-pill"><span class="dot dot-amber"></span>Gazebo Sim</div>
+    <div class="tech-pill"><span class="dot dot-blue"></span>Nav2</div>
+    <div class="tech-pill"><span class="dot dot-purple"></span>PX4 SITL</div>
+    <div class="tech-pill"><span class="dot dot-green"></span>BehaviorTree.CPP</div>
+    <div class="tech-pill"><span class="dot dot-blue"></span>ros2_control</div>
+    <div class="tech-pill"><span class="dot dot-amber"></span>robot_localization</div>
+    <div class="tech-pill"><span class="dot dot-green"></span>React (IHM web)</div>
+    <div class="tech-pill"><span class="dot dot-blue"></span>rosbridge_server</div>
+    <div class="tech-pill"><span class="dot dot-purple"></span>Python 3</div>
+    <div class="tech-pill"><span class="dot dot-blue"></span>C++17</div>
+    <div class="tech-pill"><span class="dot dot-amber"></span>OpenCV</div>
+    <div class="tech-pill"><span class="dot dot-green"></span>PCL (Point Cloud)</div>
+    <div class="tech-pill"><span class="dot dot-blue"></span>tf2 / URDF / Xacro</div>
+    <div class="tech-pill"><span class="dot dot-red"></span>Colcon / Ament</div>
+    <div class="tech-pill"><span class="dot dot-green"></span>MapViz</div>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section id="demo">
+  <div class="section-label">En action</div>
+  <h2>Le projet <em>en simulation</em></h2>
+  <p class="lead">Tout le développement est réalisé en simulation Gazebo avant déploiement physique, permettant de tester rapidement sans risque matériel.</p>
+  <div class="gallery">
+    <div class="gallery-item wide">
+      <img src="assets/screenshot_full.png" alt="Vue complète : Gazebo + RViz + IHM Ground Control" />
+      <div class="gallery-caption">Vue complète : simulation Gazebo · RViz · Interface Ground Control Station</div>
+    </div>
+    <div class="gallery-item">
+      <img src="assets/detection_rang.png" alt="Détection de rangs de maïs par LiDAR" />
+      <div class="gallery-caption">Détection de rangs de maïs - nuage de points LiDAR</div>
+    </div>
+    <div class="gallery-item">
+      <img src="assets/screenshot_sim.png" alt="Robot en simulation avec point cloud calibré" />
+      <div class="gallery-caption">Robot Full avec LiDAR calibré - Gazebo Sim</div>
+    </div>
+    <div class="gallery-item">
+      <img src="assets/preview_urdf.png" alt="Modèle 3D du robot Faucon" />
+      <div class="gallery-caption">Modèle URDF du robot Faucon</div>
+    </div>
+    <div class="gallery-item">
+      <img src="assets/maize_field.png" alt="Environnement champ de maïs" />
+      <div class="gallery-caption">Environnement virtual_maize_field - Gazebo Sim</div>
+    </div>
+    <div class="gallery-item">
+      <img src="assets/faucon_mini.png" alt="Faucon ground modele mini" />
+      <div class="gallery-caption">Robot mobile mini du Faucon</div>
+    </div>
+    <div class="gallery-item">
+      <img src="assets/dection_rang_vision.png" alt="Detection de rang avec OpenCV" />
+      <div class="gallery-caption">Detection de rang par la methode de fenetre glissante</div>
+    </div>
+  </div>
+</section>
+
+<!-- QUICKSTART -->
+<section id="start">
+  <div class="section-label">Démarrage rapide</div>
+  <h2>Lancé en <em>3 étapes</em></h2>
+  <p class="lead">Prérequis : Ubuntu 24.04 · ROS2 Jazzy · Gazebo Harmonic</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Cloner & installer les dépendances</h3>
+      <pre><span class="comment"># Cloner le dépôt</span>
+git clone git@github.com:themasterofarts/Faucon_ma64.git
+cd Faucon_ma64
+
+rosdep update
+rosdep install \
+  --from-paths . \
+  --ignore-src -y</pre>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Builder le workspace</h3>
+      <pre><span class="comment"># Build avec colcon</span>
+colcon build \
+  --symlink-install
+
+source install/setup.bash</pre>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Lancer la simulation</h3>
+      <pre><span class="comment"># Robot complet</span>
+./faucon/launch_base.sh
+
+<span class="comment"># Ou version Mini</span>
+./faucon/launch_base.sh \
+  use_mini=true</pre>
+    </div>
+  </div>
+</section>
+
+<!-- CONTRIBUTE -->
+<section id="contribute">
+  <div class="section-label">Rejoins-nous</div>
+  <h2>Tu veux <em>contribuer</em> ?</h2>
+  <p class="lead">
+    Que tu sois roboticien, développeur, étudiant ou simplement curieux — Faucon est une plateforme pour apprendre et progresser sur un projet réel. Chaque brique du projet est une opportunité de monter en compétence sur ROS2, la navigation autonome, la perception, le contrôle ou l'IA embarquée.
+  </p>
+  <div class="contribute-actions">
+    <a class="btn-primary" href="https://github.com/themasterofarts/Faucon_ma64" target="_blank">
+      ★ Fork sur GitHub
+    </a>
+    <a class="btn-blue" href="https://discord.gg/CEVwVY9RJy" target="_blank">
+      💬 Rejoindre le Discord MA64
+    </a>
+    <a class="btn-outline" href="https://github.com/themasterofarts/Faucon_ma64/issues" target="_blank">
+      Voir les issues ouvertes
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">🦅 <span>Faucon</span></div>
+  <p>Projet open source de la communauté <strong>MA64 Robotics</strong></p>
+  <p>
+    <a href="https://github.com/themasterofarts/Faucon_ma64">GitHub</a> ·
+    <a href="https://discord.gg/CEVwVY9RJy">Discord</a> ·
+    <a href="https://github.com/themasterofarts/Faucon_ma64/blob/main/README.md">Documentation</a>
+  </p>
+  <p style="margin-top:1.5rem;font-size:.75rem;">MIT License · Construit avec ❤️ par la communauté MA64 Robotics</p>
+</footer>
+
+</body>
+</html>
