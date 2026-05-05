@@ -13,8 +13,14 @@ find_package(ament_cmake REQUIRED)
 
 
 install(
-  DIRECTORY  config launch
+  DIRECTORY config launch
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+  script/datum_manager.py
+  script/gps_to_local.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
