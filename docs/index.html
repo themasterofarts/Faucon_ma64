@@ -345,7 +345,7 @@
     }
 
     /* ── QUICKSTART ── */
-    #start .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 2rem; margin-top: 2.5rem; }
+    #start .steps { display: grid; grid-template-columns: repeat(4,1fr); gap: 2rem; margin-top: 2.5rem; }
     .step { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem; }
     .step-num {
       width: 36px; height: 36px; background: rgba(34,197,94,.1);
@@ -400,7 +400,7 @@
       .connector-line { width: 80px; height: 2px; }
       .features-grid { grid-template-columns: 1fr 1fr; }
       .packages-grid { grid-template-columns: 1fr 1fr; }
-      #start .steps { grid-template-columns: 1fr; }
+      #start .steps { grid-template-columns: 1fr 1fr; }
       .stats-inner { grid-template-columns: repeat(2,1fr); }
       .nav-links { display: none; }
       #demo .gallery { grid-template-columns: 1fr; }
@@ -609,7 +609,7 @@
     <div class="feature-card">
       <div class="feature-icon">🧭</div>
       <h3>Navigation autonome</h3>
-      <p>Stack Nav2 configurée pour les environnements agricoles. Suivi de trajectoire GPS waypoints, local planner, planificateur global.</p>
+      <p>Stack Nav2 pour les environnements agricoles. Suivi de trajectoire GPS waypoints et gestionnaire de mission complet : chargement YAML, START / PAUSE / RESUME / STOP, progression en temps réel.</p>
       <span class="feature-tag">faucon_navigation</span>
     </div>
     <div class="feature-card">
@@ -627,7 +627,7 @@
     <div class="feature-card">
       <div class="feature-icon">🌐</div>
       <h3>Interface de contrôle (IHM)</h3>
-      <p>Dashboard web React embarqué : GPS temps réel, feed caméra, IMU, télémétrie, contrôle manuel et stop d'urgence.</p>
+      <p>Dashboard web React embarqué : GPS temps réel, feed caméra, IMU, télémétrie, contrôle manuel, stop d'urgence et widget Mission Control (chargement de trajectoire, suivi de progression, commandes de mission).</p>
       <span class="feature-tag">faucon_ihm</span>
     </div>
     <div class="feature-card">
@@ -811,13 +811,23 @@ source install/setup.bash</pre>
     </div>
     <div class="step">
       <div class="step-num">3</div>
-      <h3>Lancer la simulation</h3>
+      <h3>Simulation seule</h3>
       <pre><span class="comment"># Robot complet</span>
 ./faucon/launch_base.sh
 
 <span class="comment"># Ou version Mini</span>
 ./faucon/launch_base.sh \
   use_mini=true</pre>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h3>Simulation + Navigation autonome</h3>
+      <pre><span class="comment"># Base + Nav2 + mission_manager</span>
+./faucon/launch_full.sh
+
+<span class="comment"># Build, démarrage base,</span>
+<span class="comment"># puis navigation auto.</span>
+<span class="comment"># Ctrl+C arrête tout.</span></pre>
     </div>
   </div>
 </section>
