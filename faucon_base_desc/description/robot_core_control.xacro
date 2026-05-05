@@ -13,7 +13,7 @@
     <xacro:property name="leg_height" value="0.7"/>
     <xacro:property name="leg_mass" value="0.5"/>
 
-    <xacro:property name="leg_offset_x" value="1.0"/>
+    <xacro:property name="leg_offset_x" value="0.325"/>
     <xacro:property name="leg_offset_y" value="0.5"/>
     <xacro:property name="leg_offset_z" value="0.1"/>
 
@@ -21,13 +21,13 @@
     <xacro:property name="wheel_thickness" value="0.1"/>
     <xacro:property name="wheel_mass" value="0.5"/>
 
-    <xacro:property name="wheel_offset_x" value="1.0"/>
+    <xacro:property name="wheel_offset_x" value="0.325"/>
     <xacro:property name="wheel_offset_y" value="0.5"/>
     <xacro:property name="wheel_offset_z" value="0.01"/>
-    
-    
+
+
     <xacro:property name="caster_wheel_radius" value="0.12"/>
-    <xacro:property name="caster_wheel_offset_x" value="0.350"/>
+    <xacro:property name="caster_wheel_offset_x" value="-0.325"/>
     <xacro:property name="caster_wheel_offset_z" value="${wheel_offset_z - wheel_radius + caster_wheel_radius}"/>
 
     <material name="white">
@@ -68,14 +68,14 @@
 
     <link name="base_link">
         <visual>
-            <origin xyz="${chassis_length/2} 0 ${chassis_height/2}"/>
+            <origin xyz="0 0 ${chassis_height/2}"/>
             <geometry>
                 <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
             </geometry>
             <material name="blue"/>
         </visual>
         <collision>
-            <origin xyz="${chassis_length/2} 0 ${chassis_height/2}"/>
+            <origin xyz="0 0 ${chassis_height/2}"/>
             <geometry>
                 <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
             </geometry>
