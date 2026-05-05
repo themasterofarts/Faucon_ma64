@@ -383,6 +383,41 @@ const css = `
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* MISSION WIDGET */
+  .mission-wrapper { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+  .mission-state-row { display: flex; justify-content: space-between; align-items: center; }
+  .mission-state-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .mission-state-label { font-family: var(--font-display); font-size: 11px; letter-spacing: 2px; }
+  .mission-id { font-size: 9px; color: var(--text-dim); }
+
+  .mission-progress-wrap { width: 100%; }
+  .mission-progress-header { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim); margin-bottom: 4px; }
+  .mission-progress-bar { width: 100%; height: 4px; background: var(--bg3); border: 1px solid var(--border); }
+  .mission-progress-fill { height: 100%; transition: width 0.5s; }
+  .mission-progress-pct { text-align: right; font-size: 9px; margin-top: 2px; }
+
+  .mission-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .btn-amber { border-color: var(--amber); color: var(--amber); }
+  .btn-amber:hover:not(:disabled) { background: var(--amber); color: #000; }
+  .btn-red { border-color: var(--red); color: var(--red); }
+  .btn-red:hover:not(:disabled) { background: var(--red); color: #fff; }
+  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .mission-resume-btn { width: 100%; font-size: 9px; padding: 6px 4px; }
+
+  .mission-load-row { display: flex; gap: 6px; align-items: center; }
+  .mission-filename { font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+  .mission-error { background: #ff445511; border: 1px solid var(--red); padding: 6px 8px; font-size: 9px; color: var(--red); }
+
+  .mission-telem { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 2px; }
+  .mission-telem-card { background: var(--bg3); border: 1px solid var(--border); padding: 6px 8px; }
+  .mission-telem-label { font-size: 8px; color: var(--text-dim); letter-spacing: 2px; margin-bottom: 2px; }
+  .mission-telem-value { font-family: var(--font-display); font-size: 13px; }
 `;
 
 // ─── GPS MAP WIDGET ───────────────────────────────────────────────────────────
@@ -772,40 +807,149 @@ function JoystickWidget({ publish, connected }) {
   );
 }
 
-// ─── TELEMETRY PANEL ──────────────────────────────────────────────────────────
-function TelemetryWidget({ subscribe }) {
-  const [data, setData] = useState({ speed: 0, heading: 0, uptime: 0, topics: 0 });
-  const startRef = useRef(Date.now());
+// ─── MISSION WIDGET ───────────────────────────────────────────────────────────
+const STATE_COLOR = {
+  IDLE: "var(--text-dim)", LOADING: "var(--blue)", READY: "var(--amber)",
+  RUNNING: "var(--green)", PAUSED: "var(--amber)", COMPLETED: "var(--green)",
+  ABORTED: "var(--red)",   ERROR: "var(--red)",
+};
+
+function MissionWidget({ subscribe, publish, connected }) {
+  const [status, setStatus] = useState({
+    state: "IDLE", mission_id: "", progress: 0, current_wp: 0, total_wp: 0, error: "",
+  });
+  const [speed, setSpeed]     = useState(0);
+  const [uptime, setUptime]   = useState(0);
+  const [fileName, setFileName] = useState("");
+  const startRef  = useRef(Date.now());
+  const fileRef   = useRef(null);
+
+  useEffect(() => {
+    const unsub = subscribe("/mission/status", "std_msgs/String", (msg) => {
+      try { setStatus(JSON.parse(msg.data)); } catch {}
+    });
+    return unsub;
+  }, [subscribe]);
 
   useEffect(() => {
     const unsub = subscribe("/odom", "nav_msgs/Odometry", (msg) => {
       const vx = msg.twist?.twist?.linear?.x ?? 0;
-      const vz = msg.twist?.twist?.angular?.z ?? 0;
-      setData(d => ({ ...d, speed: Math.sqrt(vx * vx) }));
+      setSpeed(Math.abs(vx));
     });
     const timer = setInterval(() => {
-      setData(d => ({ ...d, uptime: Math.floor((Date.now() - startRef.current) / 1000) }));
+      setUptime(Math.floor((Date.now() - startRef.current) / 1000));
     }, 1000);
     return () => { unsub(); clearInterval(timer); };
   }, [subscribe]);
 
-  const formatUptime = (s) => `${String(Math.floor(s / 3600)).padStart(2,"0")}:${String(Math.floor((s % 3600) / 60)).padStart(2,"0")}:${String(s % 60).padStart(2,"0")}`;
+  const sendCmd = (cmd) =>
+    publish("/mission/command", "std_msgs/String", { data: cmd });
 
-  const cards = [
-    { label: "SPEED", value: data.speed.toFixed(2), unit: "m/s", warn: data.speed > 0.8, crit: data.speed > 1.2 },
-    { label: "UPTIME", value: formatUptime(data.uptime), unit: "", warn: false, crit: false },
-    { label: "FRAME", value: "map", unit: "", warn: false, crit: false },
-    { label: "NAV2", value: "IDLE", unit: "", warn: false, crit: false },
-  ];
+  const handleFileLoad = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) =>
+      publish("/mission/load_path", "std_msgs/String", { data: ev.target.result });
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const { state, mission_id, progress, current_wp, total_wp, error } = status;
+  const color    = STATE_COLOR[state] ?? "var(--text-dim)";
+  const pct      = (progress * 100).toFixed(1);
+  const isAnim   = state === "RUNNING" || state === "ERROR";
+  const canStart  = state === "READY"   && connected;
+  const canPause  = state === "RUNNING" && connected;
+  const canResume = state === "PAUSED"  && connected;
+  const canStop   = ["RUNNING","PAUSED","READY","ERROR"].includes(state) && connected;
+  const canLoad   = state !== "RUNNING" && connected;
+  const fmt = (s) => `${String(Math.floor(s/3600)).padStart(2,"0")}:${String(Math.floor((s%3600)/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
 
   return (
-    <div className="telemetry-grid">
-      {cards.map(c => (
-        <div key={c.label} className={`telem-card ${c.crit ? "crit" : c.warn ? "warn" : ""}`}>
-          <div className="telem-card-label">{c.label}</div>
-          <div className="telem-card-value">{c.value} <span className="telem-card-unit">{c.unit}</span></div>
+    <div className="mission-wrapper">
+      {/* État + ID */}
+      <div className="mission-state-row">
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div className="mission-state-dot" style={{
+            background: color,
+            boxShadow: isAnim ? `0 0 8px ${color}` : "none",
+            animation: isAnim ? "pulse 1.5s infinite" : "none",
+          }}/>
+          <span className="mission-state-label" style={{ color }}>{state}</span>
         </div>
-      ))}
+        {mission_id && <span className="mission-id">ID: {mission_id}</span>}
+      </div>
+
+      {/* Barre de progression */}
+      <div className="mission-progress-wrap">
+        <div className="mission-progress-header">
+          <span>PROGRESS</span>
+          <span>{total_wp > 0 ? `WP ${current_wp} / ${total_wp}` : "---"}</span>
+        </div>
+        <div className="mission-progress-bar">
+          <div className="mission-progress-fill" style={{
+            width: `${pct}%`, background: color,
+            boxShadow: state === "RUNNING" ? `0 0 6px ${color}` : "none",
+          }}/>
+        </div>
+        <div className="mission-progress-pct" style={{ color }}>{pct}%</div>
+      </div>
+
+      {/* Boutons principaux */}
+      <div className="mission-btns">
+        <button className="btn btn-green" disabled={!canStart}
+          onClick={() => sendCmd("START")} style={{ fontSize:9, padding:"6px 4px" }}>
+          ▶ START
+        </button>
+        <button className="btn btn-amber" disabled={!canPause}
+          onClick={() => sendCmd("PAUSE")} style={{ fontSize:9, padding:"6px 4px" }}>
+          ⏸ PAUSE
+        </button>
+        <button className="btn btn-red" disabled={!canStop}
+          onClick={() => sendCmd("STOP")} style={{ fontSize:9, padding:"6px 4px" }}>
+          ■ STOP
+        </button>
+      </div>
+
+      {/* Bouton RESUME (visible uniquement en PAUSED) */}
+      {state === "PAUSED" && (
+        <button className="btn btn-green mission-resume-btn" disabled={!canResume}
+          onClick={() => sendCmd("RESUME")}>
+          ▶▶ RESUME MISSION
+        </button>
+      )}
+
+      {/* Chargement du fichier YAML */}
+      <div className="mission-load-row">
+        <input ref={fileRef} type="file" accept=".yaml,.yml"
+          style={{ display:"none" }} onChange={handleFileLoad} />
+        <button className="btn btn-dim" disabled={!canLoad}
+          style={{ fontSize:9, padding:"5px 10px", whiteSpace:"nowrap" }}
+          onClick={() => fileRef.current?.click()}>
+          ↑ LOAD YAML
+        </button>
+        <span className="mission-filename" style={{ color: fileName ? "var(--text)" : "var(--text-dim)" }}>
+          {fileName || "no file selected"}
+        </span>
+      </div>
+
+      {/* Message d'erreur */}
+      {error && <div className="mission-error">⚠ {error}</div>}
+
+      {/* Télémétrie compacte */}
+      <div className="mission-telem">
+        {[
+          ["SPEED",  `${speed.toFixed(2)} m/s`, speed > 0.8 ? "var(--amber)" : "var(--green)"],
+          ["UPTIME", fmt(uptime),                "var(--green)"],
+        ].map(([label, value, c]) => (
+          <div key={label} className="mission-telem-card">
+            <div className="mission-telem-label">{label}</div>
+            <div className="mission-telem-value" style={{ color: c }}>{value}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -923,14 +1067,14 @@ export default function App() {
             </div>
           </div>
 
-          {/* TELEMETRY */}
+          {/* MISSION */}
           <div className="panel">
             <div className="panel-header">
-              <span className="panel-title">◈ TELEMETRY</span>
-              <span className="panel-badge">Odometry · /odom</span>
+              <span className="panel-title">◎ MISSION CONTROL</span>
+              <span className="panel-badge">/mission/status · /mission/command</span>
             </div>
-            <div className="panel-body">
-              <TelemetryWidget subscribe={subscribe} />
+            <div className="panel-body" style={{ alignItems:"flex-start", overflowY:"auto" }}>
+              <MissionWidget subscribe={subscribe} publish={publish} connected={connected} />
             </div>
           </div>
         </div>

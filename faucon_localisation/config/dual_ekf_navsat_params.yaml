@@ -124,5 +124,5 @@ navsat_transform:
     broadcast_cartesian_transform: true
     publish_filtered_gps: true
     use_odometry_yaw: true
-    wait_for_datum: false
-    datum: [43.899967, 3.199972, 0.0]  # Latitude, Longitude, Altitude
+    wait_for_datum: true
+    #datum: [43.899967, 3.199972, 0.0]  # Latitude, Longitude, Altitude

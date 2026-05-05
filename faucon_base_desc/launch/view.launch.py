@@ -23,6 +23,7 @@ def launch_setup(context, *args, **kwargs):
    
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_mini_value = LaunchConfiguration("use_mini").perform(context)
+    use_rviz = LaunchConfiguration("use_rviz").perform(context)
     
     
     if use_mini_value.lower() == "true":
@@ -37,7 +38,7 @@ def launch_setup(context, *args, **kwargs):
         use_ros2_control_value = LaunchConfiguration("use_ros2_control").perform(context)
 
     twist_mux_params = os.path.join(
-        get_package_share_directory("faucon_base_desc"), "config", "twrist_mux.yaml"
+        get_package_share_directory("faucon_base_desc"), "config", "twist_mux.yaml"
     )
 
    
@@ -130,7 +131,8 @@ def launch_setup(context, *args, **kwargs):
         executable="rviz2", 
         name="rviz2", 
         output="screen",
-        parameters=[{"use_sim_time": use_sim_time}]
+        parameters=[{"use_sim_time": use_sim_time}],
+        condition=IfCondition(PythonExpression(['"', use_rviz, '" == "true"'])),
     )
 
     
@@ -262,7 +264,11 @@ def generate_launch_description():
                 default_value="true",
                 description="ROS2 control enabled if true (ignored if use_mini=true)",
             ),
-            
+            DeclareLaunchArgument(
+                "use_rviz",
+                 default_value="false",
+                 description="Launch RViz if true (ignored if use_mini=true)",
+            ),
         
             OpaqueFunction(function=launch_setup),
         ]

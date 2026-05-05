@@ -41,6 +41,7 @@ Le projet sert à la fois de **plateforme de recherche**, de **base d’expérim
 ---
 ### 🆕 Nouveautés récentes
 
+- **Script de lancement complet (`launch_full.sh`)** : lance automatiquement la base et la navigation en un seul commande, avec build, synchronisation et arrêt propre.
 - **IHM web ROS2 intégrée (`faucon_ihm`)** : dashboard React (GPS, IMU, caméra, télémétrie, contrôle manuel) désormais inclus dans le workspace et lancé automatiquement avec la simulation principale.
 - **Support Mapviz/OpenStreetMap (`faucon_localisation`)** : ajout d’un lancement dédié pour visualiser la position GNSS sur carte.
 - **Mode mini robot amélioré** : argument `use_mini` pris en charge dans le script de lancement global et dans le launch principal (adaptation du modèle/contrôle).
@@ -75,18 +76,44 @@ git clone git@github.com:themasterofarts/Faucon_ma64.git
 cd Faucon_ma64
 
 rosdep update
-
 rosdep install --from-paths . --ignore-src -y
+```
 
+---
+
+#### **2a. Lancement base uniquement** (simulation + RViz2)
+```bash
 sudo chmod +x ./faucon/launch_base.sh
-
 ./faucon/launch_base.sh
 ```
-#### Lancement mini robot
+
+#### Variante mini robot
 ```bash
-./faucon/launch_base.sh  use_mini=true
+./faucon/launch_base.sh use_mini=true
 ```
+
 ---
+
+#### **2b. Lancement complet** (base + navigation autonome)
+
+`launch_full.sh` enchaîne automatiquement :
+1. `colcon build --symlink-install`
+2. `ros2 launch faucon_base_desc view.launch.py` (arrière-plan)
+3. Attente 5 s, puis `ros2 launch faucon_navigation faucon_nav.launch.py` (arrière-plan)
+4. Arrêt propre des deux processus sur Ctrl+C
+
+```bash
+sudo chmod +x ./faucon/launch_full.sh
+./faucon/launch_full.sh
+```
+
+#### Variante mini robot
+```bash
+./faucon/launch_full.sh use_mini=true
+```
+
+---
+
 #### Lancer Mapviz (visualisation GPS)
 ```bash
 ros2 launch faucon_localisation mapviz.launch.py

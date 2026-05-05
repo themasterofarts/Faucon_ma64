@@ -1,7 +1,5 @@
 from launch import LaunchDescription
 from ament_index_python.packages import get_package_share_directory
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 import launch_ros.actions
 import os
 import launch.actions
@@ -20,6 +18,13 @@ def generate_launch_description():
             ),
             launch.actions.DeclareLaunchArgument(
                 "output_location", default_value="~/dual_ekf_navsat_example_debug.txt"
+            ),
+            # Doit démarrer en premier : publie /datum et /gnss/datum dès le premier fix GNSS
+            launch_ros.actions.Node(
+                package="faucon_localisation",
+                executable="datum_manager.py",
+                name="datum_manager",
+                output="screen",
             ),
             launch_ros.actions.Node(
                 package="robot_localization",
