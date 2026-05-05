@@ -44,7 +44,7 @@ jobs:
             ros-jazzy-rosbridge-server ros-jazzy-pcl-ros \
             libopencv-dev
           # Packages Python depuis Ubuntu universe peu fiables → pip
-          pip3 install --quiet ujson utm pyproj
+          pip3 install --quiet --break-system-packages ujson utm pyproj
           rosdep update || (rosdep init && rosdep update)
 
       - name:  Prepare workspace
