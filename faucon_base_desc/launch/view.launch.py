@@ -34,7 +34,7 @@ def launch_setup(context, *args, **kwargs):
     else:
         robot_desc = xacro.process_file(xacro_file).toxml()
         spawn_z = "1.0"
-        spawn_y = "-3.83"
+        spawn_y = "-2.83"
         use_ros2_control_value = LaunchConfiguration("use_ros2_control").perform(context)
 
     twist_mux_params = os.path.join(
