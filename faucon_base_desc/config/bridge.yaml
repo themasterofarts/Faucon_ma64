@@ -15,12 +15,6 @@
   direction: BIDIRECTIONAL  # BIDIRECTIONAL or ROS_TO_GZ
 
 
-- ros_topic_name: "clock"
-  gz_topic_name: "/clock"
-  ros_type_name: "rosgraph_msgs/msg/Clock"
-  gz_type_name: "gz.msgs.Clock"
-  direction: GZ_TO_ROS  # BIDIRECTIONAL or ROS_TO_GZ
-
 
 - ros_topic_name: "/odom"
   gz_topic_name: "odom"
@@ -46,22 +40,15 @@
   gz_type_name:  "gz.msgs.NavSat"
   direction: GZ_TO_ROS
 
-# gz topic published by Sensors plugin (Camera)
+# rgbd_camera topics (type="rgbd_camera", <topic>camera</topic>)
 - ros_topic_name: "camera/camera_info"
   gz_topic_name: "camera/camera_info"
   ros_type_name: "sensor_msgs/msg/CameraInfo"
   gz_type_name: "gz.msgs.CameraInfo"
   direction: GZ_TO_ROS
 
-
-# depth camera topics
-- topic_name: "depth_camera/camera_info"
-  ros_type_name: "sensor_msgs/msg/CameraInfo"
-  gz_type_name: "gz.msgs.CameraInfo"
-  direction: GZ_TO_ROS
-
-# Nuage de points
-- topic_name: "depth_camera/points"
+- ros_topic_name: "camera/points"
+  gz_topic_name: "camera/points"
   ros_type_name: "sensor_msgs/msg/PointCloud2"
   gz_type_name: "gz.msgs.PointCloudPacked"
   direction: GZ_TO_ROS
