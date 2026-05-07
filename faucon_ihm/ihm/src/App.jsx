@@ -655,7 +655,7 @@ function IMUWidget({ subscribe }) {
 // ─── CAMERA WIDGET ────────────────────────────────────────────────────────────
 function CameraWidget({ config }) {
   const [streamUrl, setStreamUrl] = useState(config.videoServer || "");
-  const [inputUrl, setInputUrl] = useState(config.videoServer || "http://localhost:8080/stream?topic=/camera/image_raw");
+  const [inputUrl, setInputUrl] = useState(config.videoServer || "http://localhost:8080/stream?topic=/camera/image");
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -681,7 +681,7 @@ function CameraWidget({ config }) {
       <div style={{ display: "flex", gap: 6 }}>
         <input className="camera-url-input" style={{ flex: 1 }} value={inputUrl}
           onChange={e => setInputUrl(e.target.value)}
-          placeholder="http://localhost:8080/stream?topic=/camera/image_raw"
+          placeholder="http://localhost:8080/stream?topic=/camera/image"
         />
         <button className="btn btn-green" style={{ fontSize: 9, padding: "4px 10px", whiteSpace: "nowrap" }}
           onClick={() => setStreamUrl(inputUrl)}>LOAD</button>
@@ -963,7 +963,7 @@ function ConfigModal({ config, onSave, onClose }) {
         <div className="modal-title">⚙ SYSTEM CONFIGURATION</div>
         {[
           ["ROSBRIDGE HOST", "rosBridgeUrl", "ws://192.168.1.x:9090"],
-          ["VIDEO SERVER", "videoServer", "http://192.168.1.x:8080/stream?topic=/camera/image_raw"],
+          ["VIDEO SERVER", "videoServer", "http://192.168.1.x:8080/stream?topic=/camera/image"],
           ["GPS TOPIC", "gpsTopic", "/gps/fix"],
           ["IMU TOPIC", "imuTopic", "/imu/data"],
           ["CMD_VEL TOPIC", "cmdVelTopic", "/cmd_vel"],
