@@ -19,6 +19,14 @@ install(
 # Install Python scripts
 install(PROGRAMS
   scripts/gps_waypoint_logger.py
+  scripts/mission_manager.py
+  scripts/follower.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# mission_core is a module (not an entrypoint), installed alongside mission_manager
+install(FILES
+  scripts/mission_core.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

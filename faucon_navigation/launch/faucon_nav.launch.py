@@ -64,6 +64,15 @@ def generate_launch_description():
         ],
     )
 
+    # mission manager
+    mission_manager_cmd = Node(
+        package="faucon_navigation",
+        executable="mission_manager.py",
+        name="mission_manager",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+    )
+
     #robot localization nodes 
     robot_localization_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -121,5 +130,6 @@ def generate_launch_description():
             #static_tf,
             #static_tf2,
             robot_localization_cmd,
+            mission_manager_cmd,
         ]
     )

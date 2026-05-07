@@ -30,6 +30,8 @@ jobs:
 
       - name: Install base tools & ROS deps
         run: |
+          # Retries pour les erreurs réseau transitoires (520, timeout, etc.)
+          echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             git curl gnupg lsb-release rsync \
@@ -39,7 +41,10 @@ jobs:
             ros-jazzy-ros-gz ros-jazzy-ros-gz-bridge ros-jazzy-ros-gz-image \
             ros-jazzy-gz-ros2-control \
             ros-jazzy-behaviortree-cpp ros-jazzy-behaviortree-cpp-dbgsym ros-jazzy-nav2-bringup \
+            ros-jazzy-rosbridge-server ros-jazzy-pcl-ros \
             libopencv-dev
+          # Packages Python depuis Ubuntu universe peu fiables → pip
+          pip3 install --quiet --break-system-packages ujson utm pyproj
           rosdep update || (rosdep init && rosdep update)
 
       - name:  Prepare workspace
@@ -66,7 +71,9 @@ jobs:
           set -e
           source /opt/ros/$ROS_DISTRO/setup.sh
           cd "$WS_DIR"
-          rosdep install --from-paths src --ignore-src -y
+          # --skip-keys : packages déjà installés ci-dessus (apt ou pip)
+          rosdep install --from-paths src --ignore-src -y \
+            --skip-keys "python3-ujson python3-utm python3-pyproj ros-jazzy-rosbridge-server ros-jazzy-pcl-ros"
 
       - name: colcon build
         shell: bash

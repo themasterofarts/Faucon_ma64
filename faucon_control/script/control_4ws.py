@@ -9,6 +9,7 @@ import math
 
 from rclpy.duration import Duration
 
+
 class CmdVelToJoints(Node):
     def __init__(self):
         super().__init__("cmd_vel_based_4ws_control")
@@ -17,14 +18,16 @@ class CmdVelToJoints(Node):
         get_logger.info("4WS Control Node Initialized")
 
         # Parameters (matched to your URDF)
-        self.declare_parameter("wheel_radius", 0.35)  # Wheel radius in meters
+        self.declare_parameter("wheel_radius", 0.25)  # Wheel radius in meters
         self.declare_parameter(
-            "wheel_base", 1.4
+            "wheel_base", 0.65
         )  # Distance between front and rear axles
-        self.declare_parameter("track_width", 1.2)  # Left-right wheel distance
-        self.declare_parameter("max_steer", math.pi / 3)  # Steering limit (rad, 60 deg)
+        self.declare_parameter("track_width", 1.0)  # Left-right wheel distance
+        self.declare_parameter("max_steer", 0.7854)  # Steering limit (rad, 45 deg)
         self.declare_parameter("steer_gain", 1.0)  # Gain for steering angle
         self.declare_parameter("wheel_gain", 1.0)  # Gain for wheel velocity
+        self.declare_parameter("max_steer_rate", 0.5)  # Steering joint limit (rad/s)
+        self.declare_parameter("steer_time_from_start", 0.2)
 
         self.wheel_radius = self.get_parameter("wheel_radius").value
         self.wheel_base = self.get_parameter("wheel_base").value
@@ -32,6 +35,11 @@ class CmdVelToJoints(Node):
         self.max_steer = self.get_parameter("max_steer").value
         self.steer_gain = self.get_parameter("steer_gain").value
         self.wheel_gain = self.get_parameter("wheel_gain").value
+        self.max_steer_rate = self.get_parameter("max_steer_rate").value
+        self.steer_time_from_start = self.get_parameter("steer_time_from_start").value
+
+        self.last_steer_positions = [0.0, 0.0, 0.0, 0.0]
+        self.last_cmd_time = self.get_clock().now()
 
         # Publisher for steering (JointTrajectory for JointTrajectoryController)
         self.steering_pub = self.create_publisher(
@@ -50,7 +58,6 @@ class CmdVelToJoints(Node):
             "right_wheel_leg_joint",
             "left_wheel_back_leg_joint",
             "right_wheel_back_leg_joint",
-            
         ]
         self.wheel_joints = [
             "left_wheel_joint",
@@ -59,7 +66,6 @@ class CmdVelToJoints(Node):
             "wheel_back_right_joint",
         ]
 
-
     def cmd_vel_cb(self, msg: Twist):
         vx = msg.linear.x
         wz = msg.angular.z
@@ -67,52 +73,77 @@ class CmdVelToJoints(Node):
         EPS_VX = 1e-3
         EPS_WZ = 1e-3
 
-        # Compute steering angle using bicycle model
-        if abs(wz) < EPS_WZ:
-           
-            steer_angle = 0.0
-        elif abs(vx) > EPS_VX:
-            
-            denom = max(abs(vx), EPS_VX)
-            steer_angle = math.atan2(self.wheel_base * wz, denom)
+        wheel_positions = [
+            (self.wheel_base / 2.0, self.track_width / 2.0),    # front left
+            (self.wheel_base / 2.0, -self.track_width / 2.0),   # front right
+            (-self.wheel_base / 2.0, self.track_width / 2.0),   # rear left
+            (-self.wheel_base / 2.0, -self.track_width / 2.0),  # rear right
+        ]
+
+        if abs(vx) < EPS_VX and abs(wz) < EPS_WZ:
+            target_steers = [0.0, 0.0, 0.0, 0.0]
         else:
-           
-            steer_angle = math.copysign(self.max_steer * 0.8, wz)
+            target_steers = []
 
-        # clamp + gains
-        steer_angle = max(-self.max_steer, min(self.max_steer, steer_angle)) * self.steer_gain
+            for wheel_x, wheel_y in wheel_positions:
+                wheel_vx = vx - wz * wheel_y
+                wheel_vy = wz * wheel_x
+                steer = math.atan2(wheel_vy, wheel_vx) * self.steer_gain
+                steer = self._clamp(steer, -self.max_steer, self.max_steer)
+                target_steers.append(steer)
 
-        # 4WS: AR opposé
-        front_steer = steer_angle
-        rear_steer  = -steer_angle
+        steer_positions = self._limit_steer_rate(target_steers)
+        wheel_speeds = self._compute_wheel_speeds(vx, wz, steer_positions, wheel_positions)
 
-        
         jt_steer = JointTrajectory()
         jt_steer.joint_names = self.steer_joints
         pt = JointTrajectoryPoint()
-        pt.positions = [front_steer, front_steer, rear_steer, rear_steer]
-        pt.time_from_start = Duration(seconds=0.1).to_msg()
+        pt.positions = steer_positions
+        pt.time_from_start = Duration(seconds=self.steer_time_from_start).to_msg()
         jt_steer.points = [pt]
         self.steering_pub.publish(jt_steer)
 
-        # Compute wheel angular velocities: wheel_omega = vx / wheel_radius
-        wheel_omega = (vx / self.wheel_radius) * self.wheel_gain if abs(self.wheel_radius) > 1e-6 else 0.0
-        left_multiplier = right_multiplier = 1.0
-        if abs(wz) > 1e-5 and abs(vx) > 1e-5:
-            R_center = vx / wz
-            R_left  = R_center - (self.track_width / 2.0)
-            R_right = R_center + (self.track_width / 2.0)
-            left_multiplier  = R_left / R_center
-            right_multiplier = R_right / R_center
-
-        fl = wheel_omega * left_multiplier
-        fr = wheel_omega * right_multiplier
-        rl = wheel_omega * left_multiplier
-        rr = wheel_omega * right_multiplier
-
         wheel_msg = Float64MultiArray()
-        wheel_msg.data = [fl, fr, rl, rr]
+        wheel_msg.data = wheel_speeds
         self.wheel_pub.publish(wheel_msg)
+
+    def _compute_wheel_speeds(self, vx, wz, steer_positions, wheel_positions):
+        wheel_speeds = []
+        for steer, (wheel_x, wheel_y) in zip(steer_positions, wheel_positions):
+            wheel_vx = vx - wz * wheel_y
+            wheel_vy = wz * wheel_x
+
+            # Project the desired wheel velocity onto the achievable steering axis.
+            linear_speed = wheel_vx * math.cos(steer) + wheel_vy * math.sin(steer)
+            angular_speed = (
+                linear_speed / self.wheel_radius
+                if abs(self.wheel_radius) > 1e-6
+                else 0.0
+            )
+            wheel_speeds.append(angular_speed * self.wheel_gain)
+
+        return wheel_speeds
+
+    def _limit_steer_rate(self, target_positions):
+        now = self.get_clock().now()
+        dt = (now - self.last_cmd_time).nanoseconds * 1e-9
+        self.last_cmd_time = now
+
+        if dt <= 0.0:
+            return self.last_steer_positions
+
+        max_delta = abs(self.max_steer_rate) * dt
+        limited_positions = []
+        for current, target in zip(self.last_steer_positions, target_positions):
+            delta = self._clamp(target - current, -max_delta, max_delta)
+            limited_positions.append(current + delta)
+
+        self.last_steer_positions = limited_positions
+        return limited_positions
+
+    @staticmethod
+    def _clamp(value, lower, upper):
+        return max(lower, min(upper, value))
 
 
 

@@ -52,7 +52,21 @@ def main():
         return
 
     handler = partial(SPAHandler, directory=ihm_dir)
-    server  = HTTPServer((host, port), handler)
+
+    # SO_REUSEADDR : permet de relancer immédiatement sans attendre le timeout TCP
+    HTTPServer.allow_reuse_address = True
+    try:
+        server = HTTPServer((host, port), handler)
+    except OSError as e:
+        if e.errno == 98:  # Address already in use
+            import subprocess
+            print(f"[IHM] ⚠  Port {port} occupé — tentative de libération...", flush=True)
+            subprocess.run(["fuser", "-k", f"{port}/tcp"], capture_output=True)
+            import time as _time
+            _time.sleep(1)
+            server = HTTPServer((host, port), handler)
+        else:
+            raise
 
     
     import socket
