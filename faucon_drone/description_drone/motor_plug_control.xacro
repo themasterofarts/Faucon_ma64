@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="motor_plug_macro" params="suffix motor_num direction">
+
+    <gazebo>
+      <plugin filename="gz-sim-multicopter-motor-model-system" name="gz::sim::systems::MulticopterMotorModel">
+
+        <robotNamespace>faucon_drone/</robotNamespace>
+
+        <jointName>joint_${suffix}</jointName>
+        <linkName>rotor_${suffix}</linkName>
+        <turningDirection>${direction}</turningDirection>
+        
+        <timeConstantUp>0.0125</timeConstantUp>
+        <timeConstantDown>0.025</timeConstantDown>
+        <maxRotVelocity>1000</maxRotVelocity>
+
+        <motorConstant>8.54858e-06</motorConstant>
+        <momentConstant>0.016</momentConstant>
+        
+        <commandSubTopic>/command/motor_speed</commandSubTopic>
+        <motorNumber>${motor_num}</motorNumber>
+        
+        <rotorDragCoefficient>8.06428e-05</rotorDragCoefficient>
+        <rollingMomentCoefficient>1e-06</rollingMomentCoefficient>
+      </plugin>
+    </gazebo>
+
+  </xacro:macro>
+
+</robot>

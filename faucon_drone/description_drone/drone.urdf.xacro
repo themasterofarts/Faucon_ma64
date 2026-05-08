@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<robot name="faucon_drone" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:include filename="quadrotor_core_control.urdf.xacro"/>
+
+  
+  <xacro:include filename="imu_sensor.xacro"/>
+
+
+  <xacro:include filename="camera.xacro"/>
+
+
+  <xacro:include filename="gps.xacro"/>
+
+  <!--Deja inclu dans le fichier  quadrotor_core_control.urdf.xacro" -->
+  <!-- <xacro:include filename="motor_plug_control.xacro"/>--> 
+  
+</robot>

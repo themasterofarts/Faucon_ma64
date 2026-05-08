@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<robot name="faucon_drone" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <material name="gray"><color rgba="0.6 0.6 0.6 1.0"/> </material>
+  <material name="dark_gray"><color rgba="0.3 0.3 0.3 1.0"/> </material>
+  <material name="red"><color rgba="0.8 0.1 0.1 1.0"/> </material>
+  <material name="black"><color rgba="0.1 0.1 0.1 1.0"/> </material>
+
+  <xacro:include filename="motor_plug_control.xacro" />
+
+  <link name="base_link">
+    
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.12 0.12 0.05"/></geometry>
+      <material name="gray"/>
+    </visual>
+
+    <visual>
+      <origin xyz="0.06 0.06 0" rpy="0 0 0.7854"/>
+      <geometry><box size="0.20 0.02 0.02"/></geometry>
+      <material name="dark_gray"/>
+    </visual>
+
+    <visual>
+      <origin xyz="0.06 -0.06 0" rpy="0 0 -0.7854"/>
+      <geometry><box size="0.20 0.02 0.02"/></geometry>
+      <material name="dark_gray"/>
+    </visual>
+
+    <visual>
+      <origin xyz="-0.06 0.06 0" rpy="0 0 -0.7854"/>
+      <geometry><box size="0.20 0.02 0.02"/></geometry>
+      <material name="dark_gray"/>
+    </visual>
+
+    <visual>
+      <origin xyz="-0.06 -0.06 0" rpy="0 0 0.7854"/>
+      <geometry><box size="0.20 0.02 0.02"/></geometry>
+      <material name="dark_gray"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.3 0.3 0.05"/></geometry>
+    </collision>
+    
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.05" ixy="0.0" ixz="0.0" iyy="0.05" iyz="0.0" izz="0.1"/>
+    </inertial>
+  </link>
+
+  
+  <xacro:macro name="rotor" params="suffix x y prop_color motor_num direction">
+
+    <link name="rotor_${suffix}">
+      <visual>
+
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><cylinder radius="0.015" length="0.03"/></geometry>
+        <material name="black"/>
+      </visual>
+
+      <visual>
+        <origin xyz="0 0 0.015" rpy="0 0 0"/>
+        <geometry><box size="0.15 0.02 0.005"/></geometry>
+        <material name="${prop_color}"/>
+      </visual>
+      
+      <inertial>
+        <mass value="0.05"/>
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.002"/>
+      </inertial>
+    </link>
+
+    <joint name="joint_${suffix}" type="continuous">
+      <parent link="base_link"/>
+      <child link="rotor_${suffix}"/>
+      <origin xyz="${x} ${y} 0.02" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/> 
+    </joint>
+
+
+    <xacro:motor_plug_macro suffix="${suffix}" motor_num="${motor_num}" direction="${direction}" />
+  </xacro:macro>
+
+  <xacro:rotor suffix="FL" x="0.12" y="0.12" prop_color="red" motor_num="0" direction="ccw"/>
+  <xacro:rotor suffix="FR" x="0.12" y="-0.12" prop_color="red" motor_num="1" direction="cw"/>
+  <xacro:rotor suffix="BL" x="-0.12" y="0.12" prop_color="black" motor_num="2" direction="cw"/>
+  <xacro:rotor suffix="BR" x="-0.12" y="-0.12" prop_color="black" motor_num="3" direction="ccw"/>
+
+</robot>
