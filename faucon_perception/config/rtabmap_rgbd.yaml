@@ -54,3 +54,17 @@ rtabmap:
 
     #  Base de données 
     database_path: "~/.ros/faucon_map_rgbd.db"
+
+    # metrics
+    publish_stats: true
+    Stats/Rate: 1.0
+    Stats/Time: true
+    Stats/Memory: true
+    Stats/LoopClosure: true
+    Stats/Localization: true
+    Stats/Proximity: true
+    Stats/Reg: true
+    Stats/Graph: true   
+    publish_graph: true 
+    log_to_file: true
+    
