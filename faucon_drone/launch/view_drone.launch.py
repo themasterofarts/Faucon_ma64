@@ -113,9 +113,9 @@ def generate_launch_description():
                  default_value="true",
                  description="Launch RViz if true ",
             ),
-            
+        
         robot_state_publisher,
-        #joint_state_publisher_node,
+        joint_state_publisher_node,
         rviz,
         spawn_drone,
         gz_sim,

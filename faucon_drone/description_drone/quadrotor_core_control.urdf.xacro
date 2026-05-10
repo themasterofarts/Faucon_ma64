@@ -85,9 +85,13 @@
     <xacro:motor_plug_macro suffix="${suffix}" motor_num="${motor_num}" direction="${direction}" />
   </xacro:macro>
 
+          <!--moteur1 avant à gauche , tourne dans le sens trigo-->
   <xacro:rotor suffix="FL" x="0.12" y="0.12" prop_color="red" motor_num="0" direction="ccw"/>
+          <!--moteur2 avant à droite , tourne dans le sens inverse trigo-->
   <xacro:rotor suffix="FR" x="0.12" y="-0.12" prop_color="red" motor_num="1" direction="cw"/>
+          <!--moteur3 dérrièere à gauche , tourne dans le sens trigo-->
   <xacro:rotor suffix="BL" x="-0.12" y="0.12" prop_color="black" motor_num="2" direction="cw"/>
+          <!--moteur4 derrière à droite , tourne dans le sens inverse trigo-->
   <xacro:rotor suffix="BR" x="-0.12" y="-0.12" prop_color="black" motor_num="3" direction="ccw"/>
 
 </robot>

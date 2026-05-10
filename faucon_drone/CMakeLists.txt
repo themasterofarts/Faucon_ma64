@@ -13,9 +13,18 @@ find_package(rclcpp REQUIRED)
 # find_package(<dependency> REQUIRED)
 
 install(
-  DIRECTORY  description_drone  launch worlds config
+  DIRECTORY  description_drone  launch worlds config scripts
   DESTINATION share/${PROJECT_NAME}
 )
+
+
+# Install Python scripts ###
+install(PROGRAMS
+  scripts/controller_pid.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+
 
 
 if(BUILD_TESTING)
