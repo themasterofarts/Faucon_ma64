@@ -1,0 +1,74 @@
+{
+  "name": "Faucon — ROS2 Jazzy Dev",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "args": {
+      "USERNAME": "vscode",
+      "USER_UID": "1000",
+      "USER_GID": "1000"
+    }
+  },
+
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+
+  // -- Network: host is required for ROS2 DDS discovery on Linux
+  "runArgs": [
+    "--network=host",
+    // Remove the line below if you don't need hardware access (USB, serial, GPIO)
+    "--privileged"
+  ],
+
+  "containerEnv": {
+    "DISPLAY": "${localEnv:DISPLAY}",
+    "WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+    "XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
+    "ROS_DOMAIN_ID": "0",
+    "LIBGL_ALWAYS_SOFTWARE": "0"
+  },
+
+  "mounts": [
+    // X11 socket — needed for Gazebo and RViz2
+    "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
+    // Persist colcon build cache between container restarts
+    "source=faucon-build-cache,target=/workspace/build,type=volume",
+    "source=faucon-install-cache,target=/workspace/install,type=volume"
+  ],
+
+  // Ports: rosbridge WebSocket | web_video_server | IHM HTTP
+  "forwardPorts": [9090, 8080, 3000],
+  "portsAttributes": {
+    "9090": { "label": "rosbridge WebSocket" },
+    "8080": { "label": "web_video_server" },
+    "3000": { "label": "IHM web interface" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.pylint",
+        "ms-iot.vscode-ros",
+        "redhat.vscode-xml",
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-json"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "python.analysis.extraPaths": ["/workspace/install"],
+        "editor.formatOnSave": true,
+        "cmake.configureOnOpen": false,
+        "ros.distro": "jazzy"
+      }
+    }
+  },
+
+  // Run after container creation: install any rosdep deps not in the image
+  "postCreateCommand": "sudo apt-get update && cd /workspace && rosdep install --from-paths . --ignore-src -y --rosdistro jazzy 2>/dev/null || true",
+
+  "remoteUser": "vscode"
+}

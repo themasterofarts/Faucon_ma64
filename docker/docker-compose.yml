@@ -1,0 +1,57 @@
+# Faucon production deployment profiles:
+#
+#   IHM only (real hardware, headless):
+#     docker compose up faucon-ihm
+#
+#   Full simulation (Gazebo + Nav2 + IHM):
+#     DISPLAY=:0 docker compose --profile sim up
+#
+# Build the image first:
+#   docker compose build
+
+services:
+  #  IHM + ROS bridge (headless, for real hardware deployment) 
+  faucon-ihm:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: umoja/faucon:latest
+    network_mode: host          
+    environment:
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+    ports:
+      - "9090:9090"             # rosbridge WebSocket
+      - "8080:8080"             # web_video_server
+      - "3000:3000"             # IHM web interface
+    command: ["ros2", "launch", "faucon_ihm", "ihm_launch.py"]
+    restart: unless-stopped
+
+  #  Full simulation stack (Gazebo + Nav2 + IHM) 
+  faucon-sim:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: umoja/faucon:latest
+    profiles: ["sim"]
+    network_mode: host
+    environment:
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - DISPLAY=${DISPLAY:-:0}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    # Uncomment for NVIDIA GPU acceleration
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    command: >
+      bash -c "
+        ros2 launch faucon_base_desc view.launch.py use_sim_time:=true use_mini:=false &
+        sleep 5 &&
+        ros2 launch faucon_navigation faucon_nav.launch.py use_sim_time:=true &
+        ros2 launch faucon_ihm ihm_launch.py
+      "
+    restart: "no"

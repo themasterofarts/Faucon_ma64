@@ -1,0 +1,26 @@
+# ROS2 build artifacts
+build/
+install/
+log/
+
+# Git history (large, not needed in image)
+.git/
+.github/
+
+# Editor / IDE
+.vscode/
+.devcontainer/
+
+# Python bytecode
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Node.js
+**/node_modules/
+
+# IHM build output — rebuilt fresh inside Docker
+faucon_ihm/ihm/dist/
+
+# Documentation
+docs/
