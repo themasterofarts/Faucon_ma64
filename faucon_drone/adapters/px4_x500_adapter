@@ -1,0 +1,337 @@
+#!/usr/bin/env python3
+"""
+px4_x500_adapter.py
+────────────────────
+Translates PX4 uORB topics (/fmu/*) into the Faucon stable drone interface
+(/faucon/drone/*) and vice-versa.
+
+Nothing above this node sees PX4-specific frames, message types, or NED axes.
+
+Frame convention
+  PX4  → NED   (North-East-Down), body: x=forward, y=right,  z=down
+  ROS  → ENU   (East-North-Up),   body: x=forward, y=left,   z=up
+
+Faucon interface published here
+  /faucon/drone/odom     nav_msgs/Odometry      ENU local frame, 50 Hz
+  /faucon/drone/gps      sensor_msgs/NavSatFix  from PX4 GPS, ~5 Hz
+  /faucon/drone/imu      sensor_msgs/Imu        ENU body frame, ~250 Hz
+  /faucon/drone/state    std_msgs/String        DISARMED | ARMED | OFFBOARD | …
+
+Faucon interface consumed here
+  /faucon/drone/cmd_vel  geometry_msgs/Twist    body-ENU velocity (forward/left/up)
+  /faucon/drone/arm      std_msgs/Bool          True=arm+offboard, False=disarm
+"""
+
+import math
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+
+from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Imu, NavSatFix
+from std_msgs.msg import Bool, String
+
+from px4_msgs.msg import (
+    OffboardControlMode,
+    TrajectorySetpoint,
+    VehicleCommand,
+    VehicleLocalPosition,
+    SensorGps,
+    SensorCombined,
+    VehicleAttitude,
+    VehicleStatus,
+)
+
+# PX4 uORB topics bridged over XRCE-DDS require BEST_EFFORT + TRANSIENT_LOCAL
+_PX4_QOS = QoSProfile(
+    reliability=ReliabilityPolicy.BEST_EFFORT,
+    durability=DurabilityPolicy.TRANSIENT_LOCAL,
+    history=HistoryPolicy.KEEP_LAST,
+    depth=1,
+)
+
+_NAV_STATE_NAMES = {
+    0:  "MANUAL",
+    2:  "ALTCTL",
+    3:  "POSCTL",
+    4:  "AUTO_MISSION",
+    5:  "AUTO_LOITER",
+    6:  "AUTO_RTL",
+    14: "OFFBOARD",
+    17: "AUTO_TAKEOFF",
+    18: "AUTO_LAND",
+}
+
+
+class PX4X500Adapter(Node):
+    def __init__(self):
+        super().__init__("px4_x500_adapter")
+
+        # Cached state (updated by PX4 callbacks)
+        self._heading_ned = 0.0   # radians from North, clockwise
+        self._armed = False
+        self._q = (1.0, 0.0, 0.0, 0.0)   # (w, x, y, z) NED attitude quaternion
+        self._cmd = Twist()
+        self._last_cmd_time = None
+
+        self.declare_parameter("cmd_timeout", 0.5)
+        self.declare_parameter("max_velocity_xy", 2.0)
+        self.declare_parameter("max_velocity_z", 1.0)
+        self.declare_parameter("max_yaw_rate", 1.0)
+        self.declare_parameter("force_arm", False)
+
+        self._cmd_timeout = float(self.get_parameter("cmd_timeout").value)
+        self._max_velocity_xy = float(self.get_parameter("max_velocity_xy").value)
+        self._max_velocity_z = float(self.get_parameter("max_velocity_z").value)
+        self._max_yaw_rate = float(self.get_parameter("max_yaw_rate").value)
+        self._force_arm = bool(self.get_parameter("force_arm").value)
+
+        # ── PX4 subscribers ──────────────────────────────────────────────
+        self.create_subscription(
+            VehicleLocalPosition, "/fmu/out/vehicle_local_position_v1",
+            self._local_pos_cb, _PX4_QOS)
+        self.create_subscription(
+            SensorGps, "/fmu/out/vehicle_gps_position",
+            self._gps_cb, _PX4_QOS)
+        self.create_subscription(
+            SensorCombined, "/fmu/out/sensor_combined",
+            self._imu_cb, _PX4_QOS)
+        self.create_subscription(
+            VehicleAttitude, "/fmu/out/vehicle_attitude",
+            self._attitude_cb, _PX4_QOS)
+        self.create_subscription(
+            VehicleStatus, "/fmu/out/vehicle_status_v1",
+            self._status_cb, _PX4_QOS)
+
+        # ── Faucon publishers ─────────────────────────────────────────────
+        self._pub_odom  = self.create_publisher(Odometry,   "/faucon/drone/odom",  10)
+        self._pub_gps   = self.create_publisher(NavSatFix,  "/faucon/drone/gps",   10)
+        self._pub_imu   = self.create_publisher(Imu,        "/faucon/drone/imu",   10)
+        self._pub_state = self.create_publisher(String,     "/faucon/drone/state", 10)
+
+        # ── PX4 publishers ────────────────────────────────────────────────
+        self._pub_offboard = self.create_publisher(
+            OffboardControlMode, "/fmu/in/offboard_control_mode", _PX4_QOS)
+        self._pub_setpoint = self.create_publisher(
+            TrajectorySetpoint,  "/fmu/in/trajectory_setpoint",  _PX4_QOS)
+        self._pub_vcmd = self.create_publisher(
+            VehicleCommand,      "/fmu/in/vehicle_command",       _PX4_QOS)
+
+        # ── Faucon subscribers ────────────────────────────────────────────
+        self.create_subscription(Twist, "/faucon/drone/cmd_vel", self._cmd_vel_cb, 10)
+        self.create_subscription(Bool,  "/faucon/drone/arm",     self._arm_cb,     10)
+
+        # Offboard keepalive + velocity setpoint loop at 20 Hz
+        self.create_timer(1.0 / 20.0, self._control_loop)
+
+        self.get_logger().info("PX4 X500 adapter ready — /faucon/drone/* interface active")
+
+    # ── Frame conversion helpers ──────────────────────────────────────────
+
+    @staticmethod
+    def _local_ned_to_enu(x, y, z):
+        """Local-NED position or velocity → local-ENU."""
+        return y, x, -z
+
+    @staticmethod
+    def _body_ned_to_enu(x, y, z):
+        """Body-NED vector (accel, gyro) → body-ENU."""
+        return x, -y, -z
+
+    @staticmethod
+    def _ned_quat_to_enu(w, x, y, z):
+        """Body-NED attitude quaternion → body-ENU (standard px4→ros formula)."""
+        return w, y, x, -z
+
+    # ── PX4 callbacks ────────────────────────────────────────────────────
+
+    def _local_pos_cb(self, msg: VehicleLocalPosition):
+        self._heading_ned = float(msg.heading)
+
+        px, py, pz = self._local_ned_to_enu(msg.x, msg.y, msg.z)
+        vx, vy, vz = self._local_ned_to_enu(msg.vx, msg.vy, msg.vz)
+
+        odom = Odometry()
+        odom.header.stamp        = self.get_clock().now().to_msg()
+        odom.header.frame_id     = "odom"
+        odom.child_frame_id      = "drone_base_link"
+        odom.pose.pose.position.x = float(px)
+        odom.pose.pose.position.y = float(py)
+        odom.pose.pose.position.z = float(pz)
+        # Include current attitude in the odometry pose
+        qw, qx, qy, qz = self._ned_quat_to_enu(*self._q)
+        odom.pose.pose.orientation.w = qw
+        odom.pose.pose.orientation.x = qx
+        odom.pose.pose.orientation.y = qy
+        odom.pose.pose.orientation.z = qz
+        odom.twist.twist.linear.x    = float(vx)
+        odom.twist.twist.linear.y    = float(vy)
+        odom.twist.twist.linear.z    = float(vz)
+        self._pub_odom.publish(odom)
+
+    def _gps_cb(self, msg: SensorGps):
+        fix = NavSatFix()
+        fix.header.stamp      = self.get_clock().now().to_msg()
+        fix.header.frame_id   = "drone_gnss_frame"
+        fix.latitude          = msg.latitude_deg
+        fix.longitude         = msg.longitude_deg
+        fix.altitude          = msg.altitude_msl_m
+        fix.status.status     = 0 if msg.fix_type >= 3 else -1
+        fix.position_covariance_type = 0
+        self._pub_gps.publish(fix)
+
+    def _attitude_cb(self, msg: VehicleAttitude):
+        self._q = (float(msg.q[0]), float(msg.q[1]),
+                   float(msg.q[2]), float(msg.q[3]))
+
+    def _imu_cb(self, msg: SensorCombined):
+        ax, ay, az = self._body_ned_to_enu(
+            msg.accelerometer_m_s2[0],
+            msg.accelerometer_m_s2[1],
+            msg.accelerometer_m_s2[2],
+        )
+        gx, gy, gz = self._body_ned_to_enu(
+            msg.gyro_rad[0], msg.gyro_rad[1], msg.gyro_rad[2]
+        )
+        qw, qx, qy, qz = self._ned_quat_to_enu(*self._q)
+
+        imu = Imu()
+        imu.header.stamp             = self.get_clock().now().to_msg()
+        imu.header.frame_id          = "drone_imu_link"
+        imu.orientation.w            = qw
+        imu.orientation.x            = qx
+        imu.orientation.y            = qy
+        imu.orientation.z            = qz
+        imu.angular_velocity.x       = float(gx)
+        imu.angular_velocity.y       = float(gy)
+        imu.angular_velocity.z       = float(gz)
+        imu.linear_acceleration.x    = float(ax)
+        imu.linear_acceleration.y    = float(ay)
+        imu.linear_acceleration.z    = float(az)
+        self._pub_imu.publish(imu)
+
+    def _status_cb(self, msg: VehicleStatus):
+        self._armed = (msg.arming_state == 2)   # ARMING_STATE_ARMED = 2
+        if not self._armed:
+            name = "DISARMED"
+        else:
+            name = _NAV_STATE_NAMES.get(msg.nav_state, f"NAV_{msg.nav_state}")
+        state = String()
+        state.data = name
+        self._pub_state.publish(state)
+
+    # ── Faucon callbacks ──────────────────────────────────────────────────
+
+    def _cmd_vel_cb(self, msg: Twist):
+        self._cmd = msg
+        self._last_cmd_time = self.get_clock().now()
+
+    def _arm_cb(self, msg: Bool):
+        if msg.data:
+            if self._last_cmd_time is None:
+                self.get_logger().warn(
+                    "Arm request ignored: no /faucon/drone/cmd_vel received yet."
+                )
+                return
+            if self._command_is_stale():
+                self.get_logger().warn(
+                    "Arm request ignored: latest /faucon/drone/cmd_vel is stale."
+                )
+                return
+            arm_params = {"param1": 1.0}
+            if self._force_arm:
+                arm_params["param2"] = 21196.0
+            self._send_vehicle_command(
+                VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM,
+                **arm_params)
+            # Engage offboard mode immediately after arm
+            self._send_vehicle_command(
+                VehicleCommand.VEHICLE_CMD_DO_SET_MODE,
+                param1=1.0, param2=6.0)
+        else:
+            self._send_vehicle_command(
+                VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM,
+                param1=0.0)
+
+    def _send_vehicle_command(self, command, **params):
+        cmd = VehicleCommand()
+        cmd.command          = command
+        cmd.param1           = float(params.get("param1", 0.0))
+        cmd.param2           = float(params.get("param2", 0.0))
+        cmd.target_system    = 1
+        cmd.target_component = 1
+        cmd.source_system    = 1
+        cmd.source_component = 1
+        cmd.from_external    = True
+        cmd.timestamp        = int(self.get_clock().now().nanoseconds / 1000)
+        self._pub_vcmd.publish(cmd)
+
+    # ── Control loop (20 Hz) ──────────────────────────────────────────────
+
+    @staticmethod
+    def _clamp(value, limit):
+        return max(-limit, min(limit, float(value)))
+
+    def _command_is_stale(self):
+        if self._last_cmd_time is None:
+            return True
+        age = (self.get_clock().now() - self._last_cmd_time).nanoseconds * 1e-9
+        return age > self._cmd_timeout
+
+    def _control_loop(self):
+        now_us = int(self.get_clock().now().nanoseconds / 1000)
+
+        # Offboard keepalive — PX4 drops offboard mode if this stops at >2 Hz
+        ocm = OffboardControlMode()
+        ocm.timestamp    = now_us
+        ocm.velocity     = True
+        ocm.position     = False
+        ocm.acceleration = False
+        ocm.attitude     = False
+        ocm.body_rate    = False
+        self._pub_offboard.publish(ocm)
+
+        # cmd_vel (body ENU) → TrajectorySetpoint velocity (local NED)
+        if self._command_is_stale():
+            vx_b = 0.0
+            vy_b = 0.0
+            vz_b = 0.0
+            wz_b = 0.0
+        else:
+            vx_b = self._clamp(self._cmd.linear.x, self._max_velocity_xy)   # forward
+            vy_b = self._clamp(self._cmd.linear.y, self._max_velocity_xy)   # left
+            vz_b = self._clamp(self._cmd.linear.z, self._max_velocity_z)    # up
+            wz_b = self._clamp(self._cmd.angular.z, self._max_yaw_rate)     # yaw rate CCW+
+
+        # Step 1: body ENU → local ENU  (rotate by current heading in ENU)
+        yaw_enu  = math.pi / 2.0 - self._heading_ned
+        cos_y    = math.cos(yaw_enu)
+        sin_y    = math.sin(yaw_enu)
+        vx_local = cos_y * vx_b - sin_y * vy_b   # East component
+        vy_local = sin_y * vx_b + cos_y * vy_b   # North component
+
+        # Step 2: local ENU → local NED
+        # ENU(East, North, Up) → NED(North, East, Down)
+        vx_ned =  vy_local
+        vy_ned =  vx_local
+        vz_ned = -vz_b
+        yawspeed_ned = -wz_b   # CW positive in NED
+
+        sp = TrajectorySetpoint()
+        sp.timestamp  = now_us
+        sp.position   = [float("nan"), float("nan"), float("nan")]
+        sp.velocity   = [float(vx_ned), float(vy_ned), float(vz_ned)]
+        sp.yaw        = float("nan")
+        sp.yawspeed   = float(yawspeed_ned)
+        self._pub_setpoint.publish(sp)
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    rclpy.spin(PX4X500Adapter())
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

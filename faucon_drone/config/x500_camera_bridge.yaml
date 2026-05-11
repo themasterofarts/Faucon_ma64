@@ -1,0 +1,10 @@
+# Gazebo X500 camera bridge.
+#
+# The Faucon base launch loads generated.world, whose internal SDF world name is
+# "virtual_maize_field". Gazebo services and topics use the internal world name.
+
+- ros_topic_name: "/faucon/drone/camera/image"
+  gz_topic_name: "/world/virtual_maize_field/model/x500_mono_cam_0/link/camera_link/sensor/camera/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS

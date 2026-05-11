@@ -1,13 +1,54 @@
 <?xml version="1.0"?>
-<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>faucon_drone</name>
-  <version>0.0.0</version>
-  <description>PX4 drone integration and simulation bridge for the Faucon agricultural robot platform</description>
+  <version>0.2.0</version>
+  <description>
+    Quadrotor drone integration for the Faucon autonomy stack.
+
+    Provides:
+      - PX4 SITL + X500 co-simulation with the UGV in the same Gazebo world
+      - PX4X500Adapter: translates /fmu/* (PX4) ↔ /faucon/drone/* (Faucon interface)
+      - Gazebo bridge for camera image
+      - Lightweight velocity-controller fallback (no PX4 required)
+
+    Faucon interface topics:
+      /faucon/drone/odom          nav_msgs/Odometry
+      /faucon/drone/gps           sensor_msgs/NavSatFix
+      /faucon/drone/imu           sensor_msgs/Imu
+      /faucon/drone/state         std_msgs/String
+      /faucon/drone/cmd_vel       geometry_msgs/Twist  (input)
+      /faucon/drone/arm           std_msgs/Bool        (input)
+      /faucon/drone/camera/image  sensor_msgs/Image
+
+    px4_msgs is part of this workspace — no external sourcing required.
+</description>
   <maintainer email="kleinfy51@gmail.com">klein</maintainer>
-  <license>Apache-2.0</license>
+  <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Description processing -->
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+
+  <!-- Gazebo Harmonic / ros_gz integration -->
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>ros_gz_image</exec_depend>
+
+  <!-- PX4X500Adapter node -->
+  <exec_depend>px4_msgs</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <!-- Velocity controller fallback (sim mode) -->
+  <exec_depend>actuator_msgs</exec_depend>
+
+  <!-- UGV simulation (drone_sim.launch.py includes view.launch.py) -->
+  <exec_depend>faucon_base_desc</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

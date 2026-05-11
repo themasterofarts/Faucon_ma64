@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--
+    IMU sensor — attitude, angular rate, linear acceleration.
+
+    Gazebo topic: drone/imu  (gz.msgs.IMU)
+    ROS topic:    /faucon/drone/imu (sensor_msgs/Imu)
+
+    Noise model: same order of magnitude as the UGV IMU.
+    For a real drone, these values should match the actual hardware datasheet.
+  -->
+
+  <joint name="drone_imu_joint" type="fixed">
+    <parent link="drone_base_link"/>
+    <child  link="drone_imu_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="drone_imu_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.015 0.015 0.008"/></geometry>
+      <material name="imu_mat"><color rgba="0.0 0.8 0.0 1.0"/></material>
+    </visual>
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="1e-7" ixy="0" ixz="0" iyy="1e-7" iyz="0" izz="1e-7"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="drone_imu_link">
+    <sensor name="drone_imu" type="imu">
+      <always_on>true</always_on>
+      <update_rate>200</update_rate>
+      <topic>drone/imu</topic>
+      <gz_frame_id>drone_imu_link</gz_frame_id>
+      <imu>
+        <orientation_enabled>true</orientation_enabled>
+        <angular_velocity>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>2e-4</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>2e-4</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>2e-4</stddev></noise></z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>1.7e-2</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>1.7e-2</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>1.7e-2</stddev></noise></z>
+        </linear_acceleration>
+      </imu>
+    </sensor>
+  </gazebo>
+
+</robot>

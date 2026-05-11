@@ -2,9 +2,10 @@
 launch/ihm_launch.py
 ────────────────────
 Lance en une seule commande :
-  1. rosbridge_websocket  (port 9090)
-  2. web_video_server     (port 8080)
-  3. ihm_server           (serveur HTTP Python pour l'IHM React, port 3000)
+  1. port_cleanup          (libère 9090/8080/3000 si occupés — transition propre devcontainer/local)
+  2. rosbridge_websocket   (port 9090)
+  3. web_video_server      (port 8080)
+  4. ihm_server            (serveur HTTP Python pour l'IHM React, port 3000)
 
 Usage :
   ros2 launch faucon_ihm ihm_launch.py
@@ -13,11 +14,10 @@ Usage :
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, LogInfo, RegisterEventHandler
-from launch.event_handlers import OnProcessStart
+from launch.event_handlers import OnProcessExit
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-import os
 
 
 def generate_launch_description():
@@ -44,6 +44,14 @@ def generate_launch_description():
     ihm_port       = LaunchConfiguration("ihm_port")
     ihm_host       = LaunchConfiguration("ihm_host")
 
+    # ── Libère les ports avant de démarrer (transition devcontainer/local propre) ──
+    port_cleanup = ExecuteProcess(
+        cmd=["bash", "-c",
+             "fuser -k 9090/tcp 8080/tcp 3000/tcp 2>/dev/null; sleep 0.5; true"],
+        name="port_cleanup",
+        output="screen",
+    )
+
     rosbridge_node = Node(
         package="rosbridge_server",
         executable="rosbridge_websocket",
@@ -51,7 +59,7 @@ def generate_launch_description():
         output="screen",
         parameters=[{
             "port": rosbridge_port,
-            "address": "",         
+            "address": "",
             "retry_startup_delay": 5.0,
             "fragment_timeout": 600,
             "delay_between_messages": 0.0,
@@ -101,13 +109,19 @@ def generate_launch_description():
         "╚══════════════════════════════════════════════╝\n",
     ])
 
+    # Démarre les nœuds uniquement après que port_cleanup a terminé
+    start_nodes = RegisterEventHandler(
+        OnProcessExit(
+            target_action=port_cleanup,
+            on_exit=[log_start, rosbridge_node, video_server_node, ihm_server],
+        )
+    )
+
     return LaunchDescription([
         rosbridge_port_arg,
         video_port_arg,
         ihm_port_arg,
         ihm_host_arg,
-        log_start,
-        rosbridge_node,
-        video_server_node,
-        ihm_server,
+        port_cleanup,
+        start_nodes,
     ])

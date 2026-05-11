@@ -1,0 +1,19 @@
+#!/bin/sh
+# Faucon co-simulation overrides for x500_mono_cam in virtual_maize_field
+#
+# virtual_maize_field does not load the Gazebo Magnetometer or AirPressure
+# system plugins, so those GZ sensor topics are never published.
+#
+# This .post script runs AFTER px4-rc.gzsim, so SENS_EN_MAGSIM cannot be
+# used (px4-rc.gzsim already checked it).  Instead, start the modules directly.
+
+# Magnetometer: software simulator derives synthetic field from GPS position.
+# EKF2 will pick up sensor_mag publications dynamically and align yaw.
+sensor_mag_sim start
+
+# Barometer: not available in world — disable health check and EKF2 fusion.
+param set SYS_HAS_BARO 0
+param set EKF2_BARO_CTRL 0
+
+# No GCS in autonomous simulation — suppress failsafe.
+param set GCS_CONN_LOST_ACT 0

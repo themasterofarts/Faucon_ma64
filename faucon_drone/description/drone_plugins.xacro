@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--
+    Gazebo Harmonic simulation plugins for the Faucon drone.
+
+    Plugin chain:
+      1. MulticopterMotorModel (x4)  — rotor physics (thrust + drag)
+      2. MulticopterVelocityControl  — Twist cmd_vel → motor speeds
+      3. OdometryPublisher           — world-frame pose + velocity
+
+    Motor parameters taken from the Gazebo X3 reference quadrotor.
+    Adjust motorConstant / momentConstant if hardware specs differ.
+
+    robotNamespace="drone" scopes all Gz topics under /drone/:
+      /drone/cmd_vel          (ROS_TO_GZ, Twist)
+      /drone/enable           (ROS_TO_GZ, Bool)
+      /drone/command/motor_speed  (internal, MotorsSpeed)
+      /drone/odom             (GZ_TO_ROS, Odometry)
+  -->
+
+  <!-- ── Motor model macro ───────────────────────────────────────────── -->
+  <xacro:macro name="motor_model"
+               params="motor_id joint_name link_name turning_direction">
+    <gazebo>
+      <plugin filename="gz-sim-multicopter-motor-model-system"
+              name="gz::sim::systems::MulticopterMotorModel">
+        <robotNamespace>drone</robotNamespace>
+        <jointName>${joint_name}</jointName>
+        <linkName>${link_name}</linkName>
+        <turningDirection>${turning_direction}</turningDirection>
+        <timeConstantUp>0.0125</timeConstantUp>
+        <timeConstantDown>0.025</timeConstantDown>
+        <maxRotVelocity>800.0</maxRotVelocity>
+        <motorConstant>8.54858e-06</motorConstant>
+        <momentConstant>0.016</momentConstant>
+        <commandSubTopic>command/motor_speed</commandSubTopic>
+        <actuator_number>${motor_id}</actuator_number>
+        <rotorDragCoefficient>8.06428e-05</rotorDragCoefficient>
+        <rollingMomentCoefficient>1e-06</rollingMomentCoefficient>
+        <motorSpeedPubTopic>motor_speed/${motor_id}</motorSpeedPubTopic>
+        <rotorVelocitySlowdownSim>10</rotorVelocitySlowdownSim>
+        <motorType>velocity</motorType>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+
+  <!--
+    X-frame layout:
+      0 (CCW, front-left)   1 (CW, front-right)
+      2 (CW, back-left)     3 (CCW, back-right)
+  -->
+  <xacro:motor_model motor_id="0"
+    joint_name="drone_rotor_0_joint" link_name="drone_rotor_0"
+    turning_direction="ccw"/>
+  <xacro:motor_model motor_id="1"
+    joint_name="drone_rotor_1_joint" link_name="drone_rotor_1"
+    turning_direction="cw"/>
+  <xacro:motor_model motor_id="2"
+    joint_name="drone_rotor_2_joint" link_name="drone_rotor_2"
+    turning_direction="cw"/>
+  <xacro:motor_model motor_id="3"
+    joint_name="drone_rotor_3_joint" link_name="drone_rotor_3"
+    turning_direction="ccw"/>
+
+  <!--
+    NOTE: gz-sim-multicopter-control-system is NOT included here.
+    It does not create its motor speed publisher when a model is spawned
+    dynamically into a running gz-sim8 session (Configure runs before the
+    ECM entity graph is fully built for the new model).
+
+    Velocity control is handled by the drone_velocity_controller ROS2 node
+    (scripts/drone_velocity_controller.py), which publishes actuator_msgs/Actuators
+    to /drone/command/motor_speed, bridged to gz.msgs.Actuators by ros_gz_bridge.
+  -->
+
+  <!-- ── Odometry publisher (world → drone_base_link pose) ──────────── -->
+  <gazebo>
+    <plugin filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+      <odom_frame>world</odom_frame>
+      <robot_base_frame>drone_base_link</robot_base_frame>
+      <odom_publish_frequency>50</odom_publish_frequency>
+      <odom_topic>drone/odom</odom_topic>
+      <dimensions>3</dimensions>
+      <!-- Publish world→drone_base_link transform on the Gz tf topic -->
+      <tf_topic>drone/tf</tf_topic>
+    </plugin>
+  </gazebo>
+
+</robot>
