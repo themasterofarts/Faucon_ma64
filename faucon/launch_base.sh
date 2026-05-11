@@ -12,7 +12,19 @@ cd "${WS_DIR}"
 
 echo "Workspace : ${WS_DIR}"
 
-use_mini=false 
+# Kill any leftover Gazebo instance to ensure clean spawn
+pkill -f gz_sim 2>/dev/null || true
+pkill -f ruby.*gz 2>/dev/null || true
+sleep 1
+
+# Set CPU governor to performance for simulation (non-blocking, requires sudo)
+if command -v cpupower &>/dev/null; then
+    sudo -n cpupower frequency-set -g performance 2>/dev/null && echo "CPU governor → performance" || echo "CPU governor : sudo requis (ignoré)"
+else
+    echo performance | sudo -n tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null 2>&1 && echo "CPU governor → performance" || echo "CPU governor : sudo requis (ignoré)"
+fi
+
+use_mini=false
 
 # Parsing des arguments
 for arg in "$@"; do

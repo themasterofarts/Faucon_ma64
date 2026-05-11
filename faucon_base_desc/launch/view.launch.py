@@ -2,7 +2,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 import os, xacro
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, OpaqueFunction
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, OpaqueFunction, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration, PythonExpression
 from launch.conditions import IfCondition, UnlessCondition
@@ -34,7 +34,7 @@ def launch_setup(context, *args, **kwargs):
     else:
         robot_desc = xacro.process_file(xacro_file).toxml()
         spawn_z = "1.0"
-        spawn_y = "-2.83"
+        spawn_y = "-5.326" #-2.83
         use_ros2_control_value = LaunchConfiguration("use_ros2_control").perform(context)
 
     twist_mux_params = os.path.join(
@@ -67,7 +67,7 @@ def launch_setup(context, *args, **kwargs):
         ),
         launch_arguments={
             "world_path": os.path.join(pkg_path, "worlds", "virtual_maize_field"),
-            "world_name": "generated.world",
+            "world_name": "straight_rows_debris.world",  #straight_rows_debris  generated mon_champ
         }.items(),
     )
 
@@ -136,30 +136,25 @@ def launch_setup(context, *args, **kwargs):
     )
 
     
-    spawn_robot = Node(
-        package="ros_gz_sim",
-        executable="create",
-        output="screen",
-        arguments=[
-            "-topic",
-            "/robot_description",
-            "-name",
-            "bot",
-            "-allow_renaming",
-            "true",
-            "-x",
-            "-2.28",
-            "-y",
-            spawn_y,
-            "-z",
-            spawn_z,
-            "-R",
-            "-0.01",
-            "-P",
-            "-0.03",
-            "-Y",
-            "1.52",
-        ],
+    spawn_robot = TimerAction(
+        period=15.0,
+        actions=[Node(
+            package="ros_gz_sim",
+            executable="create",
+            output="screen",
+            arguments=[
+                "-topic", "/robot_description",
+                "-name", "bot",
+                "-world", "virtual_maize_field",
+                "-allow_renaming", "false",
+                "-x", "-3.81",  #-2.28
+                "-y", spawn_y,
+                "-z", spawn_z,
+                "-R", "-0.01",
+                "-P", "-0.03",
+                "-Y", "1.52",
+            ],
+        )]
     )
 
    
@@ -226,13 +221,13 @@ def launch_setup(context, *args, **kwargs):
    
     return [
         environment,
+        launch_world,
         robot_state_publisher,
         joint_state_publisher_node,
         rviz,
         spawn_robot,
         gz_bridge,
         control_4ws,
-        launch_world,
         ros_gz_image_bridge,
         steer_controller,
         velocity_controller,

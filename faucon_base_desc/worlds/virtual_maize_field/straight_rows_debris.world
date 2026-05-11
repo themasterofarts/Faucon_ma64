@@ -1,0 +1,5354 @@
+<?xml version="1.0"?>
+<!-- Seed: 971 -->
+<sdf version="1.9">
+  <world name="virtual_maize_field">
+
+    <!-- Change max step size to increase the simulation speed but decrease the accuracy. -->
+    <physics name="10ms" type="ignored">
+      <max_step_size>0.01</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin
+      filename="gz-sim-physics-system"
+      name="gz::sim::systems::Physics">
+    </plugin>
+    <plugin
+      filename="gz-sim-user-commands-system"
+      name="gz::sim::systems::UserCommands">
+    </plugin>
+    <plugin
+      filename="gz-sim-scene-broadcaster-system"
+      name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+
+    <plugin
+      filename="gz-sim-sensors-system"
+      name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <plugin
+    filename="gz-sim-imu-system"
+    name="gz::sim::systems::Imu"/>
+
+    <!-- Processes the NavSat sensor -->
+    <plugin
+      filename="gz-sim-navsat-system"
+      name="gz::sim::systems::NavSat">
+    </plugin>
+
+    <!-- Processes the Magnetometer sensor (required by PX4 x500 for EKF2 yaw) -->
+    <plugin
+      filename="gz-sim-magnetometer-system"
+      name="gz::sim::systems::Magnetometer">
+    </plugin>
+
+    <!-- Processes the AirPressure sensor (required by PX4 x500 for barometer) -->
+    <plugin
+      filename="gz-sim-air-pressure-system"
+      name="gz::sim::systems::AirPressure">
+    </plugin>
+
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>43.9</latitude_deg>
+      <longitude_deg>3.2</longitude_deg>
+      <elevation>0</elevation>
+      <heading_deg>0</heading_deg>
+    </spherical_coordinates>
+
+    <light type="directional" name="sun">
+      <!-- Disable shadows to avoid flickering on non-gpu pc, see: 
+           https://github.com/gazebosim/gz-sim/issues/2267 -->
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <scene>
+      <sky>
+        <clouds>
+          <speed>12</speed>
+        </clouds>
+      </sky>
+      <grid>false</grid>
+    </scene>
+
+    <model name="heightmap">
+      <static>true</static>
+      <link name="link">
+        <visual name="ground_plane">
+          <geometry>
+            <heightmap>
+              <use_terrain_paging>false</use_terrain_paging>
+              <texture>
+                <diffuse>model://materials/textures/grass_color.jpg</diffuse>
+                <normal>model://materials/textures/grass_normal.jpg</normal>
+                <size>4</size>
+              </texture>
+              <texture>
+                <diffuse>model://materials/textures/dirt_diffusespecular.png</diffuse>
+                <normal>model://materials/textures/flat_normal.png</normal>
+                <size>1</size>
+              </texture>
+              <!-- <texture>
+                <diffuse>model://materials/textures/grass_color.jpg</diffuse>
+                <normal>model://materials/textures/grass_normal.jpg</normal>
+                <size>4</size>
+              </texture> -->
+              <!-- Without this unused 3. texture the blend between the first 2 doesn"t work -->
+              <texture>
+                <diffuse>model://materials/textures/fungus_diffusespecular.png</diffuse>
+                <normal>model://materials/textures/flat_normal.png</normal>
+                <size>1</size>
+              </texture>
+              <blend>
+                <min_height>0.2</min_height>
+                <fade_dist>0.05</fade_dist>
+              </blend>
+              <!-- <blend>
+                <min_height>0.30000000000000004</min_height>
+                <fade_dist>0.05</fade_dist>
+              </blend> -->
+              <!-- Without this unused 3. texture the blend between the first 2 doesn"t work -->
+              <blend>
+                <min_height>4</min_height>
+                <fade_dist>5</fade_dist>
+              </blend>
+              <uri>virtual_maize_field_heightmap.png</uri>
+              <size>27.080000000000002 27.080000000000002 0.4</size>
+              <pos>0 0 0</pos>
+            </heightmap>
+          </geometry>
+        </visual>
+        <collision name="collision">
+          <geometry>
+            <heightmap>
+              <uri>virtual_maize_field_heightmap.png</uri>
+              <size>27.080000000000002 27.080000000000002 0.4</size>
+              <pos>0 0 0</pos>
+            </heightmap>
+          </geometry>
+        </collision>
+      </link>
+    </model>
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8316007015680538 -5.01819857757745 0.33816836689129115 0.0 0.0 3.9336330606851595</pose>
+      <name>maize_02_0000</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8146510357744092 -4.842012219974009 0.3333679641398941 0.0 0.0 5.329619620236163</pose>
+      <name>maize_02_0001</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.842429355616679 -4.714145987727572 0.3292110387694768 0.0 0.0 0.8256448573224532</pose>
+      <name>maize_02_0002</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8239984466083934 -4.586495952894232 0.3307135336561682 0.0 0.0 2.7290801494489765</pose>
+      <name>maize_02_0003</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8371949078139944 -4.43573439877714 0.3296946110315404 0.0 0.0 6.266430388934298</pose>
+      <name>maize_02_0004</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8429472585748172 -4.276962798119856 0.31594261382804156 0.0 0.0 0.5225429107601378</pose>
+      <name>maize_02_0005</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8352765045993693 -4.105284421700658 0.31749795767720734 0.0 0.0 2.2607030259230756</pose>
+      <name>maize_02_0006</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8489587278122217 -3.9565960283673163 0.3211615468791946 0.0 0.0 2.323277356013116</pose>
+      <name>maize_02_0007</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8249142251791075 -3.828495311722898 0.32091603323097595 0.0 0.0 5.462013751814668</pose>
+      <name>maize_02_0008</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8216437390368094 -3.692330850423898 0.3180432484687204 0.0 0.0 4.470534950449909</pose>
+      <name>maize_02_0009</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8443787379357883 -3.525741725570608 0.320300857595726 0.0 0.0 4.204220422952895</pose>
+      <name>maize_02_0010</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.839676335743752 -3.3593866742976792 0.3273836606222332 0.0 0.0 2.086307254165021</pose>
+      <name>maize_02_0011</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.817674853746664 -3.246139950685651 0.3245707060393012 0.0 0.0 0.7682582161448053</pose>
+      <name>maize_02_0012</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8450495414241463 -3.054442077354227 0.3277382341083208 0.0 0.0 2.2029666760627458</pose>
+      <name>maize_02_0013</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.832985132026354 -2.854712151993485 0.3279404428623591 0.0 0.0 2.282033613683476</pose>
+      <name>maize_02_0014</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8466241174290783 -2.719524053857093 0.3296770842658914 0.0 0.0 0.21656794770446844</pose>
+      <name>maize_02_0015</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.837687427477056 -2.6134788551308574 0.323677012984384 0.0 0.0 2.2496663741038287</pose>
+      <name>maize_02_0016</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8495591890392586 -2.4295756953979475 0.30718138549691765 0.0 0.0 2.506395759659554</pose>
+      <name>maize_02_0017</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.849247687637978 -2.273033513500288 0.31216326597569666 0.0 0.0 1.3510484417778383</pose>
+      <name>maize_02_0018</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8341285918044328 -2.1089389128475733 0.3024251060940162 0.0 0.0 3.5318995132375925</pose>
+      <name>maize_02_0019</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8351995278923776 -2.011041110740628 0.303095585634118 0.0 0.0 6.074877145621751</pose>
+      <name>maize_02_0020</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.828528006069626 -1.857526159755885 0.2874759807602859 0.0 0.0 0.23286104123702955</pose>
+      <name>maize_02_0021</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.825516825087397 -1.6673431475197504 0.2844066532010269 0.0 0.0 2.015343285981871</pose>
+      <name>maize_02_0022</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8411027619752134 -1.4909636062424498 0.28324803518698455 0.0 0.0 4.41683567774114</pose>
+      <name>maize_02_0023</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8208916845445646 -1.3333626901580815 0.2836766185008056 0.0 0.0 5.02497894694818</pose>
+      <name>maize_02_0024</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.816993719792926 -1.132686588702891 0.2879654553246635 0.0 0.0 3.4475965234834036</pose>
+      <name>maize_02_0025</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8315874161373498 -0.9991894650098634 0.2897893727514977 0.0 0.0 2.3107084656507606</pose>
+      <name>maize_02_0026</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.817906657162476 -0.8260169810199227 0.29174599338477447 0.0 0.0 2.0503937523640485</pose>
+      <name>maize_02_0027</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.823865255840602 -0.6384596918305259 0.29439887963726796 0.0 0.0 6.219961603865924</pose>
+      <name>maize_02_0028</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.81410312903867 -0.46472061985864643 0.293812446611574 0.0 0.0 4.2206358970314035</pose>
+      <name>maize_02_0029</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8175527497411514 -0.28228220821652483 0.293201214301557 0.0 0.0 3.580737415013792</pose>
+      <name>maize_02_0030</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8365030551408466 -0.1213392126450006 0.28866952740504753 0.0 0.0 0.9572920421661395</pose>
+      <name>maize_02_0031</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.847268082764153 0.022655560808919156 0.28809064219782426 0.0 0.0 5.287789901429815</pose>
+      <name>maize_02_0032</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.824823764917638 0.19076435906982378 0.289634064041316 0.0 0.0 5.370635785332777</pose>
+      <name>maize_02_0033</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8361228858700347 0.3455327109323698 0.29715587505851965 0.0 0.0 4.395380123637418</pose>
+      <name>maize_02_0034</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8226606762048934 0.48396037262741 0.30789310627103733 0.0 0.0 3.811308521438468</pose>
+      <name>maize_02_0035</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.843127785146764 0.5988182550553183 0.3137335600687511 0.0 0.0 2.1599274704499964</pose>
+      <name>maize_02_0036</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8372921559246507 0.7444276933232437 0.30930225252141236 0.0 0.0 5.376665708065513</pose>
+      <name>maize_02_0037</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8273480795731456 0.9208547965609379 0.30669307162286114 0.0 0.0 1.0415217827873364</pose>
+      <name>maize_02_0038</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.840320697331597 1.0869415143539096 0.3126781322922397 0.0 0.0 1.8705990491324103</pose>
+      <name>maize_02_0039</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8386168420365743 1.250546545022757 0.3105407531898455 0.0 0.0 2.9698906597780526</pose>
+      <name>maize_02_0040</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.81471768551078 1.426962463147754 0.313552365827112 0.0 0.0 2.411979461140707</pose>
+      <name>maize_02_0041</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8235369678938986 1.5636297722940093 0.30842748757216454 0.0 0.0 0.2979522615078966</pose>
+      <name>maize_02_0042</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.842071285669999 1.7411717541441223 0.2983281924039461 0.0 0.0 5.82566473313466</pose>
+      <name>maize_02_0043</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.834233627417992 1.9245594987050132 0.308200676780757 0.0 0.0 1.438284816618295</pose>
+      <name>maize_02_0044</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8467571277864234 2.080862929497767 0.30571585312111227 0.0 0.0 1.2593370022878936</pose>
+      <name>maize_02_0045</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8493289189687117 2.2561764413594836 0.30198581984525286 0.0 0.0 1.2324294091980927</pose>
+      <name>maize_02_0046</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.839642377568035 2.3842868633508316 0.30245727694589997 0.0 0.0 3.4059059403587515</pose>
+      <name>maize_02_0047</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8506830710032838 2.59519557613326 0.29680435344689193 0.0 0.0 5.685501959923213</pose>
+      <name>maize_02_0048</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.845070084049571 2.75802161472216 0.296151926027074 0.0 0.0 4.975058985483145</pose>
+      <name>maize_02_0049</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8366161863274115 2.8845227182649604 0.3001548563693279 0.0 0.0 1.6131008629346195</pose>
+      <name>maize_02_0050</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.824529685776401 3.0062252214724494 0.3003008691226388 0.0 0.0 0.4310735851941453</pose>
+      <name>maize_02_0051</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.841434542057456 3.1950525618139447 0.28508627475245624 0.0 0.0 3.721652888243572</pose>
+      <name>maize_02_0052</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8321504888301785 3.3593636378030687 0.27032916702024895 0.0 0.0 0.3526743055304205</pose>
+      <name>maize_02_0053</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8345606127638487 3.5483927197177727 0.2731189546415128 0.0 0.0 3.0470601541625313</pose>
+      <name>maize_02_0054</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8477862697491765 3.6734392746217135 0.2687049090854087 0.0 0.0 4.430078217388623</pose>
+      <name>maize_02_0055</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8279165255288343 3.80306973383427 0.2652562635830657 0.0 0.0 1.588749467776087</pose>
+      <name>maize_02_0056</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8500394076293385 3.960443337159075 0.26774694906793556 0.0 0.0 1.0753245790468864</pose>
+      <name>maize_02_0057</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.836732497329372 4.116103756153085 0.2746950654791558 0.0 0.0 4.350292915947911</pose>
+      <name>maize_02_0058</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8223743986643 4.260672677486897 0.27457530426545257 0.0 0.0 4.209900130693626</pose>
+      <name>maize_02_0059</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.8130705203955877 4.422285342546794 0.2713714150163859 0.0 0.0 5.986032250410882</pose>
+      <name>maize_02_0060</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.828769584160358 4.554293557977847 0.2853939915730494 0.0 0.0 3.100227369562043</pose>
+      <name>maize_02_0061</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.829003644949752 4.7549268710909915 0.29235432026513364 0.0 0.0 1.7244638035887343</pose>
+      <name>maize_02_0062</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-3.84422968441083 4.949455405028314 0.3015306297484906 0.0 0.0 6.193605713196131</pose>
+      <name>maize_02_0063</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.974749658007892 -4.9967713773170725 0.3385663933032519 0.0 0.0 5.271656071840758</pose>
+      <name>maize_02_0064</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9903310286479825 -4.820195977674779 0.3354415971900655 0.0 0.0 2.0222971704954227</pose>
+      <name>maize_02_0065</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9793465016702627 -4.652437940406138 0.3303614489830248 0.0 0.0 1.7533852006054456</pose>
+      <name>maize_02_0066</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.969091510143008 -4.509109588015697 0.3255247205303542 0.0 0.0 2.584772022549644</pose>
+      <name>maize_02_0067</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9671674344972385 -4.371904897549149 0.329356305514765 0.0 0.0 2.3352906222540293</pose>
+      <name>maize_02_0068</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.982163346560586 -4.2202169233602405 0.3382315327572415 0.0 0.0 4.660611995364601</pose>
+      <name>maize_02_0069</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.976224792213526 -4.0267279813762435 0.3329769752299826 0.0 0.0 5.393068018151837</pose>
+      <name>maize_02_0070</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9680446536571314 -3.9044750624730713 0.33317275436545657 0.0 0.0 4.578151288314251</pose>
+      <name>maize_02_0071</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.985173079509903 -3.742433176208823 0.341262965431224 0.0 0.0 4.767106075326474</pose>
+      <name>maize_02_0072</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9945844642489114 -3.607457924111646 0.33882706907608673 0.0 0.0 3.1184843525783266</pose>
+      <name>maize_02_0073</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.969911779376836 -3.437577597079374 0.3351598420340351 0.0 0.0 2.383288973218294</pose>
+      <name>maize_02_0074</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9855401750103545 -3.318195891822492 0.33819981598841414 0.0 0.0 2.9710578908106964</pose>
+      <name>maize_02_0075</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9828552292094836 -3.1724414608865783 0.3302956714561532 0.0 0.0 3.930714368605633</pose>
+      <name>maize_02_0076</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9798573621134508 -2.9847244528627783 0.337733123067245 0.0 0.0 2.0412428451125444</pose>
+      <name>maize_02_0077</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.981109042742912 -2.8145140122232943 0.3385281756116553 0.0 0.0 2.1396528187410797</pose>
+      <name>maize_02_0078</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.995169710609235 -2.662110099276892 0.3326059106498418 0.0 0.0 4.02647829668708</pose>
+      <name>maize_02_0079</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9714245039734095 -2.4786126072476047 0.3229267340569337 0.0 0.0 3.2350356523891426</pose>
+      <name>maize_02_0080</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9844743676025307 -2.30442528363659 0.32106863461772434 0.0 0.0 1.411267047227618</pose>
+      <name>maize_02_0081</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9992848718636824 -2.1356714645655615 0.31450316917007587 0.0 0.0 5.126064783329191</pose>
+      <name>maize_02_0082</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.976224110006624 -1.9212257312505656 0.30555732282419507 0.0 0.0 4.430050601679845</pose>
+      <name>maize_02_0083</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.985459592133106 -1.7563422042450338 0.30401140724275866 0.0 0.0 5.979342003027907</pose>
+      <name>maize_02_0084</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9985152826099357 -1.563224348869558 0.31225672701057217 0.0 0.0 2.2182264633210345</pose>
+      <name>maize_02_0085</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9899934284675136 -1.4027644429846977 0.29895168269780154 0.0 0.0 6.255408502241963</pose>
+      <name>maize_02_0086</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9992499345676324 -1.2547711590376966 0.30307143617062177 0.0 0.0 1.9947179356815006</pose>
+      <name>maize_02_0087</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.989582433657374 -1.1232120327205521 0.29920745589134146 0.0 0.0 0.5504676134683792</pose>
+      <name>maize_02_0088</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9941441019098964 -0.9806458890299852 0.3012602082043386 0.0 0.0 5.828197999732003</pose>
+      <name>maize_02_0089</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.962793162239675 -0.8201699169320498 0.3013570404882588 0.0 0.0 4.654847377672611</pose>
+      <name>maize_02_0090</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9958946948486864 -0.6543919450566169 0.2979190500364415 0.0 0.0 2.444528404193554</pose>
+      <name>maize_02_0091</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.99095990942785 -0.511517867798521 0.2970785220016784 0.0 0.0 0.8341020259780488</pose>
+      <name>maize_02_0092</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.98824328172386 -0.35449290686543256 0.2913641538248094 0.0 0.0 4.339469368162924</pose>
+      <name>maize_02_0093</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.998895866729829 -0.23167763716119574 0.29087343761973455 0.0 0.0 4.836716152374322</pose>
+      <name>maize_02_0094</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9771755352489855 -0.04938298751707528 0.292775738520653 0.0 0.0 0.7943384931967971</pose>
+      <name>maize_02_0095</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9949274512918245 0.07481958692420719 0.30653517338840386 0.0 0.0 3.236106999093206</pose>
+      <name>maize_02_0096</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9668268445370924 0.2235178263482722 0.3071086308768175 0.0 0.0 4.098612397125305</pose>
+      <name>maize_02_0097</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.970906499139405 0.3814736472407314 0.30910934077787466 0.0 0.0 6.195889444161145</pose>
+      <name>maize_02_0098</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.97958730072359 0.576894772540038 0.30276519449435846 0.0 0.0 0.45017364159726536</pose>
+      <name>maize_02_0099</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9732095587569383 0.7055496649018491 0.30749499021060905 0.0 0.0 5.200658238289372</pose>
+      <name>maize_02_0100</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.974860328658795 0.9135773101026508 0.290809735468824 0.0 0.0 4.7040257337614415</pose>
+      <name>maize_02_0101</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9673510970346046 1.0836527648918648 0.2863345695624883 0.0 0.0 0.841728302782016</pose>
+      <name>maize_02_0102</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9959002862679687 1.20178316621393 0.2833351598706635 0.0 0.0 0.18906134458947227</pose>
+      <name>maize_02_0103</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9690877555116857 1.405546603759897 0.2838387057439575 0.0 0.0 3.2343262716793912</pose>
+      <name>maize_02_0104</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.98867239060593 1.559972706321299 0.2900972596168741 0.0 0.0 2.6614601444088155</pose>
+      <name>maize_02_0105</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9764592670829555 1.6906491410960647 0.2871775491406459 0.0 0.0 4.476149832762195</pose>
+      <name>maize_02_0106</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.992908617178728 1.8712143284697613 0.28813109106761076 0.0 0.0 1.2462980011532399</pose>
+      <name>maize_02_0107</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.967011902847625 1.9925263447324792 0.2990742641543418 0.0 0.0 2.7954117647584478</pose>
+      <name>maize_02_0108</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9780641560311234 2.1385608033119925 0.2973756552164997 0.0 0.0 1.0133451673330935</pose>
+      <name>maize_02_0109</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.988246668388306 2.302599479130041 0.2979747146757514 0.0 0.0 5.572468879418974</pose>
+      <name>maize_02_0110</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9678067547627593 2.4526786315024416 0.2967167147186161 0.0 0.0 4.82014279941458</pose>
+      <name>maize_02_0111</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9808602144187946 2.6073226080607514 0.301148622452877 0.0 0.0 5.116338496511185</pose>
+      <name>maize_02_0112</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.973779765086365 2.7411898620328965 0.3033714094321749 0.0 0.0 1.8852753557408695</pose>
+      <name>maize_02_0113</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9964796347952363 2.9063473894807017 0.3041019607569635 0.0 0.0 0.2099943136098448</pose>
+      <name>maize_02_0114</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.98568914289086 3.102129655769692 0.3090321841685705 0.0 0.0 0.13748339457052572</pose>
+      <name>maize_02_0115</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9796981325145118 3.2828232209981585 0.3027803010015759 0.0 0.0 2.13315705136806</pose>
+      <name>maize_02_0116</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9825303284856286 3.441128135812869 0.29467174264698043 0.0 0.0 2.631684835356687</pose>
+      <name>maize_02_0117</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9765498842580045 3.6088314573153233 0.28807247504019434 0.0 0.0 0.8272746439165026</pose>
+      <name>maize_02_0118</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9749169210105495 3.7723191667971974 0.2848770927484015 0.0 0.0 1.981209558601423</pose>
+      <name>maize_02_0119</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9799306122693263 3.889172487700852 0.2777216874084596 0.0 0.0 4.759011784828711</pose>
+      <name>maize_02_0120</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.999171420446686 4.05950743967261 0.27797239881767116 0.0 0.0 1.543519425853598</pose>
+      <name>maize_02_0121</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9862937586629568 4.24410352306814 0.2789772291051274 0.0 0.0 5.4551677263085425</pose>
+      <name>maize_02_0122</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.987037346560309 4.418068246406434 0.27974786064493906 0.0 0.0 1.0533147229138156</pose>
+      <name>maize_02_0123</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.962187504638885 4.559928695301717 0.2757483857342535 0.0 0.0 1.238424005894219</pose>
+      <name>maize_02_0124</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.9808789473710653 4.7229026197697275 0.27928283008410437 0.0 0.0 2.857584420884982</pose>
+      <name>maize_02_0125</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.992830996492568 4.866779654672469 0.2765518863010386 0.0 0.0 2.973641256060059</pose>
+      <name>maize_02_0126</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.989796339786033 4.987295905123504 0.28100089354716135 0.0 0.0 2.723893996991808</pose>
+      <name>maize_02_0127</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1480344781661844 -5.003725689278064 0.3236372781181846 0.0 0.0 4.55440532020657</pose>
+      <name>maize_02_0128</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1264031877094554 -4.825971417139172 0.32198697336336957 0.0 0.0 2.8512704874803223</pose>
+      <name>maize_02_0129</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.144754019293198 -4.669032865366408 0.3259584452229999 0.0 0.0 3.392076178639666</pose>
+      <name>maize_02_0130</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1182701392205048 -4.536936991640045 0.32795487477209706 0.0 0.0 0.8336570077952793</pose>
+      <name>maize_02_0131</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1389009235064793 -4.363584635214538 0.3267534225621045 0.0 0.0 0.8059302152883835</pose>
+      <name>maize_02_0132</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1185951170258037 -4.194233063102281 0.3237034167848501 0.0 0.0 6.205902168928637</pose>
+      <name>maize_02_0133</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1461250010889157 -4.053387962994736 0.32240518330526574 0.0 0.0 2.303026395651803</pose>
+      <name>maize_02_0134</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1340103616522508 -3.9031216027219924 0.31959618368247994 0.0 0.0 3.108962645181822</pose>
+      <name>maize_02_0135</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.124127590941121 -3.7161889890362416 0.3160380019799729 0.0 0.0 5.376381366675072</pose>
+      <name>maize_02_0136</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.146294202412482 -3.5980054512554243 0.3185691552977062 0.0 0.0 3.0266890125285215</pose>
+      <name>maize_02_0137</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.129154384085186 -3.429613476582689 0.32072674762504366 0.0 0.0 5.946940110365697</pose>
+      <name>maize_02_0138</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1298242317888074 -3.253390645095243 0.3214177612344276 0.0 0.0 3.121555019363851</pose>
+      <name>maize_02_0139</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.132641443555419 -3.054558228064065 0.3248034440041805 0.0 0.0 0.7709464837212029</pose>
+      <name>maize_02_0140</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1427108530902292 -2.9327463699461083 0.3216392396992057 0.0 0.0 1.3576065562459327</pose>
+      <name>maize_02_0141</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1262810846149933 -2.782235720373148 0.3165807549935026 0.0 0.0 0.5125980835620172</pose>
+      <name>maize_02_0142</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1445388779290786 -2.6149421413428513 0.3141276576214365 0.0 0.0 2.454504455584774</pose>
+      <name>maize_02_0143</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.144448712558422 -2.461851197808794 0.3191726548701988 0.0 0.0 1.9935504878370873</pose>
+      <name>maize_02_0144</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.144185643074847 -2.335635752890361 0.3228380398631364 0.0 0.0 4.4499580697529195</pose>
+      <name>maize_02_0145</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.136313771181055 -2.195525051805371 0.315661768922995 0.0 0.0 3.741983463460913</pose>
+      <name>maize_02_0146</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1129676267970985 -2.0127803210980977 0.3184774487452969 0.0 0.0 4.254228807233759</pose>
+      <name>maize_02_0147</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.124855706339274 -1.8336794697141925 0.3089789356200203 0.0 0.0 5.979668094214244</pose>
+      <name>maize_02_0148</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1341023480548387 -1.6654530277411261 0.31048618896639835 0.0 0.0 2.24131289933669</pose>
+      <name>maize_02_0149</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.148944723802226 -1.5284224927707406 0.3134917946271271 0.0 0.0 4.879296046262198</pose>
+      <name>maize_02_0150</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.138788163150877 -1.34341560166092 0.30557054459824995 0.0 0.0 3.8919562835227848</pose>
+      <name>maize_02_0151</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1419482897061926 -1.1718959467865804 0.30665199918128966 0.0 0.0 2.197897555671868</pose>
+      <name>maize_02_0152</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.11327892848139 -0.9925555029922424 0.3169964575350506 0.0 0.0 2.8423049526590947</pose>
+      <name>maize_02_0153</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1320465103000195 -0.8070977630009923 0.3217522918173261 0.0 0.0 2.9978123196288484</pose>
+      <name>maize_02_0154</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1434170974107265 -0.6265382847611805 0.319851538731587 0.0 0.0 3.6785103357550537</pose>
+      <name>maize_02_0155</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.138326263965182 -0.48453909694964414 0.32219997080855833 0.0 0.0 1.369198739743103</pose>
+      <name>maize_02_0156</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1268837724440988 -0.35161167410173944 0.320231441344143 0.0 0.0 0.6356605304721773</pose>
+      <name>maize_02_0157</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.148158968993877 -0.14676394931551465 0.31240979403514857 0.0 0.0 5.468407289640041</pose>
+      <name>maize_02_0158</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.125611117266882 0.002046827894648366 0.3108890103430893 0.0 0.0 4.538411123666225</pose>
+      <name>maize_02_0159</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1291352992677934 0.1589429460088971 0.3037786058615611 0.0 0.0 1.6870152270120569</pose>
+      <name>maize_02_0160</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1153175099188153 0.3446705366716345 0.30426413592397733 0.0 0.0 3.440465086438158</pose>
+      <name>maize_02_0161</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.150199730168904 0.48503296011665453 0.31334453780630267 0.0 0.0 3.0619284200348678</pose>
+      <name>maize_02_0162</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.141367153090178 0.6621120991470613 0.3028147481920984 0.0 0.0 3.8880627908044803</pose>
+      <name>maize_02_0163</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.140718191438635 0.8540186235797438 0.29714224155420565 0.0 0.0 2.168070237010513</pose>
+      <name>maize_02_0164</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1348339600814135 1.00718594714623 0.3093843229561023 0.0 0.0 5.909507607841547</pose>
+      <name>maize_02_0165</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1396917802444944 1.1450743070866953 0.3153575341669848 0.0 0.0 6.20418213294208</pose>
+      <name>maize_02_0166</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.135400700607987 1.2932969071094864 0.3182341623964199 0.0 0.0 1.4706108175574666</pose>
+      <name>maize_02_0167</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1431512631437974 1.4508671603308216 0.31526060289852337 0.0 0.0 5.792174721100618</pose>
+      <name>maize_02_0168</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1481620993072874 1.596245276594416 0.32603109320481494 0.0 0.0 0.396743648183696</pose>
+      <name>maize_02_0169</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1335961598484565 1.796458712092679 0.3334216147121724 0.0 0.0 5.49566435084821</pose>
+      <name>maize_02_0170</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.132761423854548 1.967175366943391 0.3354792684016895 0.0 0.0 1.2361047752437015</pose>
+      <name>maize_02_0171</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1194732423024005 2.128088819198132 0.33539963440986026 0.0 0.0 0.3683499399874587</pose>
+      <name>maize_02_0172</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1357020869121874 2.2804372310647962 0.3346297812471199 0.0 0.0 2.9182087516387467</pose>
+      <name>maize_02_0173</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.137625815631488 2.4234911224461295 0.32859049164533943 0.0 0.0 6.149448743876906</pose>
+      <name>maize_02_0174</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1186146346089165 2.5547959468676953 0.31974719361394954 0.0 0.0 3.739641210278199</pose>
+      <name>maize_02_0175</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1386268197209692 2.723048765510319 0.31260674515514675 0.0 0.0 4.570513766827547</pose>
+      <name>maize_02_0176</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1321333845089057 2.896811368224039 0.313031045961363 0.0 0.0 4.519872217118169</pose>
+      <name>maize_02_0177</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.149201393077465 3.0487469449574642 0.30876093103653335 0.0 0.0 3.2155201684549723</pose>
+      <name>maize_02_0178</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1171640300491403 3.220791165458731 0.3080444621308236 0.0 0.0 0.1635711685122352</pose>
+      <name>maize_02_0179</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1422703140037016 3.423698854388204 0.30878388069903706 0.0 0.0 1.324202638700854</pose>
+      <name>maize_02_0180</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.147877864192759 3.5967572769488245 0.3052825229949756 0.0 0.0 0.1518902039558746</pose>
+      <name>maize_02_0181</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.142847909892319 3.7615625959437806 0.30109294345451415 0.0 0.0 0.1816343013201983</pose>
+      <name>maize_02_0182</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.13506563542202 3.9071413370152377 0.2907183563420798 0.0 0.0 1.3757679720801654</pose>
+      <name>maize_02_0183</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.131763839370075 4.060475246555376 0.2807381040341849 0.0 0.0 0.9041480398351274</pose>
+      <name>maize_02_0184</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1236140760574163 4.214753169484372 0.27653401910290193 0.0 0.0 4.3105024148820545</pose>
+      <name>maize_02_0185</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.13246600916738 4.3612595600083415 0.27342614843063034 0.0 0.0 5.958501796638456</pose>
+      <name>maize_02_0186</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.116563496633229 4.50446271150981 0.2744422200419931 0.0 0.0 5.250201403771024</pose>
+      <name>maize_02_0187</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1435404280090484 4.677749904690628 0.2729103880752402 0.0 0.0 0.9041815470561069</pose>
+      <name>maize_02_0188</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.1161103719868604 4.858093512521484 0.27794467112002297 0.0 0.0 4.55129373775958</pose>
+      <name>maize_02_0189</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-2.123742305030498 4.983758093215877 0.2810420832978345 0.0 0.0 0.2333632580703658</pose>
+      <name>maize_02_0190</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2700982494096764 -5.027415820879258 0.33557958989154263 0.0 0.0 3.6672432728877107</pose>
+      <name>maize_02_0191</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2674786674183594 -4.847428279727855 0.3331699211048643 0.0 0.0 0.14162825907141172</pose>
+      <name>maize_02_0192</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2870349928494775 -4.715042768863189 0.33374418177391396 0.0 0.0 1.7343690051486136</pose>
+      <name>maize_02_0193</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2789406278801874 -4.563522429524316 0.3264794863025182 0.0 0.0 5.33698368033872</pose>
+      <name>maize_02_0194</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2702239384029959 -4.406049123776555 0.3207120904511033 0.0 0.0 4.3616822766112975</pose>
+      <name>maize_02_0195</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2854813821800377 -4.2666003554065055 0.32161288670826027 0.0 0.0 4.834118630923581</pose>
+      <name>maize_02_0196</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.295123149785136 -4.082482674527856 0.32174536190843933 0.0 0.0 4.240386989202439</pose>
+      <name>maize_02_0197</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2778924654264872 -3.9572806547077204 0.3292296554851122 0.0 0.0 1.3384292448504933</pose>
+      <name>maize_02_0198</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.269340263964862 -3.8012592664451135 0.32459990053631316 0.0 0.0 3.625311394798725</pose>
+      <name>maize_02_0199</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2704833357626106 -3.5955588085219845 0.32752845579987405 0.0 0.0 5.725415041955204</pose>
+      <name>maize_02_0200</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.270604883561981 -3.442246234521407 0.31247065691607206 0.0 0.0 2.8782497676179783</pose>
+      <name>maize_02_0201</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.281761584268526 -3.2413192895880676 0.30133611908472696 0.0 0.0 2.4838777229539084</pose>
+      <name>maize_02_0202</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2814959602386997 -3.0996430232658727 0.2981024973093332 0.0 0.0 0.2682293763844965</pose>
+      <name>maize_02_0203</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.26638283647906 -2.9486430456123514 0.29331710110801634 0.0 0.0 4.625630724011372</pose>
+      <name>maize_02_0204</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2660076837679775 -2.7814119824119223 0.29194964537369084 0.0 0.0 4.167858108870776</pose>
+      <name>maize_02_0205</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.276545598911464 -2.599137356607532 0.296360883088897 0.0 0.0 0.46289925683947325</pose>
+      <name>maize_02_0206</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.282557740804418 -2.4419269777004 0.29793219872869064 0.0 0.0 5.86560145285076</pose>
+      <name>maize_02_0207</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.301360994756097 -2.3018730226013218 0.2999292349590596 0.0 0.0 0.6492483748509809</pose>
+      <name>maize_02_0208</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.279126381152222 -2.154996570131614 0.29879368019656977 0.0 0.0 1.0531334801633914</pose>
+      <name>maize_02_0209</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2634200782799248 -1.953678935087154 0.29545992751125094 0.0 0.0 6.035536128099815</pose>
+      <name>maize_02_0210</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.275656329888752 -1.780739976249765 0.30878530402713733 0.0 0.0 3.303450516531572</pose>
+      <name>maize_02_0211</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2643650843093446 -1.6047007634642996 0.3141921647463319 0.0 0.0 1.3640309794313428</pose>
+      <name>maize_02_0212</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2706386300726353 -1.4559685539072866 0.32117953298662827 0.0 0.0 4.33788912172062</pose>
+      <name>maize_02_0213</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2728694033570433 -1.295310603022605 0.3271008237009223 0.0 0.0 4.900140012060732</pose>
+      <name>maize_02_0214</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2702609110088177 -1.1179769855297792 0.32929044534578766 0.0 0.0 2.0393260754380975</pose>
+      <name>maize_02_0215</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2992367182043063 -0.9592076083462344 0.325926180582369 0.0 0.0 0.3447156176868287</pose>
+      <name>maize_02_0216</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2943965516719311 -0.7986199850745952 0.3240413734286923 0.0 0.0 1.3111774285383582</pose>
+      <name>maize_02_0217</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.298535121457331 -0.6514140050412442 0.3262879486578439 0.0 0.0 4.6713396369074385</pose>
+      <name>maize_02_0218</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2938535857743432 -0.4844693803066522 0.32140582045019267 0.0 0.0 5.8555233044564465</pose>
+      <name>maize_02_0219</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2900499539698487 -0.28312749909654267 0.3292274861450919 0.0 0.0 2.1828848445266473</pose>
+      <name>maize_02_0220</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2758093279075609 -0.11350943440280627 0.3389977456096684 0.0 0.0 4.82369537228696</pose>
+      <name>maize_02_0221</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.267225492386049 0.02626949784252151 0.3311569251303468 0.0 0.0 2.8312135320428236</pose>
+      <name>maize_02_0222</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2813855076747092 0.19712049824668518 0.3251171821978349 0.0 0.0 4.5516650778986065</pose>
+      <name>maize_02_0223</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2916125622859007 0.3892593358214387 0.3310459250446075 0.0 0.0 1.943530145013305</pose>
+      <name>maize_02_0224</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2770161316150483 0.5340112722512473 0.33358865160312473 0.0 0.0 0.392352998155514</pose>
+      <name>maize_02_0225</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2724957387392837 0.7055006685427752 0.3358946430690698 0.0 0.0 3.4984267941933846</pose>
+      <name>maize_02_0226</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2874712460110223 0.8705776412006689 0.3267999614485887 0.0 0.0 2.308040658409384</pose>
+      <name>maize_02_0227</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2818639657235127 1.029415695880878 0.32017364733696485 0.0 0.0 4.804713491080691</pose>
+      <name>maize_02_0228</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2796563292672296 1.1640288403110808 0.31761472669616203 0.0 0.0 2.001359261975214</pose>
+      <name>maize_02_0229</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.268408255871306 1.2922870457625755 0.3218651829255787 0.0 0.0 5.082772914178779</pose>
+      <name>maize_02_0230</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2879297052177305 1.4533468410372206 0.3264232274600387 0.0 0.0 0.6758123793486307</pose>
+      <name>maize_02_0231</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.26323322315187 1.6323488300669458 0.3336635725121979 0.0 0.0 4.451431008293813</pose>
+      <name>maize_02_0232</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2896304234059968 1.8058752954881876 0.32316978849992284 0.0 0.0 2.078382887193196</pose>
+      <name>maize_02_0233</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2687073443372747 2.0080694347914965 0.32806880421001305 0.0 0.0 0.8643158725125942</pose>
+      <name>maize_02_0234</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2971712860923748 2.135960535605889 0.33441299220197174 0.0 0.0 0.63181130956959</pose>
+      <name>maize_02_0235</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2881153197967738 2.296050144767817 0.3243741120912642 0.0 0.0 2.3372731393424786</pose>
+      <name>maize_02_0236</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2882462008084912 2.488013629744288 0.3120695057052351 0.0 0.0 0.423363380785429</pose>
+      <name>maize_02_0237</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2745861476466245 2.6266488176559384 0.30371062290247697 0.0 0.0 6.247277064444156</pose>
+      <name>maize_02_0238</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2815048208025313 2.779151680815074 0.30374676768899916 0.0 0.0 2.2690327382670854</pose>
+      <name>maize_02_0239</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2961816865628637 2.9402220691727545 0.3043112523143777 0.0 0.0 5.638861716297588</pose>
+      <name>maize_02_0240</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2738306985534709 3.0814602740916306 0.29690080530807456 0.0 0.0 3.210994525046986</pose>
+      <name>maize_02_0241</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.263194692954078 3.253316318965538 0.29760826206208185 0.0 0.0 3.653615851070293</pose>
+      <name>maize_02_0242</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2739690952508549 3.4075788071796977 0.29575445219517454 0.0 0.0 3.757709590515116</pose>
+      <name>maize_02_0243</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.3014452810159027 3.56188179145381 0.29632412862942525 0.0 0.0 3.619041372385686</pose>
+      <name>maize_02_0244</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2864520138191682 3.7014243843004357 0.2930270116926068 0.0 0.0 0.6747418914638936</pose>
+      <name>maize_02_0245</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2829158910357195 3.8794341972117823 0.28885646415012806 0.0 0.0 5.438429252598005</pose>
+      <name>maize_02_0246</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2728056714886113 4.047406390633104 0.2952262728549084 0.0 0.0 1.8921183387171108</pose>
+      <name>maize_02_0247</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.263581514988227 4.196722747220721 0.2915000759617904 0.0 0.0 6.2005269040658115</pose>
+      <name>maize_02_0248</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2772113022860734 4.350516920028061 0.2914233293522099 0.0 0.0 2.3100735863065136</pose>
+      <name>maize_02_0249</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2707561733667747 4.530704909143769 0.29709408859801795 0.0 0.0 0.03998902002730693</pose>
+      <name>maize_02_0250</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2967810456641984 4.682635269015262 0.3031218666064698 0.0 0.0 5.632014429193699</pose>
+      <name>maize_02_0251</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.268765202247712 4.880534341380337 0.30248772717102773 0.0 0.0 5.490546855074498</pose>
+      <name>maize_02_0252</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-1.2920514687297406 5.031670290187827 0.29548933401433364 0.0 0.0 6.153083305715282</pose>
+      <name>maize_02_0253</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4355262551630199 -4.9829833922080695 0.3295321533542944 0.0 0.0 5.262967261402848</pose>
+      <name>maize_02_0254</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4344786230424891 -4.867115946253946 0.3313388694342594 0.0 0.0 2.1146734777012854</pose>
+      <name>maize_02_0255</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.430137245029115 -4.7050139177319705 0.333851902841987 0.0 0.0 0.16501009898326666</pose>
+      <name>maize_02_0256</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4178007651515969 -4.566270115551417 0.33644306549059455 0.0 0.0 3.876234766970579</pose>
+      <name>maize_02_0257</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4431532553966657 -4.421996559410933 0.32446393885219965 0.0 0.0 6.178758015757812</pose>
+      <name>maize_02_0258</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.41444537821350824 -4.254750992400672 0.321658599385795 0.0 0.0 5.543697370246244</pose>
+      <name>maize_02_0259</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.41906847908140854 -4.082252317528924 0.3180142690575895 0.0 0.0 5.1821422748283235</pose>
+      <name>maize_02_0260</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.43903837073926866 -3.932473412536672 0.30645279443081297 0.0 0.0 3.3503628154476726</pose>
+      <name>maize_02_0261</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4388396541789792 -3.7162864819276784 0.2967116699221529 0.0 0.0 2.8681875419669347</pose>
+      <name>maize_02_0262</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4131638133978002 -3.55188120367762 0.29728101679027497 0.0 0.0 4.729471203030473</pose>
+      <name>maize_02_0263</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4487168600764768 -3.398303302449589 0.2964184976843164 0.0 0.0 4.7980944502908915</pose>
+      <name>maize_02_0264</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.43438769146672396 -3.2521001972899026 0.29916656388893065 0.0 0.0 3.987586186566413</pose>
+      <name>maize_02_0265</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4419389419394091 -3.0499116021260453 0.30373156585358685 0.0 0.0 4.700143447029308</pose>
+      <name>maize_02_0266</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4435795445724007 -2.8841147628910044 0.2963028485199164 0.0 0.0 4.421508613406475</pose>
+      <name>maize_02_0267</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.44157487264262274 -2.7608317923635326 0.292752459471416 0.0 0.0 0.8038354079933084</pose>
+      <name>maize_02_0268</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.442150011833204 -2.558076684173527 0.2901851711407221 0.0 0.0 1.0929705948788218</pose>
+      <name>maize_02_0269</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.441080703119046 -2.424714197074775 0.2869805144973109 0.0 0.0 4.086085437214161</pose>
+      <name>maize_02_0270</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.43663143812091265 -2.2647092757718195 0.29583574042599325 0.0 0.0 3.1991997185691</pose>
+      <name>maize_02_0271</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4219370685184245 -2.124990360436477 0.3016541378733357 0.0 0.0 1.6864665176197946</pose>
+      <name>maize_02_0272</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4356961805436699 -1.9653797121061767 0.303719455652759 0.0 0.0 1.627902406299209</pose>
+      <name>maize_02_0273</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.42109294219729954 -1.8220337157819522 0.3056593661608682 0.0 0.0 4.880031606275201</pose>
+      <name>maize_02_0274</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.44849504688112285 -1.6519584355680106 0.31477886409375283 0.0 0.0 0.931602917836268</pose>
+      <name>maize_02_0275</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.42359571189241096 -1.5056337838959974 0.3241650477144473 0.0 0.0 4.236123642774103</pose>
+      <name>maize_02_0276</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.42681164484480405 -1.3519134614711619 0.3261790779723166 0.0 0.0 3.4979235815778362</pose>
+      <name>maize_02_0277</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.41466570965581484 -1.182790047813997 0.3321543848667009 0.0 0.0 1.4302844129150787</pose>
+      <name>maize_02_0278</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.42681174529818655 -1.0549459716325753 0.3301262063345828 0.0 0.0 4.233349822627984</pose>
+      <name>maize_02_0279</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4436262217978606 -0.9114370194281078 0.3355992243405055 0.0 0.0 3.173405786078309</pose>
+      <name>maize_02_0280</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4179613742990158 -0.7479862116699008 0.3378899269317594 0.0 0.0 0.6567626485126556</pose>
+      <name>maize_02_0281</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4502118916649316 -0.5524498101840956 0.3246709569656747 0.0 0.0 3.368527377510127</pose>
+      <name>maize_02_0282</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.42822083288255275 -0.3703890592757797 0.331821026266821 0.0 0.0 2.82173662890364</pose>
+      <name>maize_02_0283</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.42153238946245963 -0.2216881885913469 0.3335202445219817 0.0 0.0 4.969784326003488</pose>
+      <name>maize_02_0284</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.43879358626515463 -0.08474213833876255 0.3379170764255792 0.0 0.0 4.6341386813051075</pose>
+      <name>maize_02_0285</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4487247008802102 0.06948492441674901 0.3384873320219807 0.0 0.0 2.1698107662609827</pose>
+      <name>maize_02_0286</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4183162554220492 0.27609029281717623 0.3338358843644102 0.0 0.0 0.6976391863029122</pose>
+      <name>maize_02_0287</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.44642110299804294 0.39831669044795204 0.32774999021705364 0.0 0.0 1.967705189211546</pose>
+      <name>maize_02_0288</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.42557367824382863 0.5906447535146637 0.33371011826136476 0.0 0.0 6.176854043352763</pose>
+      <name>maize_02_0289</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4408480062609357 0.7281541440275716 0.33537998058235835 0.0 0.0 0.6879325451027911</pose>
+      <name>maize_02_0290</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4395584466168967 0.8772962563296711 0.342298036555308 0.0 0.0 1.175464798332928</pose>
+      <name>maize_02_0291</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.43371759033237467 1.0446959459810015 0.3429887773844461 0.0 0.0 2.5503319727990625</pose>
+      <name>maize_02_0292</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4262605681168994 1.2099969761522735 0.34324164345216374 0.0 0.0 5.535180167214476</pose>
+      <name>maize_02_0293</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4158028468655428 1.3450261078477328 0.3405476207083033 0.0 0.0 0.17781508056074669</pose>
+      <name>maize_02_0294</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.41988784951142444 1.5438636327617599 0.3463689360249496 0.0 0.0 3.132635193364075</pose>
+      <name>maize_02_0295</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4188552757406119 1.66078223680474 0.3466567580990272 0.0 0.0 0.9755949207432308</pose>
+      <name>maize_02_0296</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4319481094686073 1.8641058577826022 0.34678188777490965 0.0 0.0 0.6770274286936598</pose>
+      <name>maize_02_0297</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.41227739346045933 2.0212879385535047 0.3431307596834908 0.0 0.0 2.3863754604672933</pose>
+      <name>maize_02_0298</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.43443339223134014 2.196146237195061 0.347303641115979 0.0 0.0 2.2829175635070467</pose>
+      <name>maize_02_0299</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4318470522053959 2.3715490207663135 0.3417219786417634 0.0 0.0 5.405445204860955</pose>
+      <name>maize_02_0300</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.45065789430974723 2.530465236569326 0.34488612161368115 0.0 0.0 2.5126077852171127</pose>
+      <name>maize_02_0301</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.42877956908545034 2.7292357163100616 0.34511779635528383 0.0 0.0 3.0297224850299314</pose>
+      <name>maize_02_0302</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4250630760101579 2.883225589774305 0.348376590341937 0.0 0.0 4.167474817687799</pose>
+      <name>maize_02_0303</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4387273204027533 3.0462844362507187 0.3456558009629336 0.0 0.0 2.5293665219149166</pose>
+      <name>maize_02_0304</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.42288869895074166 3.1868158124302552 0.34131480427274496 0.0 0.0 2.873665919236534</pose>
+      <name>maize_02_0305</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4375661625634182 3.3627752404217097 0.3400130886267213 0.0 0.0 3.2606166512747032</pose>
+      <name>maize_02_0306</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.41495363093328885 3.526029416926874 0.3436942816096631 0.0 0.0 4.814808519165233</pose>
+      <name>maize_02_0307</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4289403460543859 3.663834486897698 0.33834731051223677 0.0 0.0 1.9007484733133122</pose>
+      <name>maize_02_0308</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.43135346751947745 3.861520754344633 0.3269847817919283 0.0 0.0 0.8752211387311375</pose>
+      <name>maize_02_0309</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.41391518417519 4.049224056226154 0.3238204114999615 0.0 0.0 5.134932844035459</pose>
+      <name>maize_02_0310</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.44108602621092485 4.204642484928322 0.3236714361149252 0.0 0.0 0.7058697507295845</pose>
+      <name>maize_02_0311</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4399006107207595 4.359385015138224 0.3289088346752911 0.0 0.0 5.199589464225659</pose>
+      <name>maize_02_0312</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.43561126059412913 4.502136285397046 0.33036972843841417 0.0 0.0 3.179356146084581</pose>
+      <name>maize_02_0313</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.4304982895211982 4.645646573709258 0.32214917456577413 0.0 0.0 3.895368732361849</pose>
+      <name>maize_02_0314</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.45086530227108623 4.797642053654077 0.32838289928357955 0.0 0.0 3.1682960503450643</pose>
+      <name>maize_02_0315</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>-0.449632737527879 4.966257994489184 0.31782364249351513 0.0 0.0 1.4623329571644426</pose>
+      <name>maize_02_0316</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4300796271246994 -4.971693935864085 0.3348267787181284 0.0 0.0 2.0506952162875893</pose>
+      <name>maize_02_0317</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.42257697538546024 -4.837687432548052 0.3289088703983667 0.0 0.0 3.1572264407597563</pose>
+      <name>maize_02_0318</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.3991958201497927 -4.656620561194462 0.32687767291042613 0.0 0.0 4.300362276078047</pose>
+      <name>maize_02_0319</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4079127520797621 -4.500458124605928 0.3177107192956496 0.0 0.0 4.800767573133399</pose>
+      <name>maize_02_0320</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4300987888784715 -4.348851636984463 0.3124047037438559 0.0 0.0 1.2779306047928567</pose>
+      <name>maize_02_0321</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4108289408923196 -4.147107514747205 0.3145068475156634 0.0 0.0 4.165474464500168</pose>
+      <name>maize_02_0322</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4078786954433009 -4.0169695747775975 0.3109093610102931 0.0 0.0 0.08801716915302582</pose>
+      <name>maize_02_0323</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.43305703969559284 -3.8350666395849857 0.3123940717836889 0.0 0.0 4.035814748235566</pose>
+      <name>maize_02_0324</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.43708487031889875 -3.6951099106956167 0.3121838143657475 0.0 0.0 0.25622446527992304</pose>
+      <name>maize_02_0325</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4138060868322646 -3.507365874676463 0.30264739935969587 0.0 0.0 3.3265647584305382</pose>
+      <name>maize_02_0326</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.42384640031263077 -3.3429623569131985 0.30614457200313255 0.0 0.0 5.340145825868743</pose>
+      <name>maize_02_0327</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4287179806192323 -3.1906806351592634 0.3033675210420539 0.0 0.0 1.8469179244937663</pose>
+      <name>maize_02_0328</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.43150394369408707 -3.027202399967844 0.2984025783252614 0.0 0.0 2.6355957271140364</pose>
+      <name>maize_02_0329</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4268915252085663 -2.8323590209376523 0.2998450344305133 0.0 0.0 0.9784968498409443</pose>
+      <name>maize_02_0330</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.40684335718106945 -2.69870129793223 0.30733573849156043 0.0 0.0 1.1002464556495415</pose>
+      <name>maize_02_0331</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.40829613464093084 -2.5553640945623366 0.29842496846422406 0.0 0.0 5.659238200677474</pose>
+      <name>maize_02_0332</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.40908472641255456 -2.3609137616485736 0.30694306553574746 0.0 0.0 6.077779185098991</pose>
+      <name>maize_02_0333</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4041842550076242 -2.2185639206984575 0.30907033863101785 0.0 0.0 2.19370550999709</pose>
+      <name>maize_02_0334</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.41475363697539125 -2.0186970618432154 0.31641062501881667 0.0 0.0 4.624790472963567</pose>
+      <name>maize_02_0335</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4331447584384347 -1.8328806464848437 0.31070532712828136 0.0 0.0 1.6940282574132652</pose>
+      <name>maize_02_0336</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4093259217782914 -1.6887258731595631 0.3138104600617023 0.0 0.0 4.323878373157175</pose>
+      <name>maize_02_0337</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.42232706770207473 -1.5354697481444939 0.3177113831103269 0.0 0.0 2.642392622792695</pose>
+      <name>maize_02_0338</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4146068372838676 -1.3957005803271074 0.31424379505062916 0.0 0.0 4.705835664787747</pose>
+      <name>maize_02_0339</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.41256792186028024 -1.2017059797978011 0.3148355850519162 0.0 0.0 2.9795492885958272</pose>
+      <name>maize_02_0340</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4216462358897197 -1.0622087954540942 0.32310028578610844 0.0 0.0 6.095979256572226</pose>
+      <name>maize_02_0341</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4160955742118859 -0.9039974520214042 0.3311056636296974 0.0 0.0 3.2414863484197975</pose>
+      <name>maize_02_0342</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.3990881661476755 -0.77185921591277 0.3418907511295274 0.0 0.0 1.362898110647566</pose>
+      <name>maize_02_0343</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4052034133448861 -0.5859501435348355 0.3320600282857278 0.0 0.0 1.7571840506787821</pose>
+      <name>maize_02_0344</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.41861509519433815 -0.4339846251290864 0.34218600448229997 0.0 0.0 5.327781598927142</pose>
+      <name>maize_02_0345</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.42627635005329756 -0.26664453771802377 0.3490200625157285 0.0 0.0 5.800514609753514</pose>
+      <name>maize_02_0346</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4197206316811344 -0.12610340368174414 0.34592675810541745 0.0 0.0 0.12740733942228888</pose>
+      <name>maize_02_0347</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.39975737367979614 0.041664143236400865 0.3462467700237475 0.0 0.0 5.896527088229699</pose>
+      <name>maize_02_0348</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4064601007634585 0.20256546339221024 0.3497001132715569 0.0 0.0 1.6890471072263995</pose>
+      <name>maize_02_0349</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.3999815097575232 0.3528477249133277 0.3495973009653486 0.0 0.0 1.347580243592522</pose>
+      <name>maize_02_0350</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4309335673102317 0.54791959765365 0.34419829603160673 0.0 0.0 2.900004058965155</pose>
+      <name>maize_02_0351</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4248466241622455 0.689703309265965 0.3475276563063448 0.0 0.0 3.005023452251748</pose>
+      <name>maize_02_0352</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4280697260950421 0.8474564452195188 0.34111619618055433 0.0 0.0 3.439054709161292</pose>
+      <name>maize_02_0353</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.437108446581004 1.0211734157584798 0.3307892004777014 0.0 0.0 6.2434406445877</pose>
+      <name>maize_02_0354</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4070601528742448 1.15973636247417 0.32736981215495864 0.0 0.0 2.317491675953553</pose>
+      <name>maize_02_0355</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.43084501295997635 1.3782355187134265 0.3253822438749183 0.0 0.0 0.25344624400757915</pose>
+      <name>maize_02_0356</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.42730279374251756 1.5136610655623648 0.3258583191171465 0.0 0.0 4.366660874992138</pose>
+      <name>maize_02_0357</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4241223137845691 1.6756700760109982 0.3264725418061469 0.0 0.0 0.3426298361227561</pose>
+      <name>maize_02_0358</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4204461627594349 1.8393798640611636 0.3332245772127302 0.0 0.0 1.952019961867256</pose>
+      <name>maize_02_0359</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4324388532614143 2.002655251695882 0.3353631286682922 0.0 0.0 4.202965158432549</pose>
+      <name>maize_02_0360</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4223084599328497 2.122497755599561 0.33595014926045663 0.0 0.0 0.28967283498217955</pose>
+      <name>maize_02_0361</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4209133220178134 2.2574783673285554 0.3321424648976916 0.0 0.0 2.2346706840154873</pose>
+      <name>maize_02_0362</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.41844429322634147 2.4045697272171105 0.3399289151347749 0.0 0.0 0.7348306689581037</pose>
+      <name>maize_02_0363</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.436410707172048 2.6085035889797434 0.336147089302127 0.0 0.0 3.147859420784855</pose>
+      <name>maize_02_0364</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.40377920043318793 2.775739218228494 0.3411605879347909 0.0 0.0 3.9823926543976427</pose>
+      <name>maize_02_0365</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.41695461842113124 2.9472038519826538 0.3508524216856129 0.0 0.0 1.3193388691283916</pose>
+      <name>maize_02_0366</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.41389066683828846 3.1260819815044374 0.35619529463369126 0.0 0.0 3.2858814300872665</pose>
+      <name>maize_02_0367</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4109267158615961 3.2920849213115946 0.34715700057352417 0.0 0.0 3.169146289141645</pose>
+      <name>maize_02_0368</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.42761022667137416 3.450952747058295 0.3320982238441098 0.0 0.0 0.4535246762732837</pose>
+      <name>maize_02_0369</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4159203495717647 3.584845719956076 0.3212795361954512 0.0 0.0 5.86423267234832</pose>
+      <name>maize_02_0370</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4055895875433273 3.7122308726250792 0.3167144311586987 0.0 0.0 5.419157345803974</pose>
+      <name>maize_02_0371</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4195583809376928 3.89423577453336 0.3143450443015366 0.0 0.0 4.646466018629259</pose>
+      <name>maize_02_0372</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.40680919093199774 4.0864772743714495 0.3236655392865434 0.0 0.0 3.9415854598089313</pose>
+      <name>maize_02_0373</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4134697412296071 4.2136926448006085 0.33437917575753934 0.0 0.0 5.921443476119011</pose>
+      <name>maize_02_0374</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.424655218939201 4.368930151384736 0.3435991258843829 0.0 0.0 4.652291549573271</pose>
+      <name>maize_02_0375</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4285561729474634 4.540769310251432 0.3343995693287101 0.0 0.0 4.730666380166743</pose>
+      <name>maize_02_0376</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.4017436638443068 4.673728455521661 0.3356748592811138 0.0 0.0 3.845340688921879</pose>
+      <name>maize_02_0377</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.43375867479298824 4.852705352708488 0.33575241465259453 0.0 0.0 5.011326606949786</pose>
+      <name>maize_02_0378</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>0.40729033279723614 5.015428266689384 0.33417348703859706 0.0 0.0 4.309183668081386</pose>
+      <name>maize_02_0379</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2495094157949755 -5.044892946437828 0.3270346026008835 0.0 0.0 1.0035236531605276</pose>
+      <name>maize_02_0380</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2754792511302795 -4.879116271348265 0.3200934582179725 0.0 0.0 5.150505784802047</pose>
+      <name>maize_02_0381</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2740141372893032 -4.679594395173641 0.31778300627771805 0.0 0.0 5.654730394935246</pose>
+      <name>maize_02_0382</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2723091140017506 -4.519735666481283 0.31416257194816255 0.0 0.0 1.5209321791797652</pose>
+      <name>maize_02_0383</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.258440575819764 -4.36921360995276 0.31049698443556695 0.0 0.0 0.38120243983931157</pose>
+      <name>maize_02_0384</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2730990754158928 -4.202270251717264 0.31334078165458146 0.0 0.0 4.5506883056745115</pose>
+      <name>maize_02_0385</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.283589206894956 -4.051421667876286 0.3141596819627972 0.0 0.0 1.5356648390420433</pose>
+      <name>maize_02_0386</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.274231979337896 -3.9063392712328797 0.3120630925163287 0.0 0.0 0.12434048512553572</pose>
+      <name>maize_02_0387</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.276629818326224 -3.7615585002717635 0.31308286658524453 0.0 0.0 0.6948253172966011</pose>
+      <name>maize_02_0388</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.281242174490267 -3.6134876121181514 0.31353556456384574 0.0 0.0 2.6852222566193182</pose>
+      <name>maize_02_0389</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2729058525296586 -3.455812034226382 0.31984965945294336 0.0 0.0 3.5738769810516797</pose>
+      <name>maize_02_0390</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2860540092371697 -3.291846240720611 0.31758365593044807 0.0 0.0 3.2728016543194904</pose>
+      <name>maize_02_0391</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2634577822703412 -3.155915179107429 0.31437460980040277 0.0 0.0 2.500061159342104</pose>
+      <name>maize_02_0392</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2769485752535856 -2.9646322763739055 0.3250910445945575 0.0 0.0 0.6284007644317519</pose>
+      <name>maize_02_0393</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2491698127631774 -2.8226446150606965 0.32348068879881764 0.0 0.0 1.7202429460871327</pose>
+      <name>maize_02_0394</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2658320912924377 -2.668229602545299 0.3247120381856472 0.0 0.0 1.0488429682289495</pose>
+      <name>maize_02_0395</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.274320586070972 -2.510424115087106 0.3120437286605521 0.0 0.0 2.368619294935951</pose>
+      <name>maize_02_0396</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.25944926078887 -2.3334453324370905 0.3162173892142 0.0 0.0 3.475336238469083</pose>
+      <name>maize_02_0397</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2779439532138785 -2.1586562792425443 0.31068095799877976 0.0 0.0 5.538523045963159</pose>
+      <name>maize_02_0398</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.275976601369878 -2.0039189718982637 0.30720378029677964 0.0 0.0 0.4475537149777423</pose>
+      <name>maize_02_0399</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2542593176172576 -1.8081022006987042 0.3078263623445926 0.0 0.0 2.204860060461134</pose>
+      <name>maize_02_0400</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2734032385843945 -1.6607167301646384 0.30825169908250083 0.0 0.0 0.686530271993478</pose>
+      <name>maize_02_0401</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2592651022639019 -1.4949778090354902 0.3164994910630622 0.0 0.0 1.2063906010535004</pose>
+      <name>maize_02_0402</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2670733270084118 -1.3220724542072162 0.3140918210766985 0.0 0.0 0.17709476470446991</pose>
+      <name>maize_02_0403</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2839743323481811 -1.1794093399866332 0.3143705362893081 0.0 0.0 4.404036736601413</pose>
+      <name>maize_02_0404</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2779953920934406 -1.0331486663558676 0.3200890547932785 0.0 0.0 3.848739781174812</pose>
+      <name>maize_02_0405</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2621985445296988 -0.8812771513125424 0.3237660965150766 0.0 0.0 5.389455004975429</pose>
+      <name>maize_02_0406</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2738547740559194 -0.733449887647978 0.3201041087726923 0.0 0.0 4.733237044274086</pose>
+      <name>maize_02_0407</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2762406115402025 -0.5622907807673978 0.32439044384512045 0.0 0.0 1.6662455794764808</pose>
+      <name>maize_02_0408</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2667888243306948 -0.3898317787676002 0.32034898933271433 0.0 0.0 1.493386558656623</pose>
+      <name>maize_02_0409</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2594884284022414 -0.21850920564812218 0.32729344431809865 0.0 0.0 0.23752203592114882</pose>
+      <name>maize_02_0410</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2587180555330053 -0.059240330633399306 0.32427494032131254 0.0 0.0 2.079074657327303</pose>
+      <name>maize_02_0411</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2628274570881604 0.11194192561291726 0.32341343457390576 0.0 0.0 5.425206279963617</pose>
+      <name>maize_02_0412</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2758104493749642 0.2420952583094684 0.3200069497514537 0.0 0.0 2.738909391247789</pose>
+      <name>maize_02_0413</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2666032549185622 0.39755705213347126 0.32347420126608395 0.0 0.0 4.671966008875943</pose>
+      <name>maize_02_0414</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2827557585183569 0.5247733634283223 0.32820522483740455 0.0 0.0 3.5234721095321846</pose>
+      <name>maize_02_0415</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2780674589598795 0.7030353546743711 0.33404654146759954 0.0 0.0 3.1915541714750084</pose>
+      <name>maize_02_0416</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2550101793904074 0.8506915914542446 0.33829540767192906 0.0 0.0 0.8811510352172083</pose>
+      <name>maize_02_0417</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2526420362800175 1.057072546437476 0.334788516596418 0.0 0.0 0.20391878343029238</pose>
+      <name>maize_02_0418</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.280910882751297 1.1943217691335772 0.335183202614014 0.0 0.0 0.4961409860689145</pose>
+      <name>maize_02_0419</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2790076323639608 1.3345540764422332 0.33521908980974074 0.0 0.0 3.0935015946594526</pose>
+      <name>maize_02_0420</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2682284476296517 1.5265839533902699 0.33992376990022205 0.0 0.0 1.2763800450182874</pose>
+      <name>maize_02_0421</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.270181726604696 1.6950582929104718 0.3366027538647127 0.0 0.0 5.6104007830888305</pose>
+      <name>maize_02_0422</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2498171363564627 1.8379520396795974 0.3400741794917642 0.0 0.0 4.290244641016983</pose>
+      <name>maize_02_0423</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2538506930641566 2.006828862622141 0.34373387992260707 0.0 0.0 2.4403018216666097</pose>
+      <name>maize_02_0424</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.277320726719687 2.186813106267999 0.3289988540161685 0.0 0.0 1.3048664402344239</pose>
+      <name>maize_02_0425</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2743909323567073 2.3287563774117257 0.34080166596008177 0.0 0.0 6.130004312403525</pose>
+      <name>maize_02_0426</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2614341389991393 2.5242822946178323 0.3446837270617503 0.0 0.0 4.17190454738594</pose>
+      <name>maize_02_0427</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2572578078815924 2.6623021054037967 0.3467507289269448 0.0 0.0 2.0624236298640333</pose>
+      <name>maize_02_0428</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2649654034387994 2.8020479396716103 0.34844381792724977 0.0 0.0 0.0027343299764954823</pose>
+      <name>maize_02_0429</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2760064732401317 2.9382346739783105 0.35555584105854027 0.0 0.0 4.6651296963833335</pose>
+      <name>maize_02_0430</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.255374911356164 3.083208686553396 0.3572849193269191 0.0 0.0 3.4422294968479235</pose>
+      <name>maize_02_0431</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.263898012540595 3.280419167761161 0.3634139866202809 0.0 0.0 4.964326049340314</pose>
+      <name>maize_02_0432</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2838132286479822 3.431268962461219 0.37158652449499113 0.0 0.0 1.6749852089002206</pose>
+      <name>maize_02_0433</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2696406353421152 3.6237541543473255 0.371566835680838 0.0 0.0 5.222973066989137</pose>
+      <name>maize_02_0434</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.264369656469308 3.7501319744887893 0.3773677184969681 0.0 0.0 1.5320934584846708</pose>
+      <name>maize_02_0435</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.28546071276191 3.925871723210354 0.37664120859840183 0.0 0.0 0.7441387633815184</pose>
+      <name>maize_02_0436</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.287242191770272 4.10939541457991 0.36065280289306134 0.0 0.0 6.215086801838487</pose>
+      <name>maize_02_0437</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.255381746677085 4.2663931253323435 0.3546084457281551 0.0 0.0 3.2498974270531766</pose>
+      <name>maize_02_0438</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2676751611037855 4.446360480144807 0.3392654131679253 0.0 0.0 6.171687748108961</pose>
+      <name>maize_02_0439</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2606208973501567 4.632016795247485 0.3333559198532696 0.0 0.0 4.238917440297336</pose>
+      <name>maize_02_0440</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2705352532832275 4.783800566259768 0.3353908510623749 0.0 0.0 5.747560191379124</pose>
+      <name>maize_02_0441</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>1.2511195069068246 4.930446154148204 0.33258243197598464 0.0 0.0 3.5537850518537724</pose>
+      <name>maize_02_0442</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.101982317301738 -5.031398100786849 0.3239754751593864 0.0 0.0 2.3295266891243576</pose>
+      <name>maize_02_0443</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1092228511554345 -4.875468566104736 0.3129843458371787 0.0 0.0 1.4746446423009867</pose>
+      <name>maize_02_0444</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1117610055722316 -4.71247990308368 0.31732014812389836 0.0 0.0 1.5393789679609247</pose>
+      <name>maize_02_0445</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1040770978760617 -4.546364709985977 0.32891516483879446 0.0 0.0 2.7482431434772163</pose>
+      <name>maize_02_0446</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.130881633479769 -4.387550012968752 0.3326114948527074 0.0 0.0 5.737113559899865</pose>
+      <name>maize_02_0447</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1340833870403535 -4.241976181881167 0.3278156586922203 0.0 0.0 0.22391312686233802</pose>
+      <name>maize_02_0448</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1011355815260253 -4.056400902429657 0.33360753200820326 0.0 0.0 5.989536536637981</pose>
+      <name>maize_02_0449</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.120956990217197 -3.8973612374737194 0.34188624935962003 0.0 0.0 0.7876686164224829</pose>
+      <name>maize_02_0450</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1157979411122105 -3.68086459708745 0.34703305625761754 0.0 0.0 1.4042191818441052</pose>
+      <name>maize_02_0451</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.134062131975653 -3.5263971082474064 0.3502673277123247 0.0 0.0 0.4784403660464874</pose>
+      <name>maize_02_0452</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1239647151470327 -3.3636461126883064 0.3403462120028884 0.0 0.0 5.6041320544614495</pose>
+      <name>maize_02_0453</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.133489564177274 -3.191586569323692 0.3385946561518165 0.0 0.0 2.764083027658251</pose>
+      <name>maize_02_0454</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.109970911529238 -3.061795347734814 0.3428925265406318 0.0 0.0 0.6187433933013021</pose>
+      <name>maize_02_0455</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.128832305995393 -2.9138354075274786 0.34026667155743356 0.0 0.0 3.2227343451996675</pose>
+      <name>maize_02_0456</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1009919640080432 -2.738993082162912 0.3356840135480566 0.0 0.0 2.978494516173436</pose>
+      <name>maize_02_0457</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1245699795767217 -2.54976246539392 0.34251883582254594 0.0 0.0 5.814014796991528</pose>
+      <name>maize_02_0458</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.11149550087444 -2.4058961745752043 0.3452072710304769 0.0 0.0 1.6479369001120587</pose>
+      <name>maize_02_0459</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.129359585448467 -2.273478049280482 0.3336390977619502 0.0 0.0 5.919542637148595</pose>
+      <name>maize_02_0460</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.109234901052592 -2.104435855374818 0.3306948251172137 0.0 0.0 2.526624550330997</pose>
+      <name>maize_02_0461</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1261373398931256 -1.9493292379194216 0.32983795295303353 0.0 0.0 4.2917052750326246</pose>
+      <name>maize_02_0462</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.116738711506302 -1.7865714769303525 0.3177129538588397 0.0 0.0 2.868500725604516</pose>
+      <name>maize_02_0463</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1177709250719015 -1.6085690352976525 0.31669953374088866 0.0 0.0 3.793025087192794</pose>
+      <name>maize_02_0464</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.126528623473766 -1.460186841397678 0.3196901640743099 0.0 0.0 3.725417429219509</pose>
+      <name>maize_02_0465</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.125953405096935 -1.2857156563141965 0.3200688690445619 0.0 0.0 1.838094892810023</pose>
+      <name>maize_02_0466</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1061573883060754 -1.1264580866990737 0.31583375499862226 0.0 0.0 5.020941914838441</pose>
+      <name>maize_02_0467</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.105439321787728 -0.9676254755611695 0.3175280270538948 0.0 0.0 1.2019815635375106</pose>
+      <name>maize_02_0468</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.113998112648669 -0.8431267207795128 0.32110648436027334 0.0 0.0 3.370315442795088</pose>
+      <name>maize_02_0469</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1169994747353296 -0.7075495029223409 0.3220940504162624 0.0 0.0 5.89664421232313</pose>
+      <name>maize_02_0470</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.108077986883653 -0.512592616602078 0.32864367526834587 0.0 0.0 1.2172304193827848</pose>
+      <name>maize_02_0471</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.107828294284856 -0.4109763991269211 0.3270807575123755 0.0 0.0 2.368008132711037</pose>
+      <name>maize_02_0472</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.09843539371947 -0.21604794169451627 0.3299472564600236 0.0 0.0 2.3761019700990116</pose>
+      <name>maize_02_0473</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1180066219063183 -0.05244872138435632 0.3322420283497902 0.0 0.0 2.9423741312546716</pose>
+      <name>maize_02_0474</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.107983529548488 0.10620096867115734 0.3402008350377492 0.0 0.0 3.958709613780296</pose>
+      <name>maize_02_0475</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1288368881965725 0.3028849786955248 0.3551971486292755 0.0 0.0 2.371723010301107</pose>
+      <name>maize_02_0476</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1202802967679237 0.4520936047158357 0.3619111306748598 0.0 0.0 1.9324232527242224</pose>
+      <name>maize_02_0477</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.100853553559951 0.603319985110145 0.3652580734206765 0.0 0.0 4.034649706672974</pose>
+      <name>maize_02_0478</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.11764013829305 0.7841375528930485 0.36657127203456374 0.0 0.0 2.194579740402289</pose>
+      <name>maize_02_0479</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.101188924741924 0.9479150059765229 0.36184936675029294 0.0 0.0 2.9497567506330986</pose>
+      <name>maize_02_0480</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1068625677810844 1.1345069198311317 0.35934078321805457 0.0 0.0 2.839267375838631</pose>
+      <name>maize_02_0481</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1106402097709256 1.2983538124224014 0.3495827697185266 0.0 0.0 0.9589856098471713</pose>
+      <name>maize_02_0482</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.115966039824903 1.4605831889804572 0.35493128291608866 0.0 0.0 5.500401523240424</pose>
+      <name>maize_02_0483</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1320710383128936 1.631985162909087 0.365133857720467 0.0 0.0 3.871584924573998</pose>
+      <name>maize_02_0484</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1217212172998026 1.7822904877232744 0.36434019107649257 0.0 0.0 1.4719483160348503</pose>
+      <name>maize_02_0485</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1171424579400706 1.9731369560965866 0.3592233435833313 0.0 0.0 4.144200961606789</pose>
+      <name>maize_02_0486</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1130060825262658 2.1120293095083027 0.3574751691243984 0.0 0.0 3.9899327388063544</pose>
+      <name>maize_02_0487</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.107482616573011 2.268822161240758 0.35252458902372386 0.0 0.0 1.012648911293497</pose>
+      <name>maize_02_0488</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1191883292882205 2.4291934433270606 0.34756750759667066 0.0 0.0 2.5001223538091293</pose>
+      <name>maize_02_0489</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1343786503097895 2.584261272556534 0.3417241519536838 0.0 0.0 4.006744048409579</pose>
+      <name>maize_02_0490</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.114911921851663 2.7650150972214793 0.34465636070349687 0.0 0.0 3.535269288059449</pose>
+      <name>maize_02_0491</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.120319286732481 2.89465908039798 0.3435438878866133 0.0 0.0 1.5709049042058119</pose>
+      <name>maize_02_0492</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1307031895086728 3.061413447391961 0.3448243260813656 0.0 0.0 6.2391794000815075</pose>
+      <name>maize_02_0493</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.108349620609871 3.208114171042723 0.35277588945952304 0.0 0.0 0.19192618118990987</pose>
+      <name>maize_02_0494</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1214391170918554 3.395833467856501 0.3576656224557134 0.0 0.0 2.375452858145656</pose>
+      <name>maize_02_0495</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.1081553124925576 3.5416836914683567 0.3646999201246531 0.0 0.0 3.4119852735541896</pose>
+      <name>maize_02_0496</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.113949581364579 3.749139235260619 0.36135047592925285 0.0 0.0 5.027451614943604</pose>
+      <name>maize_02_0497</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.135170025421162 3.8993940289985427 0.3492963143824659 0.0 0.0 2.387229659018616</pose>
+      <name>maize_02_0498</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.123358937105763 4.042100370265971 0.34169195188915674 0.0 0.0 5.408395958471586</pose>
+      <name>maize_02_0499</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.137839761708834 4.203349213141171 0.35004273364170424 0.0 0.0 1.3383933621443342</pose>
+      <name>maize_02_0500</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.111067714528924 4.3451739896723796 0.3512810554651576 0.0 0.0 6.023364300119965</pose>
+      <name>maize_02_0501</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.105631972426733 4.4983525812679295 0.34768895439220143 0.0 0.0 1.1475210651711045</pose>
+      <name>maize_02_0502</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.124198802061987 4.67489451709002 0.35238234618622416 0.0 0.0 1.8269152038443288</pose>
+      <name>maize_02_0503</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.11271487139463 4.831773306729695 0.3565559740489314 0.0 0.0 2.94729742676707</pose>
+      <name>maize_02_0504</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.116639455359907 4.948649855429436 0.3546568129681391 0.0 0.0 4.279649977725602</pose>
+      <name>maize_02_0505</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9607834220208287 -5.035454194128466 0.32598928633906243 0.0 0.0 0.14095954350258208</pose>
+      <name>maize_02_0506</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.965032278628191 -4.88837374215113 0.3226037553078782 0.0 0.0 2.8715242743179026</pose>
+      <name>maize_02_0507</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9576907551887692 -4.6828912417209825 0.3128646243477218 0.0 0.0 5.587546363239015</pose>
+      <name>maize_02_0508</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.958118416661255 -4.554327652430019 0.3042782618714772 0.0 0.0 2.509782162604984</pose>
+      <name>maize_02_0509</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9605921481887862 -4.414400676747854 0.3165631759446794 0.0 0.0 5.0735192882383915</pose>
+      <name>maize_02_0510</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.963060905554132 -4.233261745409799 0.316347909647196 0.0 0.0 2.0396986139737128</pose>
+      <name>maize_02_0511</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9639007352580538 -4.077315139940381 0.30839985989960406 0.0 0.0 3.2697816948132226</pose>
+      <name>maize_02_0512</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.949085641464055 -3.9533965942213127 0.31316239568771176 0.0 0.0 5.5129842388574835</pose>
+      <name>maize_02_0513</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9654562785744916 -3.7808698168910397 0.3133192241419277 0.0 0.0 0.5182145490383463</pose>
+      <name>maize_02_0514</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9609881184658344 -3.598240171840611 0.31927503114283234 0.0 0.0 2.5272420594147804</pose>
+      <name>maize_02_0515</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.973211508827309 -3.450357124815065 0.31892925007334205 0.0 0.0 0.08051450362356982</pose>
+      <name>maize_02_0516</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9724996133122272 -3.283142855414965 0.3356016183575033 0.0 0.0 1.778442038753148</pose>
+      <name>maize_02_0517</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9639252129770974 -3.1302265735252806 0.33053396310264177 0.0 0.0 0.611803684475377</pose>
+      <name>maize_02_0518</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.965131543672236 -2.9910303496114463 0.3282901527427855 0.0 0.0 1.102986623369181</pose>
+      <name>maize_02_0519</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9580208858187222 -2.801487356785479 0.33019319070325204 0.0 0.0 0.6782529256944757</pose>
+      <name>maize_02_0520</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.966699832056666 -2.6709334432655525 0.33026113888469166 0.0 0.0 3.6594500101370295</pose>
+      <name>maize_02_0521</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9781622873854876 -2.5190169638028377 0.3302420959244026 0.0 0.0 1.837350621937957</pose>
+      <name>maize_02_0522</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9753460732268286 -2.363147236816996 0.32654270446949885 0.0 0.0 4.6831633612069306</pose>
+      <name>maize_02_0523</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.975905211298443 -2.233545373385081 0.325081751976723 0.0 0.0 2.941688163879985</pose>
+      <name>maize_02_0524</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9714425803087985 -2.0774833244231097 0.3281225533831256 0.0 0.0 1.6077608776104424</pose>
+      <name>maize_02_0525</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9728352636711457 -1.9075389190232293 0.3312638498410222 0.0 0.0 0.28358866446182524</pose>
+      <name>maize_02_0526</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.966400901254977 -1.7551027374456334 0.32553991631286316 0.0 0.0 3.9055251029012408</pose>
+      <name>maize_02_0527</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9538352285741456 -1.5830409006751753 0.3112039083778906 0.0 0.0 3.1151355902695332</pose>
+      <name>maize_02_0528</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.956972617275039 -1.456508742719182 0.3099894381986246 0.0 0.0 6.230345851883171</pose>
+      <name>maize_02_0529</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9583426906484473 -1.3057501306292298 0.3196847004913222 0.0 0.0 0.5553702165557329</pose>
+      <name>maize_02_0530</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9831673421169342 -1.181519799659919 0.3273010736214581 0.0 0.0 3.574811999159682</pose>
+      <name>maize_02_0531</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9848557767019774 -0.9687192421521273 0.32087030119674487 0.0 0.0 0.24695587908281993</pose>
+      <name>maize_02_0532</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9504115863110516 -0.852707454149034 0.32435679941369583 0.0 0.0 5.055994590293615</pose>
+      <name>maize_02_0533</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9616020360965902 -0.6653000843667463 0.32713494905186763 0.0 0.0 4.95869144363052</pose>
+      <name>maize_02_0534</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.954426833889866 -0.5215400140027788 0.3363857073705768 0.0 0.0 1.374102186873036</pose>
+      <name>maize_02_0535</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9514485202581864 -0.3463811543052455 0.334267494390218 0.0 0.0 4.831067042136173</pose>
+      <name>maize_02_0536</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9566944189845494 -0.13938828864342814 0.3389125119610896 0.0 0.0 6.050506971707495</pose>
+      <name>maize_02_0537</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.94861645809589 -0.02315363884514589 0.3331485111675184 0.0 0.0 3.9409898526295026</pose>
+      <name>maize_02_0538</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9881750610695827 0.18472986213318118 0.32883868306669284 0.0 0.0 0.2149512579752327</pose>
+      <name>maize_02_0539</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.956375892659836 0.3031552207681645 0.3393183870366743 0.0 0.0 0.2629408912765571</pose>
+      <name>maize_02_0540</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.974184663712108 0.44370813868689085 0.33557030004927074 0.0 0.0 0.7297254644161314</pose>
+      <name>maize_02_0541</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9641744416591096 0.6008855847665342 0.32956405544313205 0.0 0.0 3.679823342055864</pose>
+      <name>maize_02_0542</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.977596136348725 0.7562711397110884 0.3397647759037405 0.0 0.0 2.7552020619966684</pose>
+      <name>maize_02_0543</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.952506344542949 0.8893242488674473 0.3460873508151889 0.0 0.0 3.4345695795712423</pose>
+      <name>maize_02_0544</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9619295259406555 1.0383870214677464 0.3470098301090898 0.0 0.0 1.7433371390193224</pose>
+      <name>maize_02_0545</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9818956124117153 1.174087815539774 0.35376542235083525 0.0 0.0 3.425715316637921</pose>
+      <name>maize_02_0546</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9815319316285813 1.3382460291717702 0.34409367018010983 0.0 0.0 0.4855210651009789</pose>
+      <name>maize_02_0547</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9731473128259984 1.5345937261902702 0.3621942392286368 0.0 0.0 1.2009736166953602</pose>
+      <name>maize_02_0548</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.962724878603112 1.6998941046861842 0.3674247890336051 0.0 0.0 4.87654637714531</pose>
+      <name>maize_02_0549</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.978279180128711 1.8395986847419015 0.3735212842061542 0.0 0.0 1.4742864359209569</pose>
+      <name>maize_02_0550</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.97507394066085 2.0073686046724926 0.38233526027104725 0.0 0.0 1.2357522871433888</pose>
+      <name>maize_02_0551</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9793780812214092 2.1597624593510765 0.3726761546020422 0.0 0.0 0.6817069490346759</pose>
+      <name>maize_02_0552</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9543109778330385 2.277654795296318 0.36239228693152603 0.0 0.0 6.080014691035026</pose>
+      <name>maize_02_0553</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.968833738666848 2.431976388789241 0.3494413207030846 0.0 0.0 1.7259367304862028</pose>
+      <name>maize_02_0554</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.974298693781638 2.643760995042659 0.3466090799143718 0.0 0.0 2.2223259328718155</pose>
+      <name>maize_02_0555</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9633157660164584 2.805411094808749 0.33750671127953213 0.0 0.0 3.083960676658196</pose>
+      <name>maize_02_0556</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9546554429432867 2.9662333400139267 0.3351656725109983 0.0 0.0 3.0671541991349835</pose>
+      <name>maize_02_0557</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.956549444675383 3.128783756876645 0.34576876768140963 0.0 0.0 3.2265427259484625</pose>
+      <name>maize_02_0558</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.965863904890217 3.276057042931409 0.3517523655344172 0.0 0.0 3.5688835650471713</pose>
+      <name>maize_02_0559</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9593115667913126 3.4631643202559466 0.35129770086750284 0.0 0.0 2.1627459000868225</pose>
+      <name>maize_02_0560</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9826927324110613 3.652470306674775 0.35988000727560143 0.0 0.0 4.64387453342291</pose>
+      <name>maize_02_0561</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9664249902844495 3.7932480052186235 0.36414331997354377 0.0 0.0 2.805484509438489</pose>
+      <name>maize_02_0562</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9487795781017048 3.952402726322347 0.35818854777272374 0.0 0.0 0.04989713057399972</pose>
+      <name>maize_02_0563</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9570983628241154 4.114905688048522 0.3549646180932072 0.0 0.0 2.1965488498127947</pose>
+      <name>maize_02_0564</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9774002727509576 4.296869731874723 0.3591186189161686 0.0 0.0 5.4830660873766295</pose>
+      <name>maize_02_0565</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9690303034427843 4.439611971867605 0.355603791402327 0.0 0.0 1.0302636162628478</pose>
+      <name>maize_02_0566</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.987681643868789 4.598949019982229 0.35332831972039497 0.0 0.0 6.0168141709136425</pose>
+      <name>maize_02_0567</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9848289319202714 4.781282568700326 0.3475108677417619 0.0 0.0 2.201368183793304</pose>
+      <name>maize_02_0568</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>2.9856713311860097 4.937458280503452 0.34636257449964375 0.0 0.0 3.271988410836734</pose>
+      <name>maize_02_0569</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.7999369808731376 -4.997416826404434 0.32073180333277124 0.0 0.0 3.0857685419856216</pose>
+      <name>maize_02_0570</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8163151481834974 -4.841408978877747 0.319214466659385 0.0 0.0 2.2989403276604574</pose>
+      <name>maize_02_0571</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.812258630449002 -4.700584900019254 0.3211880955640656 0.0 0.0 5.092015166247103</pose>
+      <name>maize_02_0572</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.819023360375866 -4.543224377267172 0.3269740164421112 0.0 0.0 3.263982172630227</pose>
+      <name>maize_02_0573</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.811191444819468 -4.39917813499685 0.31829541867448197 0.0 0.0 3.26162583132582</pose>
+      <name>maize_02_0574</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8052104782002796 -4.23488920262531 0.31335326476528663 0.0 0.0 3.0058915345751744</pose>
+      <name>maize_02_0575</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.823780184557052 -4.073086085909425 0.31802651915005387 0.0 0.0 4.6727299647590135</pose>
+      <name>maize_02_0576</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8210549539152017 -3.8860308468111247 0.32125740593822205 0.0 0.0 2.87516025804245</pose>
+      <name>maize_02_0577</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8023068189360267 -3.7565371583497593 0.3313396507376605 0.0 0.0 1.2854845471965903</pose>
+      <name>maize_02_0578</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8210335948893106 -3.576418693981679 0.32625588088037355 0.0 0.0 3.205318832906664</pose>
+      <name>maize_02_0579</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.800673591810295 -3.4086984875311077 0.32853350577380813 0.0 0.0 2.052329467860748</pose>
+      <name>maize_02_0580</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8133937343348765 -3.2335770445706955 0.3375965646987467 0.0 0.0 3.8067019020014654</pose>
+      <name>maize_02_0581</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8026043467048516 -3.0608371587738743 0.3365920183308593 0.0 0.0 1.078007139269756</pose>
+      <name>maize_02_0582</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.815352567776116 -2.9149593698754344 0.34020701858249175 0.0 0.0 1.6468448363664394</pose>
+      <name>maize_02_0583</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8044714126616612 -2.7152984726724725 0.33021367923725764 0.0 0.0 0.854539411731932</pose>
+      <name>maize_02_0584</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8334634984320437 -2.56139117555629 0.330534113793604 0.0 0.0 2.808410741220702</pose>
+      <name>maize_02_0585</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.81291503591047 -2.375443140691171 0.3279109487395078 0.0 0.0 4.323557027305731</pose>
+      <name>maize_02_0586</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8012800011849177 -2.212381634540125 0.32594282694390897 0.0 0.0 4.641670442375678</pose>
+      <name>maize_02_0587</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.837460414753284 -2.0710156957881316 0.3234464344886641 0.0 0.0 3.441830469464175</pose>
+      <name>maize_02_0588</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8281764963651583 -1.9308045217130911 0.3243988530721203 0.0 0.0 3.1457492689286077</pose>
+      <name>maize_02_0589</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.7985426750893967 -1.7203669427401036 0.33300973185618754 0.0 0.0 1.216493321551776</pose>
+      <name>maize_02_0590</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.803524981431982 -1.537073009256675 0.3347997433153923 0.0 0.0 5.294882438021766</pose>
+      <name>maize_02_0591</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8142918802372043 -1.3768633959947834 0.339562656820099 0.0 0.0 2.974983673644276</pose>
+      <name>maize_02_0592</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.80606659963261 -1.220823799079179 0.35027753997116334 0.0 0.0 0.19834800301695255</pose>
+      <name>maize_02_0593</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8081110766467288 -1.0702954416532426 0.34800953470572166 0.0 0.0 0.6512367321274206</pose>
+      <name>maize_02_0594</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.830326719562207 -0.9113174565878936 0.34440810220215595 0.0 0.0 0.24051000821527424</pose>
+      <name>maize_02_0595</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.833819158574705 -0.7087082515674479 0.33567809694628564 0.0 0.0 4.113832586947513</pose>
+      <name>maize_02_0596</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8197021886467044 -0.5065730314898631 0.33503061763006237 0.0 0.0 4.939017492533914</pose>
+      <name>maize_02_0597</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.832675942128564 -0.37581687427640587 0.33601174586060767 0.0 0.0 3.9133538352700006</pose>
+      <name>maize_02_0598</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8146748135058277 -0.21241257246876313 0.3401586910005124 0.0 0.0 6.218720905282482</pose>
+      <name>maize_02_0599</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8032680145345865 -0.02029904733302203 0.354715818411675 0.0 0.0 6.117672172951196</pose>
+      <name>maize_02_0600</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.805628640405447 0.12856633829711714 0.3627755484286307 0.0 0.0 0.6301817741892008</pose>
+      <name>maize_02_0601</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8192765575906535 0.30011061948476003 0.3622884728481 0.0 0.0 1.8079873462374974</pose>
+      <name>maize_02_0602</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8290712680079326 0.43359460146285356 0.36253374795777593 0.0 0.0 4.010019136649359</pose>
+      <name>maize_02_0603</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.829990344062104 0.6182961028608998 0.3675544251013536 0.0 0.0 1.3830371717267562</pose>
+      <name>maize_02_0604</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8221218647683 0.7906222633749 0.3616098029607936 0.0 0.0 5.721482997332083</pose>
+      <name>maize_02_0605</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8306854283557974 0.9876075650112504 0.3564282060203523 0.0 0.0 0.6818002203232816</pose>
+      <name>maize_02_0606</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8006239868714586 1.1697675449880847 0.3523666802676051 0.0 0.0 3.625719395366659</pose>
+      <name>maize_02_0607</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8194700455880866 1.3000052629733712 0.34637413934347205 0.0 0.0 2.7619092014810986</pose>
+      <name>maize_02_0608</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8246440086531757 1.4771430594707904 0.34815062511775446 0.0 0.0 3.749530026047946</pose>
+      <name>maize_02_0609</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8138057321958088 1.6114303003018642 0.3504588787138763 0.0 0.0 4.175297325920493</pose>
+      <name>maize_02_0610</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8048288510608876 1.7908034163034068 0.36432947620493006 0.0 0.0 3.311587128999939</pose>
+      <name>maize_02_0611</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8069294089233146 1.970723293026166 0.36997250888856337 0.0 0.0 0.9300226036665068</pose>
+      <name>maize_02_0612</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8353874367844107 2.179725234112564 0.3633315929406918 0.0 0.0 4.60153267897326</pose>
+      <name>maize_02_0613</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8274666108436093 2.3607079414319165 0.36097886027268306 0.0 0.0 3.6497798208314656</pose>
+      <name>maize_02_0614</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8076903293966846 2.4611841684161457 0.35466483236665075 0.0 0.0 5.436873319214626</pose>
+      <name>maize_02_0615</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8274265272680066 2.661387973663907 0.3448449704322081 0.0 0.0 0.5677825215412619</pose>
+      <name>maize_02_0616</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.799615842183854 2.8299178025904337 0.3479671167663421 0.0 0.0 3.9274380809306715</pose>
+      <name>maize_02_0617</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8173990739609267 2.9955620314079776 0.34595930566862654 0.0 0.0 2.0691300325789497</pose>
+      <name>maize_02_0618</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8238123667331583 3.156141828537581 0.34548160808625483 0.0 0.0 3.311367498104768</pose>
+      <name>maize_02_0619</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.82311941105845 3.3188051384552746 0.3406860293645421 0.0 0.0 4.374328880340007</pose>
+      <name>maize_02_0620</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8049808100505635 3.484222958157749 0.34458228134480823 0.0 0.0 3.377496120487487</pose>
+      <name>maize_02_0621</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.811288171169297 3.6720148848290406 0.3420959331839355 0.0 0.0 2.7037700638000466</pose>
+      <name>maize_02_0622</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8359539090121957 3.8268698246511454 0.34025304511771043 0.0 0.0 4.690297775942019</pose>
+      <name>maize_02_0623</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.830610531903155 4.02566141749953 0.3331169155616014 0.0 0.0 0.7960449186130382</pose>
+      <name>maize_02_0624</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8054889248469643 4.155384920809909 0.3370616529715769 0.0 0.0 4.960869044060892</pose>
+      <name>maize_02_0625</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.8121211922766505 4.328413623258972 0.3334759331926038 0.0 0.0 1.6314318320032637</pose>
+      <name>maize_02_0626</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.813612167519518 4.467644266325222 0.3367968555154841 0.0 0.0 4.286888865671689</pose>
+      <name>maize_02_0627</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.808111211604761 4.591350219433951 0.3311522141545393 0.0 0.0 1.1715273465136964</pose>
+      <name>maize_02_0628</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.801783772599299 4.790752754031078 0.3326403971098528 0.0 0.0 1.539029335852233</pose>
+      <name>maize_02_0629</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://maize_02</uri>
+      <pose>3.799873591446358 4.9661454671673395 0.3438534565797462 0.0 0.0 4.775013681864855</pose>
+      <name>maize_02_0630</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>-1.8001380149526662 -4.469707487252635 0.35402352080075744 1.5707963267948966 0.0 0.09370107685820243</pose>
+      <name>retro_pepsi_can_0000</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>3.5764658447879483 2.1776276301872595 0.3839039446143248 1.5707963267948966 0.0 4.603408750375947</pose>
+      <name>retro_pepsi_can_0001</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://coke_can</uri>
+      <pose>-0.6997771004338342 3.3746810315992977 0.3501694974260568 1.5707963267948966 0.0 2.2745938857672257</pose>
+      <name>coke_can_0002</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://coke_can</uri>
+      <pose>3.637118768133258 0.624603631214447 0.3776212856636946 1.5707963267948966 0.0 2.0651435129329285</pose>
+      <name>coke_can_0003</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://coke_can</uri>
+      <pose>0.33636319351277466 -4.190197134829774 0.33903137429764335 1.5707963267948966 0.0 4.907941165160609</pose>
+      <name>coke_can_0004</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://coke_can</uri>
+      <pose>-2.397678150870352 -3.7819957021809905 0.35342619101138384 1.5707963267948966 0.0 4.901046311843415</pose>
+      <name>coke_can_0005</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>3.8103162888571256 2.683972774246364 0.3698449704322081 1.5707963267948966 0.0 0.8807461518978429</pose>
+      <name>retro_pepsi_can_0006</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>-0.053827451345941156 2.989825512055949 0.38489846372401615 1.5707963267948966 0.0 5.215775943670975</pose>
+      <name>retro_pepsi_can_0007</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://coke_can</uri>
+      <pose>-2.402707892828853 4.284528101776918 0.28936893867715824 1.5707963267948966 0.0 5.907518279419025</pose>
+      <name>coke_can_0008</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://coke_can</uri>
+      <pose>3.0434335351761947 4.1982670690149595 0.38154973219789295 1.5707963267948966 0.0 5.721227796343399</pose>
+      <name>coke_can_0009</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>2.497284603503284 0.8228150745680378 0.3865275086317852 1.5707963267948966 0.0 4.862515992204649</pose>
+      <name>retro_pepsi_can_0010</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>0.29409919923323935 0.48204465915262995 0.37704422788318265 1.5707963267948966 0.0 0.10220545792383723</pose>
+      <name>retro_pepsi_can_0011</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://coke_can</uri>
+      <pose>0.21348354185372861 4.60627605488492 0.34743184338016353 1.5707963267948966 0.0 4.430135595830439</pose>
+      <name>coke_can_0012</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>2.436402528736368 -3.651334821127459 0.36356225755185206 1.5707963267948966 0.0 0.3172718577993454</pose>
+      <name>retro_pepsi_can_0013</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://coke_can</uri>
+      <pose>1.4119390490114347 1.9153576259899423 0.3575936660094753 1.5707963267948966 0.0 5.318153513806914</pose>
+      <name>coke_can_0014</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>-2.5272006637588063 -2.1638183175482664 0.3479431584027443 1.5707963267948966 0.0 4.413686890200793</pose>
+      <name>retro_pepsi_can_0015</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>-3.1224925584988443 -0.989618679842494 0.32620197722831495 1.5707963267948966 0.0 1.007439571501592</pose>
+      <name>retro_pepsi_can_0016</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>-2.625325181223315 4.9411942344997675 0.302240752167371 1.5707963267948966 0.0 3.97516262456024</pose>
+      <name>retro_pepsi_can_0017</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>-0.20626161357011788 -2.017364184841166 0.3343624833184244 1.5707963267948966 0.0 1.8760351820874666</pose>
+      <name>retro_pepsi_can_0018</name>
+      <static>false</static>
+    </include> 
+     
+     
+    <include>
+      <uri>model://retro_pepsi_can</uri>
+      <pose>2.4823560130207425 -4.234719136089939 0.34254548062381807 1.5707963267948966 0.0 6.085431576111581</pose>
+      <name>retro_pepsi_can_0019</name>
+      <static>false</static>
+    </include> 
+    </world>
+</sdf>
