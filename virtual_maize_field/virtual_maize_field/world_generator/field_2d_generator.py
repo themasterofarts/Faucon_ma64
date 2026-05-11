@@ -479,12 +479,20 @@ class Field2DGenerator:
             )
 
         # create ditch around the crop field
+        plant_radius = self.wd.structure["params"]["plant_radius"]
+        plant_noise = self.wd.structure["params"]["plant_radius_noise"]
+        mask_distance = ditch_distance + plant_radius + plant_noise + 0.05
+
         for mx, my in self.crop_placements:
             px = metric_to_pixel(mx)
             py = metric_to_pixel(my)
 
             field_mask = cv2.circle(
-                field_mask, (px, py), int((ditch_distance) / self.resolution), 1, -1
+                field_mask,
+                (px, py),
+                int(mask_distance / self.resolution),
+                1,
+                -1,
             )
 
         blur_size = (int(0.2 / self.resolution) // 2) * 2 + 1

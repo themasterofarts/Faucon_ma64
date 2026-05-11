@@ -1,0 +1,18 @@
+row_length: 20
+rows_count: 10
+row_width: 0.75
+ground_headland: 2.0
+rows_curve_budget: 0.0
+row_segment_straight_length_min: 0.5
+row_segment_straight_length_max: 0.6
+row_segments:
+  - straight
+hole_prob: 0.0
+hole_size_max: 0
+litters: 20
+litter_types:
+  - coke_can
+  - retro_pepsi_can
+weeds: 0
+crop_types:
+  - maize_01

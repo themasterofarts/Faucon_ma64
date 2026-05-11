@@ -45,7 +45,9 @@ def parser_from_function(func: object, description: str = "") -> ArgumentParser:
     )
     for argname, default in zip(possible_kwargs, defaults):
         # we analyze the default value's type to guess the type for that argument
-        if type(default) == list:
+        arg_type = str if default is None else type(default)
+
+        if arg_type == list:
             parser.add_argument(
                 "--" + argname,
                 type=type(default[0]),
@@ -56,7 +58,7 @@ def parser_from_function(func: object, description: str = "") -> ArgumentParser:
         else:
             parser.add_argument(
                 "--" + argname,
-                type=type(default),
+                type=arg_type,
                 help=f"default_value: {default}",
                 required=False,
             )

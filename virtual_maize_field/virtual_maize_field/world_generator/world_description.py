@@ -6,6 +6,7 @@ from datetime import datetime
 from json import dump, dumps, load
 
 import numpy as np
+import yaml
 
 from .models import (
     AVAILABLE_MODELS,
@@ -252,7 +253,11 @@ class WorldDescription:
         return dumps(self.structure, indent=2)
 
     def load(self) -> None:
-        self.structure = load(open(self.load_from_file))
+        with open(self.load_from_file, "r") as f:
+            if self.load_from_file.endswith((".yaml", ".yml")):
+                self.structure = yaml.safe_load(f)
+            else:
+                self.structure = load(f)
 
     def save(self, path: str) -> None:
         dump(self.structure, open(path, "w"), indent=2)
