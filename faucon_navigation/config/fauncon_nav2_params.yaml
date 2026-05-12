@@ -56,13 +56,13 @@ controller_server:
       yaw_goal_tolerance: 0.05
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.35
+      desired_linear_vel: 0.15
       lookahead_dist: 1.7
       min_lookahead_dist: 1.5
       max_lookahead_dist: 2.4
       lookahead_time: 2.4
       rotate_to_heading_angular_vel: 0.6
-      transform_tolerance: 0.1
+      transform_tolerance: 0.5
       use_velocity_scaled_lookahead_dist: true
       regulated_linear_scaling_min_radius: 2.0
       regulated_linear_scaling_min_speed: 0.12
@@ -89,6 +89,7 @@ local_costmap:
     ros__parameters:
       update_frequency: 5.0
       publish_frequency: 2.0
+      transform_tolerance: 0.5
       global_frame: odom
       robot_base_frame: base_link
       rolling_window: true
@@ -131,6 +132,7 @@ global_costmap:
     ros__parameters:
       update_frequency: 1.0
       publish_frequency: 1.0
+      transform_tolerance: 0.5
       rolling_window: True
       width: 500
       height: 500

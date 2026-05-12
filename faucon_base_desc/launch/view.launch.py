@@ -180,9 +180,8 @@ def launch_setup(context, *args, **kwargs):
         package="ros_gz_image",
         executable="image_bridge",
         arguments=[
-            "/camera/image_raw",
-            "depth_camera/image", 
-            "depth_camera/depth_image"
+            "/camera/image",
+            "/camera/depth_image",
         ],
         parameters=[{"use_sim_time": use_sim_time}],
         output="screen",

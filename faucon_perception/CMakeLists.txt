@@ -131,6 +131,11 @@ install(TARGETS cluster_node
 ##
 
 
+## Cartographie 3D — install launch + config
+install(DIRECTORY launch config
+  DESTINATION share/${PROJECT_NAME}
+)
+
 ## setup pour les fichiers python
 
 ament_python_install_package(${PROJECT_NAME})

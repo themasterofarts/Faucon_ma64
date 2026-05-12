@@ -41,11 +41,13 @@ Le projet sert à la fois de **plateforme de recherche**, de **base d’expérim
 ---
 ### 🆕 Nouveautés récentes
 
-- **Script de lancement complet (`launch_full.sh`)** : lance automatiquement la base et la navigation en un seul commande, avec build, synchronisation et arrêt propre.
+- **Cartographie 3D fusionnée LiDAR + RGBD (`faucon_perception`)** : deux modes RTAB-Map disponibles — LiDAR seul (ICP) et fusion LiDAR + caméra profondeur (visual+ICP). Le nuage LiDAR passe par `lidar_calibrator` (RANSAC sol) avant d’être injecté dans RTAB-Map.
+- **Caméra RGBD unifiée** : passage au type `rgbd_camera` Gazebo, pipeline image corrigé (`/camera/image`, `/camera/depth_image`). Un seul bridge `/clock` actif (suppression du doublon qui provoquait des sauts TF).
+- **Stabilité Nav2 améliorée** : `transform_tolerance` porté à 0.5 s dans le controller et les deux costmaps. EKF avec `smooth_lagged_data` pour absorber les données hors-ordre.
+- **Script de lancement complet (`launch_full.sh`)** : lance automatiquement la base et la navigation en une seule commande, avec build, synchronisation et arrêt propre.
 - **IHM web ROS2 intégrée (`faucon_ihm`)** : dashboard React (GPS, IMU, caméra, télémétrie, contrôle manuel) désormais inclus dans le workspace et lancé automatiquement avec la simulation principale.
 - **Support Mapviz/OpenStreetMap (`faucon_localisation`)** : ajout d’un lancement dédié pour visualiser la position GNSS sur carte.
 - **Mode mini robot amélioré** : argument `use_mini` pris en charge dans le script de lancement global et dans le launch principal (adaptation du modèle/contrôle).
-- **Mises à jour capteurs mini** : ajustements caméra/GPS et plugin odométrie pour une simulation plus cohérente en configuration mini.
 
 ---
 
@@ -110,6 +112,21 @@ sudo chmod +x ./faucon/launch_full.sh
 #### Variante mini robot
 ```bash
 ./faucon/launch_full.sh use_mini=true
+```
+
+---
+
+#### **3. Cartographie RTAB-Map** (optionnel, après `launch_full.sh`)
+
+```bash
+# LiDAR seul
+ros2 launch faucon_perception mapping_3d.launch.py
+
+# LiDAR + caméra RGBD (fusion visuelle + ICP)
+ros2 launch faucon_perception mapping_rgbd.launch.py
+
+# reprendre une session existante
+ros2 launch faucon_perception mapping_rgbd.launch.py fresh_start:=false open_viz:=true
 ```
 
 ---
