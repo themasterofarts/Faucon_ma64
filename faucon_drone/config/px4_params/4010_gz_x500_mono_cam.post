@@ -1,19 +1,26 @@
 #!/bin/sh
 # Faucon co-simulation overrides for x500_mono_cam in virtual_maize_field
 #
-# virtual_maize_field does not load the Gazebo Magnetometer or AirPressure
-# system plugins, so those GZ sensor topics are never published.
-#
-# This .post script runs AFTER px4-rc.gzsim, so SENS_EN_MAGSIM cannot be
-# used (px4-rc.gzsim already checked it).  Instead, start the modules directly.
-
-# Magnetometer: software simulator derives synthetic field from GPS position.
-# EKF2 will pick up sensor_mag publications dynamically and align yaw.
-sensor_mag_sim start
+# virtual_maize_field loads the Gazebo Magnetometer and AirPressure systems, but
+# the autonomous SITL path is deliberately permissive and does not require a GCS.
 
 # Barometer: not available in world — disable health check and EKF2 fusion.
 param set SYS_HAS_BARO 0
 param set EKF2_BARO_CTRL 0
 
-# No GCS in autonomous simulation — suppress failsafe.
-param set GCS_CONN_LOST_ACT 0
+# Feed EKF2 with the adapter's visual odometry stream. In this world the PX4
+# simulated GPS/mag can be present but fail to become a valid local XY/yaw aid.
+param set EKF2_EV_CTRL 15
+param set EKF2_HGT_REF 3
+param set EKF2_MAG_TYPE 5
+param set EKF2_GPS_CHECK 0
+
+# Autonomous SITL: no RC receiver, no physical power module, and GPS checks
+# should not block arming while the simulated EKF is settling.
+param set COM_RC_IN_MODE 4
+param set CBRK_SUPPLY_CHK 894281
+param set COM_ARM_WO_GPS 2
+
+# No GCS in autonomous simulation — suppress datalink-loss arming/failsafe checks.
+param set NAV_DLL_ACT 0
+param set COM_DLL_EXCEPT 4

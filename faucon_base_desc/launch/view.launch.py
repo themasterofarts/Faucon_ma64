@@ -24,6 +24,8 @@ def launch_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_mini_value = LaunchConfiguration("use_mini").perform(context)
     use_rviz = LaunchConfiguration("use_rviz").perform(context)
+    headless = LaunchConfiguration("headless")
+    verbose = LaunchConfiguration("verbose")
     
     
     if use_mini_value.lower() == "true":
@@ -68,6 +70,8 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             "world_path": os.path.join(pkg_path, "worlds", "virtual_maize_field"),
             "world_name": "straight_rows_debris.world",  #straight_rows_debris  generated mon_champ
+            "headless": headless,
+            "verbose": verbose,
         }.items(),
     )
 
@@ -262,6 +266,16 @@ def generate_launch_description():
                 "use_rviz",
                  default_value="false",
                  description="Launch RViz if true (ignored if use_mini=true)",
+            ),
+            DeclareLaunchArgument(
+                "headless",
+                 default_value="false",
+                 description="Start Gazebo server without GUI rendering",
+            ),
+            DeclareLaunchArgument(
+                "verbose",
+                 default_value="false",
+                 description="Increase Gazebo verbosity",
             ),
         
             OpaqueFunction(function=launch_setup),

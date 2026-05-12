@@ -26,8 +26,9 @@ import math
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+import tf2_ros
 
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Pose, TransformStamped, Twist
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu, NavSatFix
 from std_msgs.msg import Bool, String
@@ -36,6 +37,7 @@ from px4_msgs.msg import (
     OffboardControlMode,
     TrajectorySetpoint,
     VehicleCommand,
+    VehicleOdometry,
     VehicleLocalPosition,
     SensorGps,
     SensorCombined,
@@ -72,6 +74,12 @@ class PX4X500Adapter(Node):
         self._heading_ned = 0.0   # radians from North, clockwise
         self._armed = False
         self._q = (1.0, 0.0, 0.0, 0.0)   # (w, x, y, z) NED attitude quaternion
+        self._local_ned = None
+        self._velocity_ned = None
+        self._gyro_ned = None
+        self._gz_odom = None
+        self._last_gz_odom_time = None
+        self._last_gz_pose = None
         self._cmd = Twist()
         self._last_cmd_time = None
 
@@ -109,6 +117,7 @@ class PX4X500Adapter(Node):
         self._pub_gps   = self.create_publisher(NavSatFix,  "/faucon/drone/gps",   10)
         self._pub_imu   = self.create_publisher(Imu,        "/faucon/drone/imu",   10)
         self._pub_state = self.create_publisher(String,     "/faucon/drone/state", 10)
+        self._tf_broadcaster = tf2_ros.TransformBroadcaster(self)
 
         # ── PX4 publishers ────────────────────────────────────────────────
         self._pub_offboard = self.create_publisher(
@@ -117,13 +126,18 @@ class PX4X500Adapter(Node):
             TrajectorySetpoint,  "/fmu/in/trajectory_setpoint",  _PX4_QOS)
         self._pub_vcmd = self.create_publisher(
             VehicleCommand,      "/fmu/in/vehicle_command",       _PX4_QOS)
+        self._pub_visual_odom = self.create_publisher(
+            VehicleOdometry,     "/fmu/in/vehicle_visual_odometry", _PX4_QOS)
 
         # ── Faucon subscribers ────────────────────────────────────────────
+        self.create_subscription(Odometry, "/faucon/drone/gz_odom", self._gz_odom_cb, 10)
+        self.create_subscription(Pose, "/faucon/drone/gz_pose", self._gz_pose_cb, 10)
         self.create_subscription(Twist, "/faucon/drone/cmd_vel", self._cmd_vel_cb, 10)
         self.create_subscription(Bool,  "/faucon/drone/arm",     self._arm_cb,     10)
 
         # Offboard keepalive + velocity setpoint loop at 20 Hz
         self.create_timer(1.0 / 20.0, self._control_loop)
+        self.create_timer(1.0 / 30.0, self._visual_odometry_loop)
 
         self.get_logger().info("PX4 X500 adapter ready — /faucon/drone/* interface active")
 
@@ -144,31 +158,34 @@ class PX4X500Adapter(Node):
         """Body-NED attitude quaternion → body-ENU (standard px4→ros formula)."""
         return w, y, x, -z
 
+    @staticmethod
+    def _all_finite(*values):
+        return all(math.isfinite(float(value)) for value in values)
+
+    def _has_recent_gz_odom(self):
+        if self._last_gz_odom_time is None:
+            return False
+        age = (self.get_clock().now() - self._last_gz_odom_time).nanoseconds * 1e-9
+        return age < 0.5
+
     # ── PX4 callbacks ────────────────────────────────────────────────────
 
     def _local_pos_cb(self, msg: VehicleLocalPosition):
+        local_valid = (
+            msg.xy_valid and msg.z_valid and msg.v_xy_valid and msg.v_z_valid and
+            self._all_finite(msg.x, msg.y, msg.z, msg.vx, msg.vy, msg.vz, msg.heading) and
+            abs(float(msg.x)) < 1000.0 and abs(float(msg.y)) < 1000.0 and abs(float(msg.z)) < 1000.0
+        )
+        if not local_valid:
+            return
+
         self._heading_ned = float(msg.heading)
+        self._local_ned = (float(msg.x), float(msg.y), float(msg.z))
+        self._velocity_ned = (float(msg.vx), float(msg.vy), float(msg.vz))
 
-        px, py, pz = self._local_ned_to_enu(msg.x, msg.y, msg.z)
-        vx, vy, vz = self._local_ned_to_enu(msg.vx, msg.vy, msg.vz)
-
-        odom = Odometry()
-        odom.header.stamp        = self.get_clock().now().to_msg()
-        odom.header.frame_id     = "odom"
-        odom.child_frame_id      = "drone_base_link"
-        odom.pose.pose.position.x = float(px)
-        odom.pose.pose.position.y = float(py)
-        odom.pose.pose.position.z = float(pz)
-        # Include current attitude in the odometry pose
-        qw, qx, qy, qz = self._ned_quat_to_enu(*self._q)
-        odom.pose.pose.orientation.w = qw
-        odom.pose.pose.orientation.x = qx
-        odom.pose.pose.orientation.y = qy
-        odom.pose.pose.orientation.z = qz
-        odom.twist.twist.linear.x    = float(vx)
-        odom.twist.twist.linear.y    = float(vy)
-        odom.twist.twist.linear.z    = float(vz)
-        self._pub_odom.publish(odom)
+        # Do not publish PX4 local position as Faucon odometry in this world:
+        # during EKF startup it can be valid-but-offset enough to make hover drift.
+        # /faucon/drone/odom is sourced from Gazebo ground-truth pose/odom below.
 
     def _gps_cb(self, msg: SensorGps):
         fix = NavSatFix()
@@ -180,6 +197,61 @@ class PX4X500Adapter(Node):
         fix.status.status     = 0 if msg.fix_type >= 3 else -1
         fix.position_covariance_type = 0
         self._pub_gps.publish(fix)
+
+    def _gz_odom_cb(self, msg: Odometry):
+        pose = msg.pose.pose
+        twist = msg.twist.twist
+        if not self._all_finite(
+            pose.position.x, pose.position.y, pose.position.z,
+            pose.orientation.w, pose.orientation.x, pose.orientation.y, pose.orientation.z,
+            twist.linear.x, twist.linear.y, twist.linear.z,
+        ):
+            return
+        self._gz_odom = msg
+        self._last_gz_odom_time = self.get_clock().now()
+        self._pub_odom.publish(msg)
+        self._broadcast_tf(msg)
+
+    def _publish_gz_pose_as_odom(self, pose):
+        now = self.get_clock().now()
+        odom = Odometry()
+        odom.header.stamp = now.to_msg()
+        odom.header.frame_id = "odom"
+        odom.child_frame_id = "drone_base_link"
+        odom.pose.pose = pose
+
+        if self._last_gz_pose is not None:
+            prev_pose, prev_time = self._last_gz_pose
+            dt = (now - prev_time).nanoseconds * 1e-9
+            if dt > 1e-4:
+                odom.twist.twist.linear.x = (pose.position.x - prev_pose.position.x) / dt
+                odom.twist.twist.linear.y = (pose.position.y - prev_pose.position.y) / dt
+                odom.twist.twist.linear.z = (pose.position.z - prev_pose.position.z) / dt
+
+        self._last_gz_pose = (pose, now)
+        self._gz_odom = odom
+        self._last_gz_odom_time = now
+        self._pub_odom.publish(odom)
+        self._broadcast_tf(odom)
+
+    def _broadcast_tf(self, odom: Odometry):
+        t = TransformStamped()
+        t.header.stamp = odom.header.stamp
+        t.header.frame_id = odom.header.frame_id        # "odom"
+        t.child_frame_id = odom.child_frame_id          # "drone_base_link"
+        t.transform.translation.x = odom.pose.pose.position.x
+        t.transform.translation.y = odom.pose.pose.position.y
+        t.transform.translation.z = odom.pose.pose.position.z
+        t.transform.rotation = odom.pose.pose.orientation
+        self._tf_broadcaster.sendTransform(t)
+
+    def _gz_pose_cb(self, msg: Pose):
+        if not self._all_finite(
+            msg.position.x, msg.position.y, msg.position.z,
+            msg.orientation.w, msg.orientation.x, msg.orientation.y, msg.orientation.z,
+        ):
+            return
+        self._publish_gz_pose_as_odom(msg)
 
     def _attitude_cb(self, msg: VehicleAttitude):
         self._q = (float(msg.q[0]), float(msg.q[1]),
@@ -193,6 +265,9 @@ class PX4X500Adapter(Node):
         )
         gx, gy, gz = self._body_ned_to_enu(
             msg.gyro_rad[0], msg.gyro_rad[1], msg.gyro_rad[2]
+        )
+        self._gyro_ned = (
+            float(msg.gyro_rad[0]), float(msg.gyro_rad[1]), float(msg.gyro_rad[2])
         )
         qw, qx, qy, qz = self._ned_quat_to_enu(*self._q)
 
@@ -325,6 +400,52 @@ class PX4X500Adapter(Node):
         sp.yaw        = float("nan")
         sp.yawspeed   = float(yawspeed_ned)
         self._pub_setpoint.publish(sp)
+
+    def _visual_odometry_loop(self):
+        now_us = int(self.get_clock().now().nanoseconds / 1000)
+
+        odom = VehicleOdometry()
+        odom.timestamp = now_us
+        odom.timestamp_sample = now_us
+        odom.pose_frame = VehicleOdometry.POSE_FRAME_NED
+        odom.velocity_frame = VehicleOdometry.VELOCITY_FRAME_NED
+
+        if self._gz_odom is not None and self._has_recent_gz_odom():
+            pose = self._gz_odom.pose.pose
+            twist = self._gz_odom.twist.twist
+            odom.position = [
+                float(pose.position.y),
+                float(pose.position.x),
+                -float(pose.position.z),
+            ]
+            q = pose.orientation
+            odom.q = [float(q.w), float(q.y), float(q.x), -float(q.z)]
+            odom.velocity = [
+                float(twist.linear.y),
+                float(twist.linear.x),
+                -float(twist.linear.z),
+            ]
+            odom.angular_velocity = [
+                float(twist.angular.x),
+                -float(twist.angular.y),
+                -float(twist.angular.z),
+            ]
+        else:
+            if self._local_ned is None or self._velocity_ned is None:
+                return
+            odom.position = [float(v) for v in self._local_ned]
+            odom.q = [float(v) for v in self._q]
+            odom.velocity = [float(v) for v in self._velocity_ned]
+            if self._gyro_ned is None:
+                odom.angular_velocity = [float("nan"), float("nan"), float("nan")]
+            else:
+                odom.angular_velocity = [float(v) for v in self._gyro_ned]
+
+        odom.position_variance = [0.01, 0.01, 0.02]
+        odom.orientation_variance = [0.01, 0.01, 0.01]
+        odom.velocity_variance = [0.02, 0.02, 0.02]
+        odom.quality = 100
+        self._pub_visual_odom.publish(odom)
 
 
 def main(args=None):

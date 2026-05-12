@@ -43,6 +43,7 @@ message types, frame conventions (NED), or internal topics.
 | `/faucon/drone/imu` | `sensor_msgs/Imu` | ~250 Hz | Attitude + rates, ENU body frame |
 | `/faucon/drone/state` | `std_msgs/String` | ~5 Hz | `DISARMED` / `ARMED` / `OFFBOARD` / … |
 | `/faucon/drone/camera/image` | `sensor_msgs/Image` | 10-30 Hz | RGB camera, model-dependent orientation |
+| `/faucon/drone/trajectory/status` | `std_msgs/String` | 20 Hz | Current trajectory phase: `WAITING` / `PREARM` / `TAKEOFF` / `WP_N/TOTAL` / `HOVER` |
 
 ### Subscribed
 
@@ -106,21 +107,25 @@ ros2 launch faucon_drone drone_sim.launch.py
 ```
 
 Sequence:
-- `t=0s` — Gazebo starts with `virtual_maize_field`, UGV spawns
-- `t=12s` — X500 spawned into Gazebo, MicroXRCEAgent starts
-- `t=16s` — PX4 SITL starts in standalone mode
-- `t=22s` — PX4X500Adapter + camera bridge start
-- `t=35-45s` — EKF2 converges (mag + GPS), drone ready to arm
+- `t=0s`  — Gazebo starts with `virtual_maize_field`, UGV spawns
+- `t=15s` — UGV ros2_control stack fully active
+- `t=20s` — X500 spawned into Gazebo, MicroXRCEAgent starts
+- `t=26s` — PX4 SITL starts in standalone mode
+- `t=32s` — PX4X500Adapter + camera bridge start
+- `t≈67s` — auto takeoff arms the drone, climbs to 3 m, then holds hover
 
 Optional arguments:
 
 ```bash
 ros2 launch faucon_drone drone_sim.launch.py \
-  controller:=px4 \        # px4 (default) or sim (lightweight fallback)
   px4_dir:=~/umoja_project/robotics/Faucon/PX4-Autopilot \
-  drone_spawn_x:=2.0 \     # spawn offset from UGV (m)
+  drone_spawn_x:=5.5 \        # outside the maize rows by default
   drone_spawn_y:=0.0 \
-  drone_spawn_z:=0.3 \
+  drone_spawn_z:=1.5 \
+  auto_takeoff:=true \        # arm + takeoff + hover (disabled by auto_trajectory)
+  takeoff_altitude:=3.0 \
+  auto_trajectory:=false \    # set true to run drone_trajectory instead
+  trajectory_waypoints:="" \  # comma-separated "x0,y0,z0,x1,y1,z1,…" (world-ENU)
   use_rviz:=true
 ```
 
@@ -130,20 +135,59 @@ ros2 launch faucon_drone drone_sim.launch.py \
 ros2 launch faucon_drone spawn_drone_px4.launch.py
 ```
 
-### Lightweight fallback (no PX4)
-
-```bash
-ros2 launch faucon_drone drone_sim.launch.py controller:=sim
-```
-
-Uses a simple velocity controller with a custom URDF drone. No PX4, no XRCE-DDS.
-Control interface is the same (`/faucon/drone/cmd_vel`, `/faucon/drone/arm`).
-
 ---
 
 ## Piloting
 
-### Step 1 — Wait for EKF2
+### Automatic takeoff and hover
+
+By default (`auto_takeoff:=true`, `auto_trajectory:=false`), the `drone_takeoff_hover`
+node handles:
+
+1. wait for odometry and PX4/EKF startup (`start_delay`),
+2. pre-stream zero offboard setpoints (`prearm_setpoint_time`),
+3. arm + switch to offboard mode,
+4. climb to `takeoff_altitude`,
+5. hold the initial XY position with a P controller.
+
+Disable for manual piloting:
+
+```bash
+ros2 launch faucon_drone drone_sim.launch.py auto_takeoff:=false
+```
+
+### Autonomous waypoint trajectory
+
+`drone_trajectory` replaces `drone_takeoff_hover` when `auto_trajectory:=true`.
+It runs the same arm + takeoff sequence, then visits each waypoint in order.
+
+```bash
+# Take off to 3 m then follow a square (world-ENU, metres)
+ros2 launch faucon_drone drone_sim.launch.py \
+  auto_trajectory:=true \
+  trajectory_waypoints:="7.0,2.0,3.0,9.0,2.0,3.0,9.0,-2.0,3.0,7.0,-2.0,3.0"
+```
+
+Monitor progress:
+```bash
+ros2 topic echo /faucon/drone/trajectory/status
+# WAITING → PREARM → TAKEOFF → WP_1/4 → WP_2/4 → … → HOVER
+```
+
+Fine-tuning parameters (via `--ros-args` or YAML param file):
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `waypoints` | `[]` | Flat list `[x0,y0,z0, …]` (alternative to `trajectory_waypoints`) |
+| `takeoff_altitude` | `3.0` m | Altitude before first waypoint |
+| `waypoint_tolerance` | `0.5` m | 3-D arrival radius per waypoint |
+| `cruise_speed` | `1.2` m/s | Max horizontal speed per leg |
+| `return_home` | `false` | Append home XY as final waypoint |
+| `start_delay` | `20.0` s | Delay before arming (let PX4/EKF settle) |
+
+### Manual piloting
+
+#### Step 1 — Wait for EKF2
 
 After launch, wait ~40 seconds then verify:
 
@@ -159,7 +203,7 @@ ros2 topic echo /fmu/out/estimator_status_flags --once | grep cs_yaw_align
 # → cs_yaw_align: true
 ```
 
-### Step 2 — Arm and switch to offboard
+#### Step 2 — Arm and switch to offboard
 
 ```bash
 ros2 topic pub --once /faucon/drone/arm std_msgs/msg/Bool "data: true"
@@ -168,14 +212,14 @@ ros2 topic pub --once /faucon/drone/arm std_msgs/msg/Bool "data: true"
 This sends arm + offboard mode to PX4. The adapter publishes `OffboardControlMode`
 at 20 Hz as keepalive — PX4 exits offboard if this stops for more than 500 ms.
 
-### Step 3 — Takeoff
+#### Step 3 — Takeoff
 
 ```bash
 ros2 topic pub -r 20 /faucon/drone/cmd_vel geometry_msgs/msg/Twist \
   "{linear: {x: 0.0, y: 0.0, z: 1.5}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
 ```
 
-### Step 4 — Hover / navigate
+#### Step 4 — Hover / navigate
 
 ```bash
 # Move forward at 1 m/s
@@ -187,7 +231,7 @@ ros2 topic pub -r 20 /faucon/drone/cmd_vel geometry_msgs/msg/Twist \
   "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.5}}"
 ```
 
-### Step 5 — Land
+#### Step 5 — Land
 
 ```bash
 # Descend slowly
@@ -195,7 +239,7 @@ ros2 topic pub -r 20 /faucon/drone/cmd_vel geometry_msgs/msg/Twist \
   "{linear: {x: 0.0, y: 0.0, z: -0.3}, angular: {x: 0.0, y: 0.0, z: 0.0}}"
 ```
 
-### Disarm
+#### Disarm
 
 ```bash
 ros2 topic pub --once /faucon/drone/arm std_msgs/msg/Bool "data: false"
@@ -245,6 +289,8 @@ faucon_drone/
 │   ├── spawn_drone_px4.launch.py # PX4 drone spawner
 │   └── spawn_drone.launch.py    # Sim-fallback drone spawner
 ├── scripts/
+│   ├── drone_takeoff_hover.py        # PX4 auto arm/takeoff/hover helper
+│   ├── drone_trajectory.py           # Waypoint trajectory node (arm+takeoff+waypoints)
 │   └── drone_velocity_controller.py  # Velocity controller (sim fallback)
 ├── CMakeLists.txt
 └── package.xml
@@ -272,12 +318,14 @@ GZ topics. PX4 cannot read them → EKF2 cannot align yaw → arming denied.
 ### PX4 airframe overrides
 
 `config/px4_params/4010_gz_x500_mono_cam.post` is kept as a versioned reference
-inside this package. It is not copied into PX4 during `colcon build`; apply it
-explicitly to the PX4 checkout inside this workspace when needed. It sets:
+inside this package. `spawn_drone_px4.launch.py` copies both the airframe and
+`.post` file into the local PX4 build before SITL starts. It sets:
 
 ```sh
-param set GCS_CONN_LOST_ACT 0   # no GCS failsafe in simulation
-param set COM_ARM_MAG_ANG 360   # permissive during EKF2 initial alignment
+param set NAV_DLL_ACT 0         # no GCS/datalink failsafe in simulation
+param set COM_DLL_EXCEPT 4
+param set COM_ARM_WO_GPS 2
+param set EKF2_EV_CTRL 15       # fuse adapter visual odometry
 ```
 
 ### Resetting PX4 parameters
@@ -305,10 +353,8 @@ screen /tmp/px4-sock-0
 
 ## Known limitations
 
-- No position hold controller — drone drifts when `cmd_vel` is zero. A position
-  controller node using `/faucon/drone/odom` feedback should be added in the
-  orchestration layer.
-- EKF2 convergence takes ~15-20 seconds after PX4 start. Do not attempt to arm
-  before `cs_yaw_align: true`.
+- EKF2 convergence takes ~15-20 seconds after PX4 start. The default
+  `auto_takeoff_delay` is intentionally conservative; if arming is denied,
+  increase it or verify `cs_yaw_align: true`.
 - The x500_mono_cam model has a forward camera only. No downward camera for
   precise landing.
