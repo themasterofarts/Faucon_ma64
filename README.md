@@ -41,13 +41,14 @@ Le projet sert à la fois de **plateforme de recherche**, de **base d’expérim
 ---
 ### 🆕 Nouveautés récentes
 
+- **Intégration drone complète (`faucon_drone`)** : simulation UGV + drone X500 PX4 dans un même monde Gazebo. Le drone apparaît visuellement et ses capteurs (IMU, GPS, caméra) sont disponibles via l’interface `/faucon/drone/*`. Décollage automatique et vol stationnaire activés par défaut.
+- **Nœud de trajectoire autonome (`drone_trajectory`)** : décollage + séquence de waypoints ENU configurables depuis le launch (`trajectory_waypoints:="x0,y0,z0,…"`) ou via paramètre ROS2. Feedback en temps réel sur `/faucon/drone/trajectory/status`.
+- **TF du drone** : `PX4X500Adapter` diffuse la transformée `odom → drone_base_link` à 50 Hz — le drone est visible dans RViz dans le même repère que l’UGV.
+- **Lancement unifié avec drone** : les scripts `launch_base.sh` et `launch_full.sh` acceptent `use_drone=true` pour lancer l’ensemble UGV + drone + navigation en une seule commande.
+- **Fix Gazebo Harmonic (visibilité drone)** : résolution à la volée du SDF x500 via `gz sdf -p` + `SDF_PATH` pour contourner un bug de Gazebo Harmonic 8.x où les includes imbriqués (`<include merge="true">`) ne propagent pas les composants visuels lors d’un spawn dynamique.
 - **Cartographie 3D fusionnée LiDAR + RGBD (`faucon_perception`)** : deux modes RTAB-Map disponibles — LiDAR seul (ICP) et fusion LiDAR + caméra profondeur (visual+ICP). Le nuage LiDAR passe par `lidar_calibrator` (RANSAC sol) avant d’être injecté dans RTAB-Map.
-- **Caméra RGBD unifiée** : passage au type `rgbd_camera` Gazebo, pipeline image corrigé (`/camera/image`, `/camera/depth_image`). Un seul bridge `/clock` actif (suppression du doublon qui provoquait des sauts TF).
-- **Stabilité Nav2 améliorée** : `transform_tolerance` porté à 0.5 s dans le controller et les deux costmaps. EKF avec `smooth_lagged_data` pour absorber les données hors-ordre.
 - **Script de lancement complet (`launch_full.sh`)** : lance automatiquement la base et la navigation en une seule commande, avec build, synchronisation et arrêt propre.
-- **IHM web ROS2 intégrée (`faucon_ihm`)** : dashboard React (GPS, IMU, caméra, télémétrie, contrôle manuel) désormais inclus dans le workspace et lancé automatiquement avec la simulation principale.
-- **Support Mapviz/OpenStreetMap (`faucon_localisation`)** : ajout d’un lancement dédié pour visualiser la position GNSS sur carte.
-- **Mode mini robot amélioré** : argument `use_mini` pris en charge dans le script de lancement global et dans le launch principal (adaptation du modèle/contrôle).
+- **IHM web ROS2 intégrée (`faucon_ihm`)** : dashboard React (GPS, IMU, caméra, télémétrie, contrôle manuel) désormais inclus dans le workspace.
 
 ---
 
@@ -94,6 +95,11 @@ sudo chmod +x ./faucon/launch_base.sh
 ./faucon/launch_base.sh use_mini=true
 ```
 
+#### Variante avec drone
+```bash
+./faucon/launch_base.sh use_drone=true
+```
+
 ---
 
 #### **2b. Lancement complet** (base + navigation autonome)
@@ -112,6 +118,26 @@ sudo chmod +x ./faucon/launch_full.sh
 #### Variante mini robot
 ```bash
 ./faucon/launch_full.sh use_mini=true
+```
+
+#### Variante avec drone (UGV + drone + navigation)
+```bash
+./faucon/launch_full.sh use_drone=true
+```
+
+---
+
+#### **2c. Lancement avec trajectoire drone autonome**
+
+```bash
+ros2 launch faucon_drone drone_sim.launch.py \
+  auto_trajectory:=true \
+  trajectory_waypoints:="7.0,2.0,3.0,9.0,2.0,3.0,9.0,-2.0,3.0"
+```
+
+Suivre la progression :
+```bash
+ros2 topic echo /faucon/drone/trajectory/status
 ```
 
 ---
