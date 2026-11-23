@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# NB : ce fichier existe en deux copies (faucon_navigation/scripts/ et
+# faucon_path_planning/gui/). Les garder synchronisees : la cle de sortie
+# doit rester "waypoints", attendue par mission_manager.py et follower.py.
 """Independent trajectory generator module.
 
 This module is ROS/Nav2 agnostic:
@@ -40,7 +43,7 @@ class TrajectoryConfig:
     step: float
     turn_radius: float
     list_key_in: str = "waypoints"
-    list_key_out: str = "trajectory"
+    list_key_out: str = "waypoints"
     x_key: str = "latitude"
     y_key: str = "longitude"
     yaw_key: str = "yaw"
@@ -480,7 +483,7 @@ def _compute_yaws(points: Sequence[Point2D]) -> List[float]:
 def write_trajectory_yaml(
     output_yaml_path: str,
     trajectory_points: Sequence[Point2D],
-    list_key: str = "trajectory",
+    list_key: str = "waypoints",
     x_key: str = "latitude",
     y_key: str = "longitude",
     include_yaw: bool = True,
@@ -639,7 +642,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--step", required=True, type=float, help="Sampling step in meters (default GNSS->local pipeline)")
     parser.add_argument("--turn-radius", required=True, type=float, help="Turn radius in meters (default GNSS->local pipeline)")
     parser.add_argument("--input-list-key", default="waypoints")
-    parser.add_argument("--output-list-key", default="trajectory")
+    parser.add_argument("--output-list-key", default="waypoints")
     parser.add_argument("--x-key", default="latitude")
     parser.add_argument("--y-key", default="longitude")
     parser.add_argument("--yaw-key", default="yaw")

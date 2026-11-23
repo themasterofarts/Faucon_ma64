@@ -173,7 +173,7 @@ class PathGeneratorApp(tk.Tk):
         self.step = tk.StringVar(value="0.10")
         self.turn_radius = tk.StringVar(value="1.50")
         self.input_list_key = tk.StringVar(value="waypoints")
-        self.output_list_key = tk.StringVar(value="trajectory")
+        self.output_list_key = tk.StringVar(value="waypoints")
         self.x_key = tk.StringVar(value="latitude")
         self.y_key = tk.StringVar(value="longitude")
         self.yaw_key = tk.StringVar(value="yaw")
@@ -324,7 +324,7 @@ class PathGeneratorApp(tk.Tk):
             step=self._float_from_var(self.step, "Pas") or 0.0,
             turn_radius=self._float_from_var(self.turn_radius, "Rayon virage") or 0.0,
             list_key_in=self.input_list_key.get().strip() or "waypoints",
-            list_key_out=self.output_list_key.get().strip() or "trajectory",
+            list_key_out=self.output_list_key.get().strip() or "waypoints",
             x_key=self.x_key.get().strip() or "latitude",
             y_key=self.y_key.get().strip() or "longitude",
             yaw_key=self.yaw_key.get().strip() or "yaw",

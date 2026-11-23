@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# NB : ce fichier existe en deux copies (faucon_navigation/scripts/ et
+# faucon_path_planning/gui/). Les garder synchronisees : la cle de sortie
+# doit rester "waypoints", attendue par mission_manager.py et follower.py.
 """Independent trajectory generator module.
 
 This module is ROS/Nav2 agnostic:
