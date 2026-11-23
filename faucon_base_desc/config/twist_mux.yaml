@@ -12,3 +12,8 @@ twist_mux:
         topic   : cmd_vel_teleop   # IHM (clavier / joystick) et teleop_twist_keyboard
         timeout : 0.5
         priority: 100              # la commande manuelle est prioritaire sur Nav2
+    locks:
+      e_stop:
+        topic   : e_stop           # std_msgs/Bool : true = arret d'urgence (bouton IHM)
+        timeout : 0.0              # etat conserve jusqu'au rearmement (false)
+        priority: 255              # bloque toutes les entrees (Nav2 ET teleop)

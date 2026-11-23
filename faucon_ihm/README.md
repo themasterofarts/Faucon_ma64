@@ -114,7 +114,7 @@ Au premier lancement, cliquez sur **⚙ CONFIG** (en haut à droite) et renseign
 | `S` ou `↓` | Reculer |
 | `Q` ou `A` ou `←` | Tourner à gauche |
 | `D` ou `→` | Tourner à droite |
-| Bouton **EMERGENCY STOP** | Stoppe immédiatement le robot (`cmd_vel` = 0) |
+| Bouton **EMERGENCY STOP** | Arrêt d'urgence à accrochage : publie `/e_stop` = true (verrou `twist_mux` qui bloque Nav2 et la téléop, roues à zéro dans `control_4ws`, mission mise en PAUSE). Reste actif jusqu'au clic sur **RÉARMER** (avec confirmation). |
 
 ---
 

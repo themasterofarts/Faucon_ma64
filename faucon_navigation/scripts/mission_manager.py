@@ -16,7 +16,7 @@ from rclpy.action import ActionClient
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from action_msgs.msg import GoalStatus
 
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 from sensor_msgs.msg import NavSatFix
 from nav_msgs.msg import Odometry, Path
 from geometry_msgs.msg import PoseStamped, Quaternion, Point
@@ -55,6 +55,7 @@ class MissionManager(Node):
       /mission/command    (std_msgs/String)  — START | STOP | PAUSE | RESUME
       /gnss/datum         (NavSatFix, latch) — localisation prête
       odometry/global     (Odometry)         — pose courante
+      /e_stop             (std_msgs/Bool)    — arrêt d'urgence : met la mission en PAUSE
 
     Topics produits :
       /mission/status     (std_msgs/String)  — JSON 5 Hz
@@ -96,6 +97,7 @@ class MissionManager(Node):
         self.create_subscription(String,    "/mission/command",   self._on_command,   10)
         self.create_subscription(NavSatFix, "/gnss/datum",        self._on_datum,     LATCHED_QOS)
         self.create_subscription(Odometry,  "odometry/global",    self._on_odom,      10)
+        self.create_subscription(Bool,      "/e_stop",            self._on_e_stop,    10)
 
         # publishers
         self._pub_status = self.create_publisher(String, "/mission/status", 10)
@@ -107,6 +109,14 @@ class MissionManager(Node):
 
         self.get_logger().info("mission_manager prêt - état: IDLE")
 
+
+    def _on_e_stop(self, msg: Bool) -> None:
+        # Arrêt d'urgence : twist_mux bloque déjà les commandes ; on met la mission
+        # en PAUSE pour annuler le goal Nav2 (sinon il échoue au progress checker
+        # et la mission passe en ERROR). Reprise par RESUME après réarmement.
+        if msg.data and self._state == State.RUNNING:
+            self.get_logger().warn(f"[{self._mission_id}] Arrêt d'urgence — mission mise en PAUSE.")
+            self._cmd_pause()
 
     def _on_datum(self, _: NavSatFix) -> None:
         if not self._datum_ready:

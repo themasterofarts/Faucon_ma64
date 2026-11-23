@@ -351,6 +351,9 @@ const css = `
     transition: all 0.15s;
   }
   .emergency-stop:hover { background: var(--red); color: #fff; box-shadow: 0 0 20px #ff445588; }
+  .emergency-stop.active { background: var(--red); color: #fff; box-shadow: 0 0 20px #ff445588; animation: estop-blink 1s step-end infinite; }
+  .emergency-stop:disabled { opacity: 0.4; cursor: not-allowed; }
+  @keyframes estop-blink { 50% { background: transparent; color: var(--red); } }
   .keyboard-hint { font-size: 9px; color: var(--text-dim); display: flex; gap: 12px; }
   .key-badge { background: var(--bg3); border: 1px solid var(--border); padding: 1px 5px; color: var(--text); }
 
@@ -691,7 +694,7 @@ function CameraWidget({ config }) {
 }
 
 // ─── JOYSTICK WIDGET ──────────────────────────────────────────────────────────
-function JoystickWidget({ publish, connected }) {
+function JoystickWidget({ publish, subscribe, connected }) {
   const [vel, setVel] = useState({ linear: 0, angular: 0 });
   const [active, setActive] = useState(false);
   const baseRef = useRef(null);
@@ -799,7 +802,45 @@ function JoystickWidget({ publish, connected }) {
     move(e.clientX, e.clientY);
   }, [sendCmd]);
 
-  const stop = () => { sendCmd(0, 0); setVel({ linear: 0, angular: 0 }); };
+  // ── Arrêt d'urgence ─────────────────────────────────────────────────────
+  // /e_stop (std_msgs/Bool) : verrou twist_mux (bloque Nav2 et teleop), arrêt
+  // immédiat des roues dans control_4ws, mise en PAUSE de la mission.
+  // Interrupteur à accrochage : actif jusqu'au réarmement explicite.
+  const E_STOP_TOPIC = "/e_stop";
+  const [eStop, setEStop] = useState(false);
+
+  const publishEStop = useCallback((active) => {
+    publish(E_STOP_TOPIC, "std_msgs/Bool", { data: active });
+  }, [publish]);
+
+  // L'affichage suit l'état réel du topic (autre IHM, autre client…)
+  useEffect(() => {
+    if (!subscribe) return undefined;
+    return subscribe(E_STOP_TOPIC, "std_msgs/Bool", (msg) => {
+      setEStop(!!msg.data);
+    });
+  }, [subscribe]);
+
+  // Tant qu'il est actif, l'état est republié à 1 Hz (robustesse : redémarrage
+  // de twist_mux / control_4ws, nouveaux abonnés)
+  useEffect(() => {
+    if (!eStop || !connected) return undefined;
+    const t = setInterval(() => publishEStop(true), 1000);
+    return () => clearInterval(t);
+  }, [eStop, connected, publishEStop]);
+
+  const triggerEStop = () => {
+    setEStop(true);
+    publishEStop(true);
+    sendCmd(0, 0);
+    setVel({ linear: 0, angular: 0 });
+  };
+
+  const rearmEStop = () => {
+    if (!window.confirm("Réarmer l'arrêt d'urgence ? Le robot pourra de nouveau bouger.")) return;
+    setEStop(false);
+    publishEStop(false);
+  };
 
   const linPct = Math.abs(vel.linear / MAX_LINEAR) * 100;
   const angPct = Math.abs(vel.angular / MAX_ANGULAR) * 100;
@@ -834,7 +875,17 @@ function JoystickWidget({ publish, connected }) {
           <span key={k}><span className="key-badge">{k}</span> {l}</span>
         ))}
       </div>
-      <button className="emergency-stop" onClick={stop}>■ EMERGENCY STOP</button>
+      {eStop ? (
+        <button className="emergency-stop active" onClick={rearmEStop} disabled={!connected}
+                title="Arrêt d'urgence actif — cliquer pour réarmer">
+          ⚠ ARRÊT D'URGENCE ACTIF — RÉARMER
+        </button>
+      ) : (
+        <button className="emergency-stop" onClick={triggerEStop} disabled={!connected}
+                title={connected ? "Bloque Nav2 et la téléopération jusqu'au réarmement" : "rosbridge non connecté"}>
+          ■ EMERGENCY STOP
+        </button>
+      )}
     </div>
   );
 }
@@ -1095,7 +1146,7 @@ export default function App() {
               <span className="panel-badge">Twist · /cmd_vel_teleop</span>
             </div>
             <div className="panel-body">
-              <JoystickWidget publish={publish} connected={connected} />
+              <JoystickWidget publish={publish} subscribe={subscribe} connected={connected} />
             </div>
           </div>
 

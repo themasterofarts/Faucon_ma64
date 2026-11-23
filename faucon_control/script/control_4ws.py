@@ -4,7 +4,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Bool, Float64MultiArray
 import math
 
 from rclpy.duration import Duration
@@ -46,6 +46,8 @@ class CmdVelToJoints(Node):
         # Instant de reception de la derniere commande (pour le watchdog)
         self.last_cmd_rx_time = None
         self.wheels_stopped = True
+        # Arret d'urgence (/e_stop) : roues a zero et /cmd_vel ignore tant qu'il est actif
+        self.e_stop_active = False
 
         # Publisher for steering (JointTrajectory for JointTrajectoryController)
         self.steering_pub = self.create_publisher(
@@ -57,6 +59,9 @@ class CmdVelToJoints(Node):
         )
 
         self.create_subscription(Twist, "/cmd_vel", self.cmd_vel_cb, 10)
+        # twist_mux bloque les entrees mais ne publie pas de zero : on arrete
+        # donc les roues ici, immediatement, sans attendre le watchdog.
+        self.create_subscription(Bool, "/e_stop", self.e_stop_cb, 10)
 
         # Watchdog : le JointGroupVelocityController conserve la derniere consigne,
         # il faut donc publier explicitement un zero si les commandes s'arretent.
@@ -76,21 +81,39 @@ class CmdVelToJoints(Node):
             "wheel_back_right_joint",
         ]
 
+    def _publish_zero_wheels(self):
+        wheel_msg = Float64MultiArray()
+        wheel_msg.data = [0.0] * len(self.wheel_joints)
+        self.wheel_pub.publish(wheel_msg)
+        self.wheels_stopped = True
+
+    def e_stop_cb(self, msg: Bool):
+        active = bool(msg.data)
+        if active:
+            # Republie un zero a chaque message (l'IHM republie l'etat a 1 Hz)
+            self._publish_zero_wheels()
+            if not self.e_stop_active:
+                self.get_logger().error("ARRET D'URGENCE actif : roues a zero, /cmd_vel ignore.")
+        elif self.e_stop_active:
+            self.get_logger().warn("Arret d'urgence rearme : /cmd_vel de nouveau accepte.")
+        self.e_stop_active = active
+
     def _watchdog_cb(self):
         if self.wheels_stopped or self.last_cmd_rx_time is None or self.cmd_timeout <= 0.0:
             return
         age = (self.get_clock().now() - self.last_cmd_rx_time).nanoseconds * 1e-9
         if age > self.cmd_timeout:
-            wheel_msg = Float64MultiArray()
-            wheel_msg.data = [0.0] * len(self.wheel_joints)
-            self.wheel_pub.publish(wheel_msg)
-            self.wheels_stopped = True
+            self._publish_zero_wheels()
             self.get_logger().warn(
                 f"Aucune commande /cmd_vel depuis {age:.2f} s : arret des roues."
             )
 
     def cmd_vel_cb(self, msg: Twist):
         self.last_cmd_rx_time = self.get_clock().now()
+        if self.e_stop_active:
+            if not self.wheels_stopped:
+                self._publish_zero_wheels()
+            return
         vx = msg.linear.x
         wz = msg.angular.z
 
