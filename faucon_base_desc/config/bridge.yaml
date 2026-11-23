@@ -67,6 +67,9 @@
   direction: GZ_TO_ROS
 
 # gz topic published by JointState plugin
+# NB : aucun plugin gz JointStatePublisher n'est declare dans les xacro, cette
+# entree ne recoit donc rien. /joint_states vient du joint_state_broadcaster
+# (ros2_control) ou de joint_state_publisher (robot mini), cf. view.launch.py.
 - ros_topic_name: "joint_states"
   gz_topic_name: "joint_states"
   ros_type_name: "sensor_msgs/msg/JointState"

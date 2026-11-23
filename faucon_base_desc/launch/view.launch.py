@@ -95,6 +95,10 @@ def launch_setup(context, *args, **kwargs):
     )
 
     
+    # Uniquement sans ros2_control (robot mini, ou use_ros2_control:=false) :
+    # avec ros2_control, le joint_state_broadcaster publie deja les vrais etats
+    # sur /joint_states, et joint_state_publisher (qui publie des zeros) entrait
+    # en conflit avec lui (TF des roues / jambes qui sautaient).
     joint_state_publisher_node = Node(
         package="joint_state_publisher",
         executable="joint_state_publisher",
@@ -105,6 +109,7 @@ def launch_setup(context, *args, **kwargs):
                 "use_sim_time": use_sim_time
             }
         ],
+        condition=UnlessCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
     )
 
    
