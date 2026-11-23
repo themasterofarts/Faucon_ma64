@@ -80,8 +80,10 @@
                 <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
             </geometry>
         </collision>
-        <xacro:inertial_box mass="0.5" x="${chassis_length}" y="${chassis_width}" z="${chassis_height}">
-            <origin xyz="${chassis_length/2} 0 ${chassis_height/2}" rpy="0 0 0"/>
+        <!-- Inertiel aligne sur le visuel / la collision (origine du robot au centre depuis
+             b8333e3) ; masse issue de la propriete chassis_mass (auparavant 0.5 en dur). -->
+        <xacro:inertial_box mass="${chassis_mass}" x="${chassis_length}" y="${chassis_width}" z="${chassis_height}">
+            <origin xyz="0 0 ${chassis_height/2}" rpy="0 0 0"/>
         </xacro:inertial_box>
     </link>
 
@@ -121,7 +123,7 @@
             </geometry>
         </collision>
         <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="${leg_length/2} 0 ${leg_height/2}" rpy="0 0 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
         </xacro:inertial_box>
     </link>
 
@@ -181,7 +183,7 @@
             </geometry>
         </collision>
         <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="${leg_length/2} 0 ${leg_height/2}" rpy="0 0 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
         </xacro:inertial_box>
     </link>
 
@@ -240,7 +242,7 @@
             </geometry>
         </collision>
         <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="${leg_length/2} 0 ${leg_height/2}" rpy="0 0 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
         </xacro:inertial_box>
     </link>
 
@@ -297,7 +299,7 @@
             </geometry>
         </collision>
         <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="${leg_length/2} 0 ${leg_height/2}" rpy="0 0 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
         </xacro:inertial_box>
     </link>
 
