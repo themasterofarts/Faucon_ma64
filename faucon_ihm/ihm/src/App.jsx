@@ -712,11 +712,22 @@ function JoystickWidget({ publish, connected }) {
   }, [publish, connected]);
 
   // Keyboard control
+  const keyboardMovingRef = useRef(false);
   useEffect(() => {
-    const down = (e) => { keysRef.current[e.key] = true; };
+    // Ne pas piloter le robot quand l'utilisateur tape dans un champ de saisie
+    const isTyping = (e) => {
+      const t = e.target;
+      return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+    };
+    const down = (e) => { if (!isTyping(e)) keysRef.current[e.key] = true; };
     const up = (e) => { keysRef.current[e.key] = false; };
+    // Perte de focus : les keyup ne seront jamais reçus → on relâche toutes les touches
+    const releaseAll = () => { keysRef.current = {}; };
+    const onVisibility = () => { if (document.hidden) releaseAll(); };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
+    window.addEventListener("blur", releaseAll);
+    document.addEventListener("visibilitychange", onVisibility);
     const tick = setInterval(() => {
       const k = keysRef.current;
       let lin = 0, ang = 0;
@@ -724,11 +735,27 @@ function JoystickWidget({ publish, connected }) {
       if (k["ArrowDown"] || k["s"]) lin = -MAX_LINEAR * 0.5;
       if (k["ArrowLeft"] || k["q"] || k["a"]) ang = MAX_ANGULAR;
       if (k["ArrowRight"] || k["d"]) ang = -MAX_ANGULAR;
-      velRef.current = { linear: lin, angular: ang };
-      setVel({ linear: lin, angular: ang });
-      if (lin !== 0 || ang !== 0) sendCmd(lin, ang);
+      const moving = lin !== 0 || ang !== 0;
+      if (moving) {
+        velRef.current = { linear: lin, angular: ang };
+        setVel({ linear: lin, angular: ang });
+        sendCmd(lin, ang);
+      } else if (keyboardMovingRef.current) {
+        // Transition mouvement → arrêt : on publie explicitement un zéro
+        velRef.current = { linear: 0, angular: 0 };
+        setVel({ linear: 0, angular: 0 });
+        sendCmd(0, 0);
+      }
+      keyboardMovingRef.current = moving;
     }, 100);
-    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); clearInterval(tick); };
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", releaseAll);
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearInterval(tick);
+      if (keyboardMovingRef.current) { sendCmd(0, 0); keyboardMovingRef.current = false; }
+    };
   }, [sendCmd]);
 
   // Touch/mouse joystick
@@ -761,9 +788,12 @@ function JoystickWidget({ publish, connected }) {
       sendCmd(0, 0);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onEnd);
+    // pointercancel (geste interrompu, perte du pointeur) doit aussi arrêter le robot
+    window.addEventListener("pointercancel", onEnd);
     move(e.clientX, e.clientY);
   }, [sendCmd]);
 

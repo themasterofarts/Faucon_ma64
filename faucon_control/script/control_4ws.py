@@ -28,6 +28,8 @@ class CmdVelToJoints(Node):
         self.declare_parameter("wheel_gain", 1.0)  # Gain for wheel velocity
         self.declare_parameter("max_steer_rate", 0.5)  # Steering joint limit (rad/s)
         self.declare_parameter("steer_time_from_start", 0.2)
+        # Securite : arret des roues si aucune commande /cmd_vel recue depuis cmd_timeout (s)
+        self.declare_parameter("cmd_timeout", 0.5)
 
         self.wheel_radius = self.get_parameter("wheel_radius").value
         self.wheel_base = self.get_parameter("wheel_base").value
@@ -37,9 +39,13 @@ class CmdVelToJoints(Node):
         self.wheel_gain = self.get_parameter("wheel_gain").value
         self.max_steer_rate = self.get_parameter("max_steer_rate").value
         self.steer_time_from_start = self.get_parameter("steer_time_from_start").value
+        self.cmd_timeout = self.get_parameter("cmd_timeout").value
 
         self.last_steer_positions = [0.0, 0.0, 0.0, 0.0]
         self.last_cmd_time = self.get_clock().now()
+        # Instant de reception de la derniere commande (pour le watchdog)
+        self.last_cmd_rx_time = None
+        self.wheels_stopped = True
 
         # Publisher for steering (JointTrajectory for JointTrajectoryController)
         self.steering_pub = self.create_publisher(
@@ -51,6 +57,10 @@ class CmdVelToJoints(Node):
         )
 
         self.create_subscription(Twist, "/cmd_vel", self.cmd_vel_cb, 10)
+
+        # Watchdog : le JointGroupVelocityController conserve la derniere consigne,
+        # il faut donc publier explicitement un zero si les commandes s'arretent.
+        self.create_timer(0.1, self._watchdog_cb)
 
         # Joint ordering matches steer_controllers.yaml
         self.steer_joints = [
@@ -66,7 +76,21 @@ class CmdVelToJoints(Node):
             "wheel_back_right_joint",
         ]
 
+    def _watchdog_cb(self):
+        if self.wheels_stopped or self.last_cmd_rx_time is None or self.cmd_timeout <= 0.0:
+            return
+        age = (self.get_clock().now() - self.last_cmd_rx_time).nanoseconds * 1e-9
+        if age > self.cmd_timeout:
+            wheel_msg = Float64MultiArray()
+            wheel_msg.data = [0.0] * len(self.wheel_joints)
+            self.wheel_pub.publish(wheel_msg)
+            self.wheels_stopped = True
+            self.get_logger().warn(
+                f"Aucune commande /cmd_vel depuis {age:.2f} s : arret des roues."
+            )
+
     def cmd_vel_cb(self, msg: Twist):
+        self.last_cmd_rx_time = self.get_clock().now()
         vx = msg.linear.x
         wz = msg.angular.z
 
@@ -106,6 +130,7 @@ class CmdVelToJoints(Node):
         wheel_msg = Float64MultiArray()
         wheel_msg.data = wheel_speeds
         self.wheel_pub.publish(wheel_msg)
+        self.wheels_stopped = all(abs(w) < 1e-9 for w in wheel_speeds)
 
     def _compute_wheel_speeds(self, vx, wz, steer_positions, wheel_positions):
         wheel_speeds = []
