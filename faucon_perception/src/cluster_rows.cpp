@@ -1,5 +1,7 @@
 #include "faucon_perception/cluster_rows.hpp"
 
+#include <cmath>
+
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/kdtree/kdtree.h>
@@ -110,6 +112,7 @@ void RowClusterer::pointCloudCallback(const sensor_msgs::msg::PointCloud2::Share
     if (clusters.empty())
     {
         RCLCPP_WARN(this->get_logger(), "No clusters detected");
+        publishRowMarkers({}, msg->header); // efface les marqueurs des rangs precedents
         return;
     }
 
@@ -242,12 +245,19 @@ RowClusterer::detectCropRows(const std::vector<pcl::PointCloud<pcl::PointXYZ>::P
         seg.setDistanceThreshold(ransac_distance_threshold_);
         seg.setProbability(0.99);
 
-        // Contrainte locale autour de la direction PCA
-        seg.setModelType(pcl::SACMODEL_PARALLEL_LINE);
-        Eigen::Vector3f axis(principal_axis_x_, principal_axis_y_, principal_axis_z_);
-        axis.normalize();
-        seg.setAxis(axis);
-        seg.setEpsAngle(axis_angle_tolerance_ * M_PI / 180.0);
+        // Contrainte de direction (parametre use_axis_constraint, auparavant ignore)
+        if (use_axis_constraint_)
+        {
+            seg.setModelType(pcl::SACMODEL_PARALLEL_LINE);
+            Eigen::Vector3f axis(principal_axis_x_, principal_axis_y_, principal_axis_z_);
+            axis.normalize();
+            seg.setAxis(axis);
+            seg.setEpsAngle(axis_angle_tolerance_ * M_PI / 180.0);
+        }
+        else
+        {
+            seg.setModelType(pcl::SACMODEL_LINE);
+        }
 
         seg.setInputCloud(cluster);
         seg.segment(*inliers, *coefficients);
@@ -307,10 +317,9 @@ RowClusterer::detectCropRows(const std::vector<pcl::PointCloud<pcl::PointXYZ>::P
         row.start_point.y = start.y();
         row.start_point.z = start.z();
 
-        // Je vous conseille d’ajouter row.end_point dans votre struct
-        // row.end_point.x = end.x();
-        // row.end_point.y = end.y();
-        // row.end_point.z = end.z();
+        row.end_point.x = end.x();
+        row.end_point.y = end.y();
+        row.end_point.z = end.z();
 
         row.direction.x = dir.x();
         row.direction.y = dir.y();
@@ -472,6 +481,13 @@ void RowClusterer::publishRowMarkers(
 {
     visualization_msgs::msg::MarkerArray marker_array;
 
+    // Efface les marqueurs precedents : sinon, quand le nombre de rangs diminue,
+    // les anciens rangs restent affiches dans RViz.
+    visualization_msgs::msg::Marker clear_marker;
+    clear_marker.header = header;
+    clear_marker.action = visualization_msgs::msg::Marker::DELETEALL;
+    marker_array.markers.push_back(clear_marker);
+
     for (size_t i = 0; i < crop_rows.size(); ++i)
     {
         const auto &row = crop_rows[i];
@@ -484,22 +500,21 @@ void RowClusterer::publishRowMarkers(
         line_marker.action = visualization_msgs::msg::Marker::ADD;
         line_marker.scale.x = 0.05;
 
-        line_marker.color.r = (i * 0.3f);
-        line_marker.color.g = (i * 0.5f);
+        line_marker.color.r = std::fmod(i * 0.3f, 1.0f); // composantes bornees a [0, 1]
+        line_marker.color.g = std::fmod(i * 0.5f, 1.0f);
         line_marker.color.b = 1.0f;
         line_marker.color.a = 1.0;
 
+        // Segment reel du rang : de start_point a end_point. Avant : de
+        // (start - direction) a (start + direction * longueur/2), soit un
+        // segment decale d'1 m et deux fois trop court.
         geometry_msgs::msg::Point start_pt, end_pt;
-
-        double extension = row.length / 2.0;
-
-        start_pt.x = row.start_point.x - row.direction.x;
-        start_pt.y = row.start_point.y - row.direction.y;
+        start_pt.x = row.start_point.x;
+        start_pt.y = row.start_point.y;
         start_pt.z = row.start_point.z;
-
-        end_pt.x = row.start_point.x + row.direction.x * extension;
-        end_pt.y = row.start_point.y + row.direction.y * extension;
-        end_pt.z = row.start_point.z;
+        end_pt.x = row.end_point.x;
+        end_pt.y = row.end_point.y;
+        end_pt.z = row.end_point.z;
 
         line_marker.points.push_back(start_pt);
         line_marker.points.push_back(end_pt);

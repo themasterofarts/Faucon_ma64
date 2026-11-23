@@ -20,6 +20,7 @@ public:
         pcl::PointCloud<pcl::PointXYZ>::Ptr cluster;
         pcl::ModelCoefficients::Ptr coefficients;
         pcl::PointXYZ start_point;
+        pcl::PointXYZ end_point;   // fin du segment detecte (tmax le long de la direction)
         pcl::PointXYZ direction;
         pcl::PointXYZ centroid;
         double length;
