@@ -574,11 +574,21 @@ function GPSWidget({ subscribe }) {
 }
 
 // ─── IMU COCKPIT (ADI) ────────────────────────────────────────────────────────
+// Mode démo de l'horizon artificiel (attitude simulée). DÉSACTIVÉ par défaut :
+// il écrasait en permanence les vraies données IMU. À n'activer que pour une
+// démonstration sans robot — un bandeau "DÉMO" est alors affiché.
+const IMU_DEMO = false;
+// Au-delà de ce délai sans message IMU, les valeurs sont signalées comme absentes
+const IMU_STALE_MS = 1500;
+
 function IMUWidget({ subscribe }) {
   const [attitude, setAttitude] = useState({ roll: 0, pitch: 0, yaw: 0 });
+  const lastImuRef = useRef(0);
+  const [stale, setStale] = useState(true);
 
   useEffect(() => {
     const unsub = subscribe("/imu/data", "sensor_msgs/Imu", (msg) => {
+      lastImuRef.current = Date.now();
       const q = msg.orientation;
       // Quaternion to Euler
       const sinr = 2 * (q.w * q.x + q.y * q.z);
@@ -594,8 +604,19 @@ function IMUWidget({ subscribe }) {
     return unsub;
   }, [subscribe]);
 
-  // Simulate movement for demo when not connected
+  // Détection d'absence de données IMU
   useEffect(() => {
+    if (IMU_DEMO) return undefined;
+    const check = setInterval(() => {
+      setStale(Date.now() - lastImuRef.current > IMU_STALE_MS);
+    }, 250);
+    return () => clearInterval(check);
+  }, []);
+
+  // Simulation d'attitude pour démonstration (uniquement si IMU_DEMO = true)
+  useEffect(() => {
+    if (!IMU_DEMO) return undefined;
+    setStale(false);
     let t = 0;
     const demo = setInterval(() => {
       t += 0.02;
@@ -625,6 +646,15 @@ function IMUWidget({ subscribe }) {
               </div>
             ))}
           </div>
+          {(stale || IMU_DEMO) && (
+            <div style={{
+              position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "#080c0fcc", color: IMU_DEMO ? "var(--amber)" : "var(--red)", zIndex: 5,
+              fontSize: 10, letterSpacing: 2, textAlign: "center", pointerEvents: "none",
+            }}>
+              {IMU_DEMO ? "DÉMO — ATTITUDE SIMULÉE" : "PAS DE DONNÉES IMU"}
+            </div>
+          )}
           <div className="adi-overlay">
             <div className="adi-wings">
               <div className="adi-wing-left" />
@@ -647,7 +677,7 @@ function IMUWidget({ subscribe }) {
         {[["ROLL", attitude.roll, "°"], ["PITCH", attitude.pitch, "°"], ["HDG", ((attitude.yaw + 360) % 360), "°"]].map(([l, v, u]) => (
           <div key={l} className="imu-value-box">
             <div className="imu-val-label">{l}</div>
-            <div className="imu-val">{v.toFixed(1)}<span style={{ fontSize: 9, color: "var(--text-dim)" }}>{u}</span></div>
+            <div className="imu-val">{stale ? "--.-" : v.toFixed(1)}<span style={{ fontSize: 9, color: "var(--text-dim)" }}>{u}</span></div>
           </div>
         ))}
       </div>
@@ -1047,7 +1077,7 @@ function ConfigModal({ config, onSave, onClose }) {
         {[
           ["ROSBRIDGE HOST", "rosBridgeUrl", "ws://192.168.1.x:9090"],
           ["VIDEO SERVER", "videoServer", "http://192.168.1.x:8080/stream?topic=/camera/image"],
-          ["GPS TOPIC", "gpsTopic", "/gps/fix"],
+          ["GPS TOPIC", "gpsTopic", "/gnss/fix"],
           ["IMU TOPIC", "imuTopic", "/imu/data"],
           ["CMD_VEL TOPIC", "cmdVelTopic", "/cmd_vel_teleop"],
         ].map(([label, key, ph]) => (
@@ -1110,7 +1140,7 @@ export default function App() {
           <div className="panel panel-gps">
             <div className="panel-header">
               <span className="panel-title">⬡ GPS POSITION</span>
-              <span className="panel-badge">NavSatFix · /gps/fix</span>
+              <span className="panel-badge">NavSatFix · /gnss/fix</span>
             </div>
             <div className="panel-body" style={{ padding: 0 }}>
               <GPSWidget subscribe={subscribe} />
