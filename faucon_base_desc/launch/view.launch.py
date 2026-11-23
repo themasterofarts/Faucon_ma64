@@ -126,6 +126,17 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
     )
 
+    # Modes DiffDrive (mini, use_ros2_control:=false) : control_4ws n'est pas lance,
+    # ce noeud assure l'arret sur /e_stop et le watchdog /cmd_vel.
+    diffdrive_safety = Node(
+        package="faucon_control",
+        executable="diffdrive_safety.py",
+        name="diffdrive_safety",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+        condition=UnlessCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
+    )
+
     ground_filter = Node(
         package="faucon_perception",
         executable="lidar_calibrator",
@@ -246,6 +257,7 @@ def launch_setup(context, *args, **kwargs):
         spawn_robot,
         gz_bridge,
         control_4ws,
+        diffdrive_safety,
         launch_world,
         ros_gz_image_bridge,
         steer_controller,
