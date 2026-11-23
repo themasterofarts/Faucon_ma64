@@ -11,3 +11,6 @@ __pycache__/
 
 # Sauvegardes locales de fichiers xacro
 *.xacro.p
+
+# Cache pytest
+.pytest_cache/
