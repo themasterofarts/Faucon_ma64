@@ -32,10 +32,14 @@ def launch_setup(context, *args, **kwargs):
         spawn_y = "-2.94"
         use_ros2_control_value = "false"
     else:
-        robot_desc = xacro.process_file(xacro_file).toxml()
+        use_ros2_control_value = LaunchConfiguration("use_ros2_control").perform(context).lower()
+        # L'argument doit etre transmis au xacro : il choisit ros2_control ou le
+        # DiffDrive Gazebo, et le type (revolute / fixed) des jambes de braquage.
+        robot_desc = xacro.process_file(
+            xacro_file, mappings={"use_ros2_control": use_ros2_control_value}
+        ).toxml()
         spawn_z = "1.0"
         spawn_y = "-2.83"
-        use_ros2_control_value = LaunchConfiguration("use_ros2_control").perform(context)
 
     twist_mux_params = os.path.join(
         get_package_share_directory("faucon_base_desc"), "config", "twist_mux.yaml"
@@ -271,7 +275,8 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "use_ros2_control",
                 default_value="true",
-                description="ROS2 control enabled if true (ignored if use_mini=true)",
+                description="true: ros2_control + control_4ws (4 roues directrices) ; "
+                            "false: DiffDrive Gazebo, jambes de braquage fixes (ignored if use_mini=true)",
             ),
             DeclareLaunchArgument(
                 "use_rviz",

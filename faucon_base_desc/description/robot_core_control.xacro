@@ -98,7 +98,7 @@
         
     </joint>
 
-    <joint name="left_wheel_leg_joint" type="revolute">  <!-- revolute to ros2 control and fixed to diffdrive -->
+    <joint name="left_wheel_leg_joint" type="${steer_joint_type}">  <!-- revolute to ros2 control and fixed to diffdrive -->
         <parent link="base_link"/>
         <child link="left_leg_link"/>
         <origin xyz="${leg_offset_x} ${leg_offset_y} ${-leg_offset_z}" rpy="0 0 0"/>
@@ -158,7 +158,7 @@
         <disable_collision>0</disable_collision>
     </joint>
 
-    <joint name="right_wheel_leg_joint" type="revolute">   <!-- revolute to ros2 control and fixed to diffdrive -->
+    <joint name="right_wheel_leg_joint" type="${steer_joint_type}">   <!-- revolute to ros2 control and fixed to diffdrive -->
         <parent link="base_link"/>
         <child link="right_leg_link"/>
         <origin xyz="${leg_offset_x} ${-leg_offset_y} ${-leg_offset_z}" rpy="0 0 0"/>
@@ -217,7 +217,7 @@
 
 </joint>
 
-<joint name="right_wheel_back_leg_joint" type="revolute">  <!-- revolute to ros2 control and fixed to diffdrive  -->
+<joint name="right_wheel_back_leg_joint" type="${steer_joint_type}">  <!-- revolute to ros2 control and fixed to diffdrive  -->
         <parent link="base_link"/>
         <child link="right_back_leg_link"/>
         <origin xyz="${caster_wheel_offset_x} ${-wheel_offset_y} ${-leg_offset_z}" rpy="0.0 0.0 0.0"/>
@@ -274,7 +274,7 @@
 
 </joint>
 
-<joint name="left_wheel_back_leg_joint" type="revolute"> <!-- revolute to ros2 control and fixed to diffdrive -->
+<joint name="left_wheel_back_leg_joint" type="${steer_joint_type}"> <!-- revolute to ros2 control and fixed to diffdrive -->
         <parent link="base_link"/>
         <child link="left_back_leg_link"/>
         <origin xyz="${caster_wheel_offset_x} ${wheel_offset_y} ${-leg_offset_z}" rpy="0.0 0.0 0.0"/>
