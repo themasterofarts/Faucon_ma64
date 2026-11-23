@@ -198,6 +198,18 @@ Des réunions de coordination sont organisées régulièrement pour planifier le
 
 ---
 
+### Licences
+
+Le projet est distribué sous licence **MIT**, avec les exceptions suivantes :
+
+| Paquet | Licence | Remarque |
+|---|---|---|
+| `faucon_base_desc`, `faucon_control`, `faucon_drone`, `faucon_ihm`, `faucon_navigation`, `faucon_perception`, `Faucon_Orchestration` | MIT | |
+| `faucon_localisation` | Apache-2.0 | Contient du code contribué sous Apache-2.0 ; un passage en MIT nécessite l'accord de ses contributeurs. |
+| `virtual_maize_field` | GPLv3 | Projet externe embarqué (Field Robot Event). Sa licence s'applique à ce paquet et à toute redistribution qui l'inclut. |
+
+La licence de chaque paquet fait foi dans son `package.xml` (et son fichier `LICENSE` lorsqu'il existe).
+
 ### Remerciements
 
 Un grand merci à tous les membres de la communauté MA64 Robotics pour leur implication, leurs idées et leur passion pour la robotique.
