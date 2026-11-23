@@ -8,6 +8,7 @@ from std_msgs.msg import Bool, Float64MultiArray
 import math
 
 from rclpy.duration import Duration
+from rclpy.executors import ExternalShutdownException
 
 
 class CmdVelToJoints(Node):
@@ -218,10 +219,11 @@ def main(args=None):
     node = CmdVelToJoints()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
+        # Ctrl+C / arret par ros2 launch (SIGINT/SIGTERM) : arret silencieux
         pass
     node.destroy_node()
-    rclpy.shutdown()
+    rclpy.try_shutdown()
 
 
 if __name__ == "__main__":

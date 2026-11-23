@@ -6,6 +6,7 @@ import math
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
+from rclpy.executors import ExternalShutdownException
 
 from sensor_msgs.msg import NavSatFix
 from robot_localization.srv import SetDatum
@@ -146,9 +147,13 @@ class DatumManager(Node):
 def main():
     rclpy.init()
     node = DatumManager()
-    rclpy.spin(node)
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        # Ctrl+C / arret par ros2 launch (SIGINT/SIGTERM) : arret silencieux
+        pass
     node.destroy_node()
-    rclpy.shutdown()
+    rclpy.try_shutdown()
 
 
 if __name__ == "__main__":

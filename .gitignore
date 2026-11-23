@@ -4,3 +4,7 @@ log/
 .vscode/
 __pycache__/
 *.pyc
+
+# Enregistrements rosbag (plusieurs Go) : a ne jamais committer
+*.mcap
+*.db3
