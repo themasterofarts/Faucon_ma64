@@ -688,7 +688,7 @@ function IMUWidget({ subscribe }) {
 // ─── CAMERA WIDGET ────────────────────────────────────────────────────────────
 function CameraWidget({ config }) {
   const [streamUrl, setStreamUrl] = useState(config.videoServer || "");
-  const [inputUrl, setInputUrl] = useState(config.videoServer || "http://localhost:8080/stream?topic=/camera/image");
+  const [inputUrl, setInputUrl] = useState(config.videoServer || `http://${ROBOT_HOST}:8080/stream?topic=/camera/image`);
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -1095,11 +1095,15 @@ function ConfigModal({ config, onSave, onClose }) {
   );
 }
 
+// Hôte qui sert la page : en local "localhost", depuis une tablette l'IP du robot
+// (ihm_lan:=true). rosbridge et la caméra tournent sur cette même machine.
+const ROBOT_HOST = (typeof window !== "undefined" && window.location.hostname) || "localhost";
+
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [showConfig, setShowConfig] = useState(false);
   const [config, setConfig] = useState({
-    rosBridgeUrl: "ws://localhost:9090",
+    rosBridgeUrl: `ws://${ROBOT_HOST}:9090`,
     videoServer: "",
     gpsTopic: "/gnss/fix",
     imuTopic: "/imu/data",

@@ -65,19 +65,24 @@ ros2 launch faucon_ihm ihm_launch.py
 
 Le terminal affiche les URLs d'accès :
 
-```
-╔══════════════════════════════════════════════╗
-║        ROS2 IHM — GROUND CONTROL             ║
-╠══════════════════════════════════════════════╣
-║  rosbridge   ws://0.0.0.0:9090               ║
-║  camera      http://0.0.0.0:8080             ║
-║  IHM         http://0.0.0.0:3000             ║
-╚══════════════════════════════════════════════╝
+Par défaut, les serveurs (rosbridge, caméra, IHM) n'écoutent **qu'en local** :
+ouvrez **`http://localhost:3000`** sur la machine ROS2.
+
+### Accès depuis le réseau (tablette, autre PC)
+
+> ⚠️ rosbridge n'a **pas d'authentification** : une fois ouvert au réseau, **tout appareil du
+> réseau peut piloter le robot** (`/cmd_vel_teleop`, `/e_stop`, `/mission/command`).
+> À n'utiliser que sur un réseau dédié au robot (point d'accès isolé ou VPN).
+
+```bash
+ros2 launch faucon_ihm ihm_launch.py ihm_lan:=true
 ```
 
-Ouvrez **`http://<IP-robot>:3000`** dans votre navigateur.
+Ouvrez alors **`http://<IP-robot>:3000`** depuis l'autre appareil (IP : `hostname -I`).
+L'IHM se connecte automatiquement à rosbridge et à la caméra sur la machine qui l'a servie.
 
-> Pour connaître l'IP de votre machine ROS2 : `hostname -I`
+Si le port est déjà utilisé, le serveur IHM ne démarre pas (il ne tue plus le processus
+existant) et indique comment l'identifier : `ss -ltnp 'sport = :3000'`.
 
 ### Avec ports personnalisés
 

@@ -141,6 +141,17 @@ ros2 launch faucon_localisation mapviz.launch.py
 ros2 launch faucon_ihm ihm_launch.py
 ```
 
+#### Accès à l'IHM depuis un autre appareil (tablette…)
+Par défaut, l'IHM, rosbridge et la caméra n'écoutent **qu'en local** (`http://localhost:3000`).
+rosbridge n'a **pas d'authentification** : l'ouvrir au réseau permet à tout appareil du réseau
+de piloter le robot. Pour l'activer explicitement :
+```bash
+./faucon/launch_full.sh ihm_lan=true          # ou launch_base.sh ihm_lan=true
+ros2 launch faucon_ihm ihm_launch.py ihm_lan:=true
+```
+puis ouvrir `http://<IP-robot>:3000`. À n'utiliser que sur un réseau dédié au robot
+(point d'accès isolé ou VPN).
+
 #### Pilotage en manuel
 ```bash
 # remap vers l'entree teleop de twist_mux (prioritaire sur Nav2)

@@ -81,6 +81,8 @@ def launch_setup(context, *args, **kwargs):
         ),
         launch_arguments={
             "use_sim_time": use_sim_time,
+            # false (defaut) : IHM / rosbridge accessibles en local uniquement
+            "ihm_lan": LaunchConfiguration("ihm_lan"),
         }.items(),
     )
 
@@ -296,6 +298,13 @@ def generate_launch_description():
                  description="Launch RViz if true (ignored if use_mini=true)",
             ),
         
+            DeclareLaunchArgument(
+                "ihm_lan",
+                default_value="false",
+                description="true : IHM, rosbridge et camera accessibles depuis le reseau "
+                            "(SANS authentification) ; false : machine locale uniquement",
+            ),
+
             OpaqueFunction(function=launch_setup),
         ]
     )
