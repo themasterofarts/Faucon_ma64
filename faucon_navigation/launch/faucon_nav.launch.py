@@ -116,6 +116,11 @@ def generate_launch_description():
                     "use_sim_time": LaunchConfiguration("use_sim_time"),
                     "params_file": LaunchConfiguration("params_file"),
                     "autostart": LaunchConfiguration("autostart"),
+                    # Pas de map_server / AMCL : la localisation (map -> odom) est
+                    # assuree par robot_localization (EKF + navsat_transform).
+                    # Par defaut bringup_launch les lance : map_server echouait
+                    # (aucune carte) et AMCL aurait publie un second map -> odom.
+                    "use_localization": "False",
                 }.items(),
             ),
             launch.actions.IncludeLaunchDescription(
