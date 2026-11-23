@@ -8,3 +8,6 @@ __pycache__/
 # Enregistrements rosbag (plusieurs Go) : a ne jamais committer
 *.mcap
 *.db3
+
+# Sauvegardes locales de fichiers xacro
+*.xacro.p
