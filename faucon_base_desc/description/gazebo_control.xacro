@@ -1,34 +1,38 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-
+    <!-- Mode sans ros2_control (use_ros2_control:=false) : DiffDrive Gazebo sur les
+         4 roues. Les jambes de braquage sont alors en "fixed" (cf. robot.urdf.xacro). -->
      <gazebo>
-        
+
         <plugin name="gz::sim::systems::DiffDrive" filename="gz-sim-diff-drive-system">
 
 
             <left_joint>left_wheel_joint</left_joint>
             <right_joint>right_wheel_joint</right_joint>
-            
+
             <right_joint>wheel_back_right_joint</right_joint>
             <left_joint>wheel_back_left_joint</left_joint>
 
-            <wheel_separation>1.8</wheel_separation>
+            <!-- Ecart reel entre roues gauche et droite : 2 x wheel_offset_y (0.5) = 1.0 m -->
+            <wheel_separation>1.0</wheel_separation>
             <wheel_radius>0.25</wheel_radius>
-            
+
             <topic>cmd_vel</topic>
             <max_linear_acceleration>0.5</max_linear_acceleration>
 
-             <!-- Output -->
+             <!-- Output : odometrie et TF odom -> base_link deja publiees par
+                  l'OdometryPublisher (odom.xacro). On les desactive ici pour
+                  eviter une seconde TF (ancienne valeur : child base_footprint,
+                  repere inexistant dans l'URDF). Meme principe que le robot mini. -->
              <frame_id>odom</frame_id>
-             <child_frame_id>base_footprint</child_frame_id>
-             <odom_topic>odom</odom_topic>
+             <child_frame_id>base_link</child_frame_id>
              <odom_publisher_frequency>30</odom_publisher_frequency>
-             
-             <tf_topic>/tf</tf_topic>
+             <odom_topic>__disabled</odom_topic>
+             <tf_topic>__disabled</tf_topic>
         </plugin>
 
-       
+
     </gazebo>
-     
+
 </robot>

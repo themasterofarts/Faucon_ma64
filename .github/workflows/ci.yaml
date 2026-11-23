@@ -42,7 +42,8 @@ jobs:
             ros-jazzy-gz-ros2-control \
             ros-jazzy-behaviortree-cpp ros-jazzy-behaviortree-cpp-dbgsym ros-jazzy-nav2-bringup \
             ros-jazzy-rosbridge-server ros-jazzy-pcl-ros \
-            libopencv-dev
+            libopencv-dev \
+            python3-pytest
           # Packages Python depuis Ubuntu universe peu fiables → pip
           pip3 install --quiet --break-system-packages ujson utm pyproj
           rosdep update || (rosdep init && rosdep update)
@@ -84,7 +85,25 @@ jobs:
           colcon build --merge-install --event-handlers console_cohesion+
           echo "::notice:: Build completed successfully"
 
-      
+      - name: Python syntax check
+        shell: bash
+        run: |
+          set -e
+          cd "$WS_DIR/src/this_repo"
+          find . -name '*.py' -not -path '*/node_modules/*' -not -path './virtual_maize_field/*' \
+            -print0 | xargs -0 python3 -m py_compile
+          echo "::notice:: Syntaxe Python OK"
+
+      - name: Tests
+        shell: bash
+        run: |
+          set -e
+          source /opt/ros/$ROS_DISTRO/setup.bash
+          # workspace source : les tests URDF ont besoin de $(find faucon_base_desc)
+          source "$WS_DIR/install/setup.bash"
+          cd "$WS_DIR/src/this_repo"
+          python3 -m pytest -q -p no:cacheprovider \
+            faucon_navigation/test faucon_control/test faucon_base_desc/test
 
       - name: Upload logs (artefacts)
         if: always()

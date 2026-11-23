@@ -16,7 +16,7 @@ from rclpy.action import ActionClient
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from action_msgs.msg import GoalStatus
 
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 from sensor_msgs.msg import NavSatFix
 from nav_msgs.msg import Odometry, Path
 from geometry_msgs.msg import PoseStamped, Quaternion, Point
@@ -55,6 +55,7 @@ class MissionManager(Node):
       /mission/command    (std_msgs/String)  — START | STOP | PAUSE | RESUME
       /gnss/datum         (NavSatFix, latch) — localisation prête
       odometry/global     (Odometry)         — pose courante
+      /e_stop             (std_msgs/Bool)    — arrêt d'urgence : met la mission en PAUSE
 
     Topics produits :
       /mission/status     (std_msgs/String)  — JSON 5 Hz
@@ -82,6 +83,9 @@ class MissionManager(Node):
 
         # Nav2
         self._goal_handle = None
+        # Numero de generation du goal courant : toute reponse Nav2 (acceptation,
+        # resultat) portant un autre numero concerne un goal perime et est ignoree.
+        self._goal_seq    = 0
         self._nav_client  = ActionClient(self, FollowPath, "/follow_path")
 
         # conversion GPS→ENU
@@ -93,6 +97,7 @@ class MissionManager(Node):
         self.create_subscription(String,    "/mission/command",   self._on_command,   10)
         self.create_subscription(NavSatFix, "/gnss/datum",        self._on_datum,     LATCHED_QOS)
         self.create_subscription(Odometry,  "odometry/global",    self._on_odom,      10)
+        self.create_subscription(Bool,      "/e_stop",            self._on_e_stop,    10)
 
         # publishers
         self._pub_status = self.create_publisher(String, "/mission/status", 10)
@@ -104,6 +109,14 @@ class MissionManager(Node):
 
         self.get_logger().info("mission_manager prêt - état: IDLE")
 
+
+    def _on_e_stop(self, msg: Bool) -> None:
+        # Arrêt d'urgence : twist_mux bloque déjà les commandes ; on met la mission
+        # en PAUSE pour annuler le goal Nav2 (sinon il échoue au progress checker
+        # et la mission passe en ERROR). Reprise par RESUME après réarmement.
+        if msg.data and self._state == State.RUNNING:
+            self.get_logger().warn(f"[{self._mission_id}] Arrêt d'urgence — mission mise en PAUSE.")
+            self._cmd_pause()
 
     def _on_datum(self, _: NavSatFix) -> None:
         if not self._datum_ready:
@@ -277,25 +290,44 @@ class MissionManager(Node):
 
         goal = FollowPath.Goal()
         goal.path = path
+        self._goal_seq += 1
+        seq = self._goal_seq
         self._transition(State.RUNNING)
         self.get_logger().info(f"[{self._mission_id}] FollowPath envoyé — {len(path.poses)} poses.")
         self._nav_client.send_goal_async(
             goal, feedback_callback=self._on_feedback
-        ).add_done_callback(self._on_goal_accepted)
+        ).add_done_callback(lambda f, seq=seq: self._on_goal_accepted(f, seq))
 
     def _on_feedback(self, _) -> None:
         pass
 
-    def _on_goal_accepted(self, future) -> None:
-        self._goal_handle = future.result()
-        if not self._goal_handle.accepted:
-            return self._set_error("Goal FollowPath refusé par Nav2")
-        self.get_logger().info(f"[{self._mission_id}] Goal accepté par Nav2.")
-        self._goal_handle.get_result_async().add_done_callback(self._on_result)
+    def _on_goal_accepted(self, future, seq: int) -> None:
+        try:
+            handle = future.result()
+        except Exception as e:
+            if seq == self._goal_seq:
+                self._set_error(f"Erreur d'envoi du goal FollowPath: {e}")
+            return
 
-    def _on_result(self, future) -> None:
-        if self._state != State.RUNNING:
-            return  # annulé volontairement (PAUSE / STOP)
+        if seq != self._goal_seq or self._state != State.RUNNING:
+            # Goal perime : STOP / PAUSE / nouveau goal recu avant l'acceptation.
+            # S'il a ete accepte, Nav2 l'execute : il faut l'annuler tout de suite.
+            if handle.accepted:
+                self.get_logger().warn(
+                    f"[{self._mission_id}] Goal accepté après annulation — annulation immédiate."
+                )
+                handle.cancel_goal_async()
+            return
+
+        if not handle.accepted:
+            return self._set_error("Goal FollowPath refusé par Nav2")
+        self._goal_handle = handle
+        self.get_logger().info(f"[{self._mission_id}] Goal accepté par Nav2.")
+        handle.get_result_async().add_done_callback(lambda f, seq=seq: self._on_result(f, seq))
+
+    def _on_result(self, future, seq: int) -> None:
+        if seq != self._goal_seq or self._state != State.RUNNING:
+            return  # resultat d'un goal perime ou annulé volontairement (PAUSE / STOP)
         self._goal_handle = None
         try:
             status = future.result().status
@@ -315,6 +347,9 @@ class MissionManager(Node):
             self._transition(State.IDLE)
 
     def _cancel_goal(self) -> None:
+        # Invalide aussi un goal envoye mais pas encore accepte : il sera annule
+        # des son acceptation (voir _on_goal_accepted).
+        self._goal_seq += 1
         if self._goal_handle is not None:
             self._goal_handle.cancel_goal_async()
             self._goal_handle = None

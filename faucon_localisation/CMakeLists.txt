@@ -20,6 +20,13 @@ install(
 install(PROGRAMS
   script/datum_manager.py
   script/gps_to_local.py
+  script/pose_robot.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# local_frame est un module (pas un point d'entree), importe par gps_to_local.py
+install(FILES
+  script/local_frame.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

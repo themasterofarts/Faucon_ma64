@@ -1,15 +1,22 @@
-import rclpy
+#!/usr/bin/env python3
 import math
+import os
+import sys
+
+import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 
 from sensor_msgs.msg import NavSatFix, Imu
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Quaternion
 
-import math
-
-from local_frame import LocalFrame
+# local_frame.py est installe a cote de ce script (lib/faucon_localisation)
+_DIR = os.path.dirname(os.path.abspath(__file__))
+if _DIR not in sys.path:
+    sys.path.insert(0, _DIR)
+from local_frame import LocalFrame  # noqa: E402
 
 
 
@@ -140,9 +147,12 @@ class GnssToLocal(Node):
 def main():
     rclpy.init()
     node = GnssToLocal()
-    rclpy.spin(node)
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
     node.destroy_node()
-    rclpy.shutdown()
+    rclpy.try_shutdown()
 
 
 if __name__ == '__main__':

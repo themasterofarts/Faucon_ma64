@@ -10,7 +10,9 @@ from typing import List, Optional
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
+from rclpy.executors import ExternalShutdownException
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
+from action_msgs.msg import GoalStatus
 from ament_index_python.packages import get_package_share_directory
 
 from sensor_msgs.msg import NavSatFix
@@ -112,6 +114,9 @@ class GpsPathSender(Node):
         )
 
         self._sent = False
+        # Une seule requete /fromLLArray a la fois, et un seul timer de nouvelle tentative
+        self._fromll_in_flight = False
+        self._fromll_timer = None
 
         # Client de conversion GPS -> ENU fourni par navsat_transform_node
         self._fromll_client = self.create_client(FromLLArray, "/fromLLArray")
@@ -141,20 +146,32 @@ class GpsPathSender(Node):
         self._call_fromll()
 
     def _call_fromll(self) -> None:
+        # Tentative immediate, puis toutes les 0.5 s via un timer UNIQUE, annule
+        # des que le chemin est envoye. Avant : un nouveau timer a chaque appel,
+        # jamais annule, et des requetes en double si la reponse tardait.
+        self._retry_fromll()
+        if not self._sent and self._fromll_timer is None:
+            self._fromll_timer = self.create_timer(0.5, self._retry_fromll)
+
+    def _retry_fromll(self) -> None:
+        if self._sent:
+            self._cancel_fromll_timer()
+            return
+        if self._fromll_in_flight:
+            return  # reponse en attente : pas de requete en double
         if not self._fromll_client.service_is_ready():
             self.get_logger().info(
                 "Service /fromLLArray pas encore disponible, nouvelle tentative dans 0.5 s...",
                 throttle_duration_sec=5.0,
             )
-            self.create_timer(0.5, self._retry_fromll)
-            return
-
-        self._send_fromll_request()
-
-    def _retry_fromll(self) -> None:
-        if self._sent or not self._fromll_client.service_is_ready():
             return
         self._send_fromll_request()
+
+    def _cancel_fromll_timer(self) -> None:
+        if self._fromll_timer is not None:
+            self._fromll_timer.cancel()
+            self.destroy_timer(self._fromll_timer)
+            self._fromll_timer = None
 
     def _send_fromll_request(self) -> None:
         req = FromLLArray.Request()
@@ -163,6 +180,7 @@ class GpsPathSender(Node):
             for wp in self._gps_waypoints
         ]
 
+        self._fromll_in_flight = True
         future = self._fromll_client.call_async(req)
         future.add_done_callback(self._on_fromll_response)
         self.get_logger().info(
@@ -174,10 +192,12 @@ class GpsPathSender(Node):
     # ------------------------------------------------------------------
 
     def _on_fromll_response(self, future) -> None:
+        self._fromll_in_flight = False
         try:
             response = future.result()
         except Exception as e:
-            self.get_logger().error(f"Erreur /fromLLArray : {e}")
+            # Le timer de nouvelle tentative reste actif : la requete sera renvoyee
+            self.get_logger().error(f"Erreur /fromLLArray : {e} — nouvelle tentative...")
             return
 
         map_points: List[Point] = response.map_points
@@ -193,8 +213,9 @@ class GpsPathSender(Node):
             f"Premier point ENU: x={path_msg.poses[0].pose.position.x:.3f}, "
             f"y={path_msg.poses[0].pose.position.y:.3f}"
         )
-        self._send_follow_path(path_msg)
         self._sent = True
+        self._cancel_fromll_timer()
+        self._send_follow_path(path_msg)
 
     def _build_path(self, map_points: List[Point]) -> Path:
         path = Path()
@@ -237,23 +258,44 @@ class GpsPathSender(Node):
         self.get_logger().debug("Feedback FollowPath recu.")
 
     def _on_goal_response(self, future) -> None:
-        goal_handle = future.result()
+        try:
+            goal_handle = future.result()
+        except Exception as e:
+            self.get_logger().error(f"Erreur d'envoi du goal FollowPath : {e}")
+            rclpy.try_shutdown()
+            return
         if not goal_handle.accepted:
             self.get_logger().error("Goal FollowPath refuse.")
+            rclpy.try_shutdown()
             return
         self.get_logger().info("Goal FollowPath accepte. Attente du resultat...")
         goal_handle.get_result_async().add_done_callback(self._on_result)
 
-    def _on_result(self, _) -> None:
-        self.get_logger().info("FollowPath termine.")
-        rclpy.shutdown()
+    def _on_result(self, future) -> None:
+        # Avant : "termine" etait affiche meme en cas d'echec ou d'annulation
+        try:
+            status = future.result().status
+        except Exception as e:
+            self.get_logger().error(f"Resultat FollowPath illisible : {e}")
+            status = GoalStatus.STATUS_UNKNOWN
+        if status == GoalStatus.STATUS_SUCCEEDED:
+            self.get_logger().info("FollowPath termine avec succes.")
+        elif status == GoalStatus.STATUS_CANCELED:
+            self.get_logger().warn("FollowPath annule.")
+        else:
+            self.get_logger().error(f"FollowPath en echec (statut {status}).")
+        rclpy.try_shutdown()
 
 
 def main():
     rclpy.init()
     node = GpsPathSender()
-    rclpy.spin(node)
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
     node.destroy_node()
+    rclpy.try_shutdown()
 
 
 if __name__ == "__main__":

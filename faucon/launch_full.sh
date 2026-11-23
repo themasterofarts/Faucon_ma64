@@ -11,11 +11,15 @@ cd "${WS_DIR}"
 echo "Workspace : ${WS_DIR}"
 
 use_mini=false
+ihm_lan=false
 
 for arg in "$@"; do
     case $arg in
         use_mini=*)
             use_mini="${arg#*=}"
+            ;;
+        ihm_lan=*)
+            ihm_lan="${arg#*=}"
             ;;
         *)
             echo "Argument inconnu : $arg"
@@ -29,6 +33,14 @@ if [[ "$use_mini" != "true" && "$use_mini" != "false" ]]; then
     exit 1
 fi
 
+if [[ "$ihm_lan" != "true" && "$ihm_lan" != "false" ]]; then
+    echo "Erreur : ihm_lan doit être true ou false (valeur reçue : $ihm_lan)"
+    exit 1
+fi
+if [[ "$ihm_lan" == "true" ]]; then
+    echo "⚠  ihm_lan=true : IHM et rosbridge accessibles depuis le réseau SANS authentification."
+fi
+
 echo "Compilation (colcon build)…"
 colcon build --symlink-install --event-handlers console_direct+ --parallel-workers "$(nproc)"
 echo "Build terminé."
@@ -37,7 +49,7 @@ source "${WS_DIR}/install/setup.bash"
 
 # Lancement de la base en arrière-plan
 echo "Lancement base : ros2 launch faucon_base_desc view.launch.py use_sim_time:=true use_mini:=${use_mini}"
-ros2 launch faucon_base_desc view.launch.py use_sim_time:=true use_mini:="${use_mini}" &
+ros2 launch faucon_base_desc view.launch.py use_sim_time:=true use_mini:="${use_mini}" ihm_lan:="${ihm_lan}" &
 BASE_PID=$!
 
 echo "Attente du démarrage de la base (5s)…"

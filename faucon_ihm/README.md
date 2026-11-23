@@ -15,7 +15,7 @@
 | 🗺 Carte GPS | `/gnss/fix` | Carte OpenStreetMap + trace de trajectoire temps réel |
 | ✈ Cockpit IMU | `/imu/data` | Horizon artificiel — roll / pitch / cap |
 | 📷 Caméra | `web_video_server :8080` | Flux MJPEG configurable via URL |
-| 🕹 Contrôle manuel | `/cmd_vel` | Joystick souris/touch + clavier ZQSD/flèches |
+| 🕹 Contrôle manuel | `/cmd_vel_teleop` (via twist_mux) | Joystick souris/touch + clavier ZQSD/flèches |
 | 📡 Télémétrie | `/odom` | Vitesse, uptime, statut Nav2 |
 
 ---
@@ -65,19 +65,24 @@ ros2 launch faucon_ihm ihm_launch.py
 
 Le terminal affiche les URLs d'accès :
 
-```
-╔══════════════════════════════════════════════╗
-║        ROS2 IHM — GROUND CONTROL             ║
-╠══════════════════════════════════════════════╣
-║  rosbridge   ws://0.0.0.0:9090               ║
-║  camera      http://0.0.0.0:8080             ║
-║  IHM         http://0.0.0.0:3000             ║
-╚══════════════════════════════════════════════╝
+Par défaut, les serveurs (rosbridge, caméra, IHM) n'écoutent **qu'en local** :
+ouvrez **`http://localhost:3000`** sur la machine ROS2.
+
+### Accès depuis le réseau (tablette, autre PC)
+
+> ⚠️ rosbridge n'a **pas d'authentification** : une fois ouvert au réseau, **tout appareil du
+> réseau peut piloter le robot** (`/cmd_vel_teleop`, `/e_stop`, `/mission/command`).
+> À n'utiliser que sur un réseau dédié au robot (point d'accès isolé ou VPN).
+
+```bash
+ros2 launch faucon_ihm ihm_launch.py ihm_lan:=true
 ```
 
-Ouvrez **`http://<IP-robot>:3000`** dans votre navigateur.
+Ouvrez alors **`http://<IP-robot>:3000`** depuis l'autre appareil (IP : `hostname -I`).
+L'IHM se connecte automatiquement à rosbridge et à la caméra sur la machine qui l'a servie.
 
-> Pour connaître l'IP de votre machine ROS2 : `hostname -I`
+Si le port est déjà utilisé, le serveur IHM ne démarre pas (il ne tue plus le processus
+existant) et indique comment l'identifier : `ss -ltnp 'sport = :3000'`.
 
 ### Avec ports personnalisés
 
@@ -100,7 +105,7 @@ Au premier lancement, cliquez sur **⚙ CONFIG** (en haut à droite) et renseign
 | VIDEO SERVER | `http://localhost:8080/stream?topic=/camera/image_raw` | URL du flux caméra MJPEG |
 | GPS TOPIC | `/gnss/fix` | Topic NavSatFix |
 | IMU TOPIC | `/imu/data` | Topic Imu |
-| CMD_VEL TOPIC | `/cmd_vel` | Topic de commande vitesse |
+| CMD_VEL TOPIC | `/cmd_vel_teleop` | Topic de commande vitesse (entrée teleop de twist_mux) |
 
 > Si l'IHM est sur une machine différente du robot, remplacez `localhost` par l'IP du robot.
 
@@ -114,7 +119,7 @@ Au premier lancement, cliquez sur **⚙ CONFIG** (en haut à droite) et renseign
 | `S` ou `↓` | Reculer |
 | `Q` ou `A` ou `←` | Tourner à gauche |
 | `D` ou `→` | Tourner à droite |
-| Bouton **EMERGENCY STOP** | Stoppe immédiatement le robot (`cmd_vel` = 0) |
+| Bouton **EMERGENCY STOP** | Arrêt d'urgence à accrochage : publie `/e_stop` = true (verrou `twist_mux` qui bloque Nav2 et la téléop, roues à zéro dans `control_4ws`, mission mise en PAUSE). Reste actif jusqu'au clic sur **RÉARMER** (avec confirmation). |
 
 ---
 
@@ -204,7 +209,7 @@ Subscriptions (lecture) :
   /odom         nav_msgs/Odometry       — odométrie
 
 Publications (écriture) :
-  /cmd_vel      geometry_msgs/Twist     — commande vitesse
+  /cmd_vel_teleop geometry_msgs/Twist   — commande vitesse (entrée teleop de twist_mux, prioritaire sur Nav2)
 ```
 
 ---

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# NB : ce fichier existe en deux copies (faucon_navigation/scripts/ et
+# faucon_path_planning/gui/). Les garder synchronisees : la cle de sortie
+# doit rester "waypoints", attendue par mission_manager.py et follower.py.
 """Independent trajectory generator module.
 
 This module is ROS/Nav2 agnostic:
@@ -40,7 +43,7 @@ class TrajectoryConfig:
     step: float
     turn_radius: float
     list_key_in: str = "waypoints"
-    list_key_out: str = "trajectory"
+    list_key_out: str = "waypoints"
     x_key: str = "latitude"
     y_key: str = "longitude"
     yaw_key: str = "yaw"
@@ -360,6 +363,16 @@ def _heading(start: Point2D, goal: Point2D) -> float:
     return math.atan2(goal[1] - start[1], goal[0] - start[0])
 
 
+def _north_east_yaw_to_enu(yaw: float) -> float:
+    """Convertit un yaw du repere interne (x = nord, y = est) en yaw ENU ROS.
+
+    En interne, x = latitude/nord et y = longitude/est : le yaw vaut donc 0 vers
+    le nord et croit vers l'est (cap). ROS / navsat_transform / Nav2 utilisent
+    ENU (REP-103) : 0 vers l'est, croissant vers le nord. yaw_enu = pi/2 - yaw.
+    """
+    return _wrap_pi(math.pi / 2.0 - yaw)
+
+
 def _line_segment_poses(start: Point2D, goal: Point2D, step: float, include_start: bool) -> List[Pose2D]:
     pts = _interpolate_line(start, goal, step=step, include_start=include_start)
     if not pts:
@@ -470,7 +483,7 @@ def _compute_yaws(points: Sequence[Point2D]) -> List[float]:
 def write_trajectory_yaml(
     output_yaml_path: str,
     trajectory_points: Sequence[Point2D],
-    list_key: str = "trajectory",
+    list_key: str = "waypoints",
     x_key: str = "latitude",
     y_key: str = "longitude",
     include_yaw: bool = True,
@@ -607,7 +620,8 @@ def generate_trajectory_yaml(input_yaml_path: str, output_yaml_path: str, config
         trajectory_poses_out = trajectory_poses_local
 
     trajectory_points: List[Point2D] = [(p.x, p.y) for p in trajectory_poses_out]
-    trajectory_yaws = [p.yaw for p in trajectory_poses_out]
+    # Le yaw ecrit doit etre en ENU : c'est ce qu'attendent mission_manager.py / follower.py
+    trajectory_yaws = [_north_east_yaw_to_enu(p.yaw) for p in trajectory_poses_out]
 
     return write_trajectory_yaml(
         output_yaml_path=output_yaml_path,
@@ -628,7 +642,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--step", required=True, type=float, help="Sampling step in meters (default GNSS->local pipeline)")
     parser.add_argument("--turn-radius", required=True, type=float, help="Turn radius in meters (default GNSS->local pipeline)")
     parser.add_argument("--input-list-key", default="waypoints")
-    parser.add_argument("--output-list-key", default="trajectory")
+    parser.add_argument("--output-list-key", default="waypoints")
     parser.add_argument("--x-key", default="latitude")
     parser.add_argument("--y-key", default="longitude")
     parser.add_argument("--yaw-key", default="yaw")

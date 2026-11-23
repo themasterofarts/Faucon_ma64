@@ -351,6 +351,9 @@ const css = `
     transition: all 0.15s;
   }
   .emergency-stop:hover { background: var(--red); color: #fff; box-shadow: 0 0 20px #ff445588; }
+  .emergency-stop.active { background: var(--red); color: #fff; box-shadow: 0 0 20px #ff445588; animation: estop-blink 1s step-end infinite; }
+  .emergency-stop:disabled { opacity: 0.4; cursor: not-allowed; }
+  @keyframes estop-blink { 50% { background: transparent; color: var(--red); } }
   .keyboard-hint { font-size: 9px; color: var(--text-dim); display: flex; gap: 12px; }
   .key-badge { background: var(--bg3); border: 1px solid var(--border); padding: 1px 5px; color: var(--text); }
 
@@ -571,11 +574,21 @@ function GPSWidget({ subscribe }) {
 }
 
 // ─── IMU COCKPIT (ADI) ────────────────────────────────────────────────────────
+// Mode démo de l'horizon artificiel (attitude simulée). DÉSACTIVÉ par défaut :
+// il écrasait en permanence les vraies données IMU. À n'activer que pour une
+// démonstration sans robot — un bandeau "DÉMO" est alors affiché.
+const IMU_DEMO = false;
+// Au-delà de ce délai sans message IMU, les valeurs sont signalées comme absentes
+const IMU_STALE_MS = 1500;
+
 function IMUWidget({ subscribe }) {
   const [attitude, setAttitude] = useState({ roll: 0, pitch: 0, yaw: 0 });
+  const lastImuRef = useRef(0);
+  const [stale, setStale] = useState(true);
 
   useEffect(() => {
     const unsub = subscribe("/imu/data", "sensor_msgs/Imu", (msg) => {
+      lastImuRef.current = Date.now();
       const q = msg.orientation;
       // Quaternion to Euler
       const sinr = 2 * (q.w * q.x + q.y * q.z);
@@ -591,8 +604,19 @@ function IMUWidget({ subscribe }) {
     return unsub;
   }, [subscribe]);
 
-  // Simulate movement for demo when not connected
+  // Détection d'absence de données IMU
   useEffect(() => {
+    if (IMU_DEMO) return undefined;
+    const check = setInterval(() => {
+      setStale(Date.now() - lastImuRef.current > IMU_STALE_MS);
+    }, 250);
+    return () => clearInterval(check);
+  }, []);
+
+  // Simulation d'attitude pour démonstration (uniquement si IMU_DEMO = true)
+  useEffect(() => {
+    if (!IMU_DEMO) return undefined;
+    setStale(false);
     let t = 0;
     const demo = setInterval(() => {
       t += 0.02;
@@ -622,6 +646,15 @@ function IMUWidget({ subscribe }) {
               </div>
             ))}
           </div>
+          {(stale || IMU_DEMO) && (
+            <div style={{
+              position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              background: "#080c0fcc", color: IMU_DEMO ? "var(--amber)" : "var(--red)", zIndex: 5,
+              fontSize: 10, letterSpacing: 2, textAlign: "center", pointerEvents: "none",
+            }}>
+              {IMU_DEMO ? "DÉMO — ATTITUDE SIMULÉE" : "PAS DE DONNÉES IMU"}
+            </div>
+          )}
           <div className="adi-overlay">
             <div className="adi-wings">
               <div className="adi-wing-left" />
@@ -644,7 +677,7 @@ function IMUWidget({ subscribe }) {
         {[["ROLL", attitude.roll, "°"], ["PITCH", attitude.pitch, "°"], ["HDG", ((attitude.yaw + 360) % 360), "°"]].map(([l, v, u]) => (
           <div key={l} className="imu-value-box">
             <div className="imu-val-label">{l}</div>
-            <div className="imu-val">{v.toFixed(1)}<span style={{ fontSize: 9, color: "var(--text-dim)" }}>{u}</span></div>
+            <div className="imu-val">{stale ? "--.-" : v.toFixed(1)}<span style={{ fontSize: 9, color: "var(--text-dim)" }}>{u}</span></div>
           </div>
         ))}
       </div>
@@ -655,7 +688,7 @@ function IMUWidget({ subscribe }) {
 // ─── CAMERA WIDGET ────────────────────────────────────────────────────────────
 function CameraWidget({ config }) {
   const [streamUrl, setStreamUrl] = useState(config.videoServer || "");
-  const [inputUrl, setInputUrl] = useState(config.videoServer || "http://localhost:8080/stream?topic=/camera/image");
+  const [inputUrl, setInputUrl] = useState(config.videoServer || `http://${ROBOT_HOST}:8080/stream?topic=/camera/image`);
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -691,7 +724,7 @@ function CameraWidget({ config }) {
 }
 
 // ─── JOYSTICK WIDGET ──────────────────────────────────────────────────────────
-function JoystickWidget({ publish, connected }) {
+function JoystickWidget({ publish, subscribe, connected }) {
   const [vel, setVel] = useState({ linear: 0, angular: 0 });
   const [active, setActive] = useState(false);
   const baseRef = useRef(null);
@@ -702,21 +735,34 @@ function JoystickWidget({ publish, connected }) {
 
   const MAX_LINEAR = 1.0;
   const MAX_ANGULAR = 1.5;
+  // Topic d'entree teleop de twist_mux (prioritaire sur Nav2), qui publie ensuite /cmd_vel
+  const CMD_VEL_TELEOP_TOPIC = "/cmd_vel_teleop";
 
   const sendCmd = useCallback((linear, angular) => {
     if (!connected) return;
-    publish("/cmd_vel", "geometry_msgs/Twist", {
+    publish(CMD_VEL_TELEOP_TOPIC, "geometry_msgs/Twist", {
       linear: { x: linear, y: 0, z: 0 },
       angular: { x: 0, y: 0, z: angular }
     });
   }, [publish, connected]);
 
   // Keyboard control
+  const keyboardMovingRef = useRef(false);
   useEffect(() => {
-    const down = (e) => { keysRef.current[e.key] = true; };
+    // Ne pas piloter le robot quand l'utilisateur tape dans un champ de saisie
+    const isTyping = (e) => {
+      const t = e.target;
+      return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+    };
+    const down = (e) => { if (!isTyping(e)) keysRef.current[e.key] = true; };
     const up = (e) => { keysRef.current[e.key] = false; };
+    // Perte de focus : les keyup ne seront jamais reçus → on relâche toutes les touches
+    const releaseAll = () => { keysRef.current = {}; };
+    const onVisibility = () => { if (document.hidden) releaseAll(); };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
+    window.addEventListener("blur", releaseAll);
+    document.addEventListener("visibilitychange", onVisibility);
     const tick = setInterval(() => {
       const k = keysRef.current;
       let lin = 0, ang = 0;
@@ -724,11 +770,27 @@ function JoystickWidget({ publish, connected }) {
       if (k["ArrowDown"] || k["s"]) lin = -MAX_LINEAR * 0.5;
       if (k["ArrowLeft"] || k["q"] || k["a"]) ang = MAX_ANGULAR;
       if (k["ArrowRight"] || k["d"]) ang = -MAX_ANGULAR;
-      velRef.current = { linear: lin, angular: ang };
-      setVel({ linear: lin, angular: ang });
-      if (lin !== 0 || ang !== 0) sendCmd(lin, ang);
+      const moving = lin !== 0 || ang !== 0;
+      if (moving) {
+        velRef.current = { linear: lin, angular: ang };
+        setVel({ linear: lin, angular: ang });
+        sendCmd(lin, ang);
+      } else if (keyboardMovingRef.current) {
+        // Transition mouvement → arrêt : on publie explicitement un zéro
+        velRef.current = { linear: 0, angular: 0 };
+        setVel({ linear: 0, angular: 0 });
+        sendCmd(0, 0);
+      }
+      keyboardMovingRef.current = moving;
     }, 100);
-    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); clearInterval(tick); };
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", releaseAll);
+      document.removeEventListener("visibilitychange", onVisibility);
+      clearInterval(tick);
+      if (keyboardMovingRef.current) { sendCmd(0, 0); keyboardMovingRef.current = false; }
+    };
   }, [sendCmd]);
 
   // Touch/mouse joystick
@@ -761,13 +823,54 @@ function JoystickWidget({ publish, connected }) {
       sendCmd(0, 0);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onEnd);
+    // pointercancel (geste interrompu, perte du pointeur) doit aussi arrêter le robot
+    window.addEventListener("pointercancel", onEnd);
     move(e.clientX, e.clientY);
   }, [sendCmd]);
 
-  const stop = () => { sendCmd(0, 0); setVel({ linear: 0, angular: 0 }); };
+  // ── Arrêt d'urgence ─────────────────────────────────────────────────────
+  // /e_stop (std_msgs/Bool) : verrou twist_mux (bloque Nav2 et teleop), arrêt
+  // immédiat des roues dans control_4ws, mise en PAUSE de la mission.
+  // Interrupteur à accrochage : actif jusqu'au réarmement explicite.
+  const E_STOP_TOPIC = "/e_stop";
+  const [eStop, setEStop] = useState(false);
+
+  const publishEStop = useCallback((active) => {
+    publish(E_STOP_TOPIC, "std_msgs/Bool", { data: active });
+  }, [publish]);
+
+  // L'affichage suit l'état réel du topic (autre IHM, autre client…)
+  useEffect(() => {
+    if (!subscribe) return undefined;
+    return subscribe(E_STOP_TOPIC, "std_msgs/Bool", (msg) => {
+      setEStop(!!msg.data);
+    });
+  }, [subscribe]);
+
+  // Tant qu'il est actif, l'état est republié à 1 Hz (robustesse : redémarrage
+  // de twist_mux / control_4ws, nouveaux abonnés)
+  useEffect(() => {
+    if (!eStop || !connected) return undefined;
+    const t = setInterval(() => publishEStop(true), 1000);
+    return () => clearInterval(t);
+  }, [eStop, connected, publishEStop]);
+
+  const triggerEStop = () => {
+    setEStop(true);
+    publishEStop(true);
+    sendCmd(0, 0);
+    setVel({ linear: 0, angular: 0 });
+  };
+
+  const rearmEStop = () => {
+    if (!window.confirm("Réarmer l'arrêt d'urgence ? Le robot pourra de nouveau bouger.")) return;
+    setEStop(false);
+    publishEStop(false);
+  };
 
   const linPct = Math.abs(vel.linear / MAX_LINEAR) * 100;
   const angPct = Math.abs(vel.angular / MAX_ANGULAR) * 100;
@@ -802,7 +905,17 @@ function JoystickWidget({ publish, connected }) {
           <span key={k}><span className="key-badge">{k}</span> {l}</span>
         ))}
       </div>
-      <button className="emergency-stop" onClick={stop}>■ EMERGENCY STOP</button>
+      {eStop ? (
+        <button className="emergency-stop active" onClick={rearmEStop} disabled={!connected}
+                title="Arrêt d'urgence actif — cliquer pour réarmer">
+          ⚠ ARRÊT D'URGENCE ACTIF — RÉARMER
+        </button>
+      ) : (
+        <button className="emergency-stop" onClick={triggerEStop} disabled={!connected}
+                title={connected ? "Bloque Nav2 et la téléopération jusqu'au réarmement" : "rosbridge non connecté"}>
+          ■ EMERGENCY STOP
+        </button>
+      )}
     </div>
   );
 }
@@ -964,9 +1077,9 @@ function ConfigModal({ config, onSave, onClose }) {
         {[
           ["ROSBRIDGE HOST", "rosBridgeUrl", "ws://192.168.1.x:9090"],
           ["VIDEO SERVER", "videoServer", "http://192.168.1.x:8080/stream?topic=/camera/image"],
-          ["GPS TOPIC", "gpsTopic", "/gps/fix"],
+          ["GPS TOPIC", "gpsTopic", "/gnss/fix"],
           ["IMU TOPIC", "imuTopic", "/imu/data"],
-          ["CMD_VEL TOPIC", "cmdVelTopic", "/cmd_vel"],
+          ["CMD_VEL TOPIC", "cmdVelTopic", "/cmd_vel_teleop"],
         ].map(([label, key, ph]) => (
           <div key={key} className="modal-field">
             <label>{label}</label>
@@ -982,15 +1095,19 @@ function ConfigModal({ config, onSave, onClose }) {
   );
 }
 
+// Hôte qui sert la page : en local "localhost", depuis une tablette l'IP du robot
+// (ihm_lan:=true). rosbridge et la caméra tournent sur cette même machine.
+const ROBOT_HOST = (typeof window !== "undefined" && window.location.hostname) || "localhost";
+
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [showConfig, setShowConfig] = useState(false);
   const [config, setConfig] = useState({
-    rosBridgeUrl: "ws://localhost:9090",
+    rosBridgeUrl: `ws://${ROBOT_HOST}:9090`,
     videoServer: "",
     gpsTopic: "/gnss/fix",
     imuTopic: "/imu/data",
-    cmdVelTopic: "/cmd_vel",
+    cmdVelTopic: "/cmd_vel_teleop",
   });
 
   const { connected, latency, subscribe, publish } = useRosBridge(config.rosBridgeUrl);
@@ -1027,7 +1144,7 @@ export default function App() {
           <div className="panel panel-gps">
             <div className="panel-header">
               <span className="panel-title">⬡ GPS POSITION</span>
-              <span className="panel-badge">NavSatFix · /gps/fix</span>
+              <span className="panel-badge">NavSatFix · /gnss/fix</span>
             </div>
             <div className="panel-body" style={{ padding: 0 }}>
               <GPSWidget subscribe={subscribe} />
@@ -1060,10 +1177,10 @@ export default function App() {
           <div className="panel">
             <div className="panel-header">
               <span className="panel-title">◎ MANUAL CONTROL</span>
-              <span className="panel-badge">Twist · /cmd_vel</span>
+              <span className="panel-badge">Twist · /cmd_vel_teleop</span>
             </div>
             <div className="panel-body">
-              <JoystickWidget publish={publish} connected={connected} />
+              <JoystickWidget publish={publish} subscribe={subscribe} connected={connected} />
             </div>
           </div>
 

@@ -141,10 +141,26 @@ ros2 launch faucon_localisation mapviz.launch.py
 ros2 launch faucon_ihm ihm_launch.py
 ```
 
+#### Accès à l'IHM depuis un autre appareil (tablette…)
+Par défaut, l'IHM, rosbridge et la caméra n'écoutent **qu'en local** (`http://localhost:3000`).
+rosbridge n'a **pas d'authentification** : l'ouvrir au réseau permet à tout appareil du réseau
+de piloter le robot. Pour l'activer explicitement :
+```bash
+./faucon/launch_full.sh ihm_lan=true          # ou launch_base.sh ihm_lan=true
+ros2 launch faucon_ihm ihm_launch.py ihm_lan:=true
+```
+puis ouvrir `http://<IP-robot>:3000`. À n'utiliser que sur un réseau dédié au robot
+(point d'accès isolé ou VPN).
+
 #### Pilotage en manuel
 ```bash
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
+# remap vers l'entree teleop de twist_mux (prioritaire sur Nav2)
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=cmd_vel_teleop
 ```
+
+> Les commandes de vitesse passent par `twist_mux` : Nav2 publie sur `/cmd_vel_nav2` (priorité 10),
+> la téléopération (IHM, clavier) sur `/cmd_vel_teleop` (priorité 100). `twist_mux` publie le résultat sur `/cmd_vel`.
+> Ne publiez pas directement sur `/cmd_vel` : cela contournerait l'arbitrage.
 ---
 
 ### Contribuer au projet
@@ -181,6 +197,18 @@ Des réunions de coordination sont organisées régulièrement pour planifier le
 
 
 ---
+
+### Licences
+
+Le projet est distribué sous licence **MIT**, avec les exceptions suivantes :
+
+| Paquet | Licence | Remarque |
+|---|---|---|
+| `faucon_base_desc`, `faucon_control`, `faucon_drone`, `faucon_ihm`, `faucon_navigation`, `faucon_perception`, `Faucon_Orchestration` | MIT | |
+| `faucon_localisation` | Apache-2.0 | Contient du code contribué sous Apache-2.0 ; un passage en MIT nécessite l'accord de ses contributeurs. |
+| `virtual_maize_field` | GPLv3 | Projet externe embarqué (Field Robot Event). Sa licence s'applique à ce paquet et à toute redistribution qui l'inclut. |
+
+La licence de chaque paquet fait foi dans son `package.xml` (et son fichier `LICENSE` lorsqu'il existe).
 
 ### Remerciements
 

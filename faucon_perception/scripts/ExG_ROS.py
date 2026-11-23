@@ -5,8 +5,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import cv2 
 import numpy as np 
-import matplotlib.pyplot as plt
-import os 
+from rclpy.executors import ExternalShutdownException
 
 class CornDetectorNode(Node):
     def __init__(self):
@@ -15,7 +14,7 @@ class CornDetectorNode(Node):
         # Abonnement caméra
         self.subscription = self.create_subscription(
             Image,
-            '/camera/image_raw',
+            '/camera/image',   # topic RGB de la camera rgbd (anciennement /camera/image_raw)
             self.image_callback,
             10)
         
@@ -51,10 +50,12 @@ class CornDetectorNode(Node):
                 
                 # Publication du résultat final
                 ros_final = self.bridge.cv2_to_imgmsg(final_image, "bgr8")
+                ros_final.header = msg.header   # horodatage et repere de l'image source
                 self.publisher_final.publish(ros_final)
             
             # Publication du debug 
             ros_debug = self.bridge.cv2_to_imgmsg(result_debug, "bgr8")
+            ros_debug.header = msg.header
             self.publisher_debug.publish(ros_debug)
             
         except Exception as e:
@@ -95,7 +96,9 @@ class CornDetectorNode(Node):
     # utiliser des fenetres glissantes
     def trouver_pixel_rang(self, img_mask):
         histogram = np.sum(img_mask[img_mask.shape[0]//2:, :], axis=0)
-        out_img = np.dstack((img_mask, img_mask, img_mask))*255
+        # Le masque vaut deja 0..255 (uint8) : le "*255" d'origine debordait
+        # (255*255 -> 1 en uint8) et rendait l'image de debug quasi noire.
+        out_img = np.dstack((img_mask, img_mask, img_mask))
 
         midpoint = int(histogram.shape[0]//2)
         leftxbase = np.argmax(histogram[:midpoint])
@@ -215,9 +218,12 @@ class CornDetectorNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = CornDetectorNode()
-    rclpy.spin(node)
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
     node.destroy_node()
-    rclpy.shutdown()
+    rclpy.try_shutdown()
 
 if __name__ == '__main__':
     main()
