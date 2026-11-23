@@ -109,10 +109,10 @@ class CmdVelToJoints(Node):
         else:
             target_steers = []
 
-            for wheel_x, wheel_y in wheel_positions:
+            for (wheel_x, wheel_y), previous in zip(wheel_positions, self.last_steer_positions):
                 wheel_vx = vx - wz * wheel_y
                 wheel_vy = wz * wheel_x
-                steer = math.atan2(wheel_vy, wheel_vx) * self.steer_gain
+                steer = self._wheel_steer_angle(wheel_vx, wheel_vy, previous) * self.steer_gain
                 steer = self._clamp(steer, -self.max_steer, self.max_steer)
                 target_steers.append(steer)
 
@@ -165,6 +165,24 @@ class CmdVelToJoints(Node):
 
         self.last_steer_positions = limited_positions
         return limited_positions
+
+    @staticmethod
+    def _wheel_steer_angle(wheel_vx, wheel_vy, previous=0.0):
+        """Angle de braquage dans [-pi/2, pi/2] pour la vitesse roue (vx, vy).
+
+        atan2 renvoie un angle dans [-pi, pi] : en marche arriere (vx < 0) il vaut
+        ~ +/-pi, ce qui, une fois borne a max_steer, braquait les roues a 45 deg
+        (deplacement en crabe). Une roue pouvant tourner dans les deux sens,
+        braquer a (angle - pi) et inverser la vitesse est equivalent : on replie
+        donc l'angle dans [-pi/2, pi/2]. Le signe de la vitesse roue est ensuite
+        obtenu par projection dans _compute_wheel_speeds.
+        Pres de +/-pi/2 (deux solutions equivalentes), on garde la plus proche
+        du braquage precedent pour eviter que les roues oscillent d'une butee a l'autre.
+        """
+        raw = math.atan2(wheel_vy, wheel_vx)
+        candidates = [a for a in (raw, raw - math.pi, raw + math.pi)
+                      if -math.pi / 2 - 1e-9 <= a <= math.pi / 2 + 1e-9]
+        return min(candidates, key=lambda a: abs(a - previous))
 
     @staticmethod
     def _clamp(value, lower, upper):
