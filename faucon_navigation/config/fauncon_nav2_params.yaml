@@ -93,10 +93,13 @@ local_costmap:
       global_frame: odom
       robot_base_frame: base_link
       rolling_window: true
-      width: 3
-      height: 3
+      width: 5   # couvre obstacle_max_range (2.5 m) autour du robot
+      height: 5
       resolution: 0.05
-      robot_radius: 1.0
+      # Empreinte reelle du robot enjambeur (chassis 1.3 m, roues a +/-0.5 m) au lieu
+      # d'un cercle de 1.0 m qui couvrait 3 rangs de mais (espaces de 0.75 m).
+      # Rayon inscrit 0.55 m < inflation_radius 0.70 m.
+      footprint: "[[0.65, 0.55], [0.65, -0.55], [-0.65, -0.55], [-0.65, 0.55]]"
       plugins: ["voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
@@ -138,7 +141,10 @@ global_costmap:
       height: 500
       global_frame: map
       robot_base_frame: base_link
-      robot_radius: 1.0
+      # Empreinte reelle du robot enjambeur (chassis 1.3 m, roues a +/-0.5 m) au lieu
+      # d'un cercle de 1.0 m qui couvrait 3 rangs de mais (espaces de 0.75 m).
+      # Rayon inscrit 0.55 m < inflation_radius 0.70 m.
+      footprint: "[[0.65, 0.55], [0.65, -0.55], [-0.65, -0.55], [-0.65, 0.55]]"
       resolution: 0.1
       track_unknown_space: true
       plugins: [inflation_layer] #["obstacle_layer", "inflation_layer"]
