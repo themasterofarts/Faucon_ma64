@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/BehaviorTree-CPP-green" alt="BehaviorTree.CPP"/>
   <img src="https://img.shields.io/badge/License-MIT-yellow" alt="MIT License"/>
   <img src="https://img.shields.io/badge/Contributions-Welcome-success" alt="Contributions Welcome"/>
-  <a href="https://discord.gg/a4hTAH4J">
+  <a href="https://discord.gg/CEVwVY9RJy">
     <img src="https://img.shields.io/discord/000000000000000000?color=7289DA&label=Discord&logo=discord&logoColor=white" alt="Discord MH64 Robotics"/>
   </a>
 </p>
@@ -39,6 +39,18 @@ Le projet sert à la fois de **plateforme de recherche**, de **base d’expérim
 | **Python / C++** | Langages principaux utilisés |
 
 ---
+### 🆕 Nouveautés récentes
+
+- **Cartographie 3D fusionnée LiDAR + RGBD (`faucon_perception`)** : deux modes RTAB-Map disponibles — LiDAR seul (ICP) et fusion LiDAR + caméra profondeur (visual+ICP). Le nuage LiDAR passe par `lidar_calibrator` (RANSAC sol) avant d’être injecté dans RTAB-Map.
+- **Caméra RGBD unifiée** : passage au type `rgbd_camera` Gazebo, pipeline image corrigé (`/camera/image`, `/camera/depth_image`). Un seul bridge `/clock` actif (suppression du doublon qui provoquait des sauts TF).
+- **Stabilité Nav2 améliorée** : `transform_tolerance` porté à 0.5 s dans le controller et les deux costmaps. EKF avec `smooth_lagged_data` pour absorber les données hors-ordre.
+- **Script de lancement complet (`launch_full.sh`)** : lance automatiquement la base et la navigation en une seule commande, avec build, synchronisation et arrêt propre.
+- **IHM web ROS2 intégrée (`faucon_ihm`)** : dashboard React (GPS, IMU, caméra, télémétrie, contrôle manuel) désormais inclus dans le workspace et lancé automatiquement avec la simulation principale.
+- **Support Mapviz/OpenStreetMap (`faucon_localisation`)** : ajout d’un lancement dédié pour visualiser la position GNSS sur carte.
+- **Mode mini robot amélioré** : argument `use_mini` pris en charge dans le script de lancement global et dans le launch principal (adaptation du modèle/contrôle).
+
+---
+
 
 ### 🧩 Architecture du projet
 ```bash 
@@ -49,6 +61,7 @@ Faucon_ma64/
 ├── faucon_control/ # Contrôleurs 4WS, plugins ROS2 Control
 ├── faucon_drone/ # Intégration et simulation du drone PX4
 ├── faucon_localisation/ # Fusion GPS, IMU, odométrie
+├── faucon_ihm/ # Interface web (dashboard + commande manuelle)
 ├── faucon_navigation/ # Stack Nav2 et configuration
 ├── faucon_perception/ # Traitement des capteurs et vision
 ├── virtual_maize_field/ # Environnement de simulation agricole
@@ -64,10 +77,90 @@ Faucon_ma64/
 git clone git@github.com:themasterofarts/Faucon_ma64.git
 cd Faucon_ma64
 
-sudo chmod +x ./faucon/launch_base.sh
+rosdep update
+rosdep install --from-paths . --ignore-src -y
+```
 
+---
+
+#### **2a. Lancement base uniquement** (simulation + RViz2)
+```bash
+sudo chmod +x ./faucon/launch_base.sh
 ./faucon/launch_base.sh
 ```
+
+#### Variante mini robot
+```bash
+./faucon/launch_base.sh use_mini=true
+```
+
+---
+
+#### **2b. Lancement complet** (base + navigation autonome)
+
+`launch_full.sh` enchaîne automatiquement :
+1. `colcon build --symlink-install`
+2. `ros2 launch faucon_base_desc view.launch.py` (arrière-plan)
+3. Attente 5 s, puis `ros2 launch faucon_navigation faucon_nav.launch.py` (arrière-plan)
+4. Arrêt propre des deux processus sur Ctrl+C
+
+```bash
+sudo chmod +x ./faucon/launch_full.sh
+./faucon/launch_full.sh
+```
+
+#### Variante mini robot
+```bash
+./faucon/launch_full.sh use_mini=true
+```
+
+---
+
+#### **3. Cartographie RTAB-Map** (optionnel, après `launch_full.sh`)
+
+```bash
+# LiDAR seul
+ros2 launch faucon_perception mapping_3d.launch.py
+
+# LiDAR + caméra RGBD (fusion visuelle + ICP)
+ros2 launch faucon_perception mapping_rgbd.launch.py
+
+# reprendre une session existante
+ros2 launch faucon_perception mapping_rgbd.launch.py fresh_start:=false open_viz:=true
+```
+
+---
+
+#### Lancer Mapviz (visualisation GPS)
+```bash
+ros2 launch faucon_localisation mapviz.launch.py
+```
+
+#### Lancer uniquement l'IHM (hors lancement global)
+```bash
+ros2 launch faucon_ihm ihm_launch.py
+```
+
+#### Accès à l'IHM depuis un autre appareil (tablette…)
+Par défaut, l'IHM, rosbridge et la caméra n'écoutent **qu'en local** (`http://localhost:3000`).
+rosbridge n'a **pas d'authentification** : l'ouvrir au réseau permet à tout appareil du réseau
+de piloter le robot. Pour l'activer explicitement :
+```bash
+./faucon/launch_full.sh ihm_lan=true          # ou launch_base.sh ihm_lan=true
+ros2 launch faucon_ihm ihm_launch.py ihm_lan:=true
+```
+puis ouvrir `http://<IP-robot>:3000`. À n'utiliser que sur un réseau dédié au robot
+(point d'accès isolé ou VPN).
+
+#### Pilotage en manuel
+```bash
+# remap vers l'entree teleop de twist_mux (prioritaire sur Nav2)
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=cmd_vel_teleop
+```
+
+> Les commandes de vitesse passent par `twist_mux` : Nav2 publie sur `/cmd_vel_nav2` (priorité 10),
+> la téléopération (IHM, clavier) sur `/cmd_vel_teleop` (priorité 100). `twist_mux` publie le résultat sur `/cmd_vel`.
+> Ne publiez pas directement sur `/cmd_vel` : cela contournerait l'arbitrage.
 ---
 
 ### Contribuer au projet
@@ -104,6 +197,18 @@ Des réunions de coordination sont organisées régulièrement pour planifier le
 
 
 ---
+
+### Licences
+
+Le projet est distribué sous licence **MIT**, avec les exceptions suivantes :
+
+| Paquet | Licence | Remarque |
+|---|---|---|
+| `faucon_base_desc`, `faucon_control`, `faucon_drone`, `faucon_ihm`, `faucon_navigation`, `faucon_perception`, `Faucon_Orchestration` | MIT | |
+| `faucon_localisation` | Apache-2.0 | Contient du code contribué sous Apache-2.0 ; un passage en MIT nécessite l'accord de ses contributeurs. |
+| `virtual_maize_field` | GPLv3 | Projet externe embarqué (Field Robot Event). Sa licence s'applique à ce paquet et à toute redistribution qui l'inclut. |
+
+La licence de chaque paquet fait foi dans son `package.xml` (et son fichier `LICENSE` lorsqu'il existe).
 
 ### Remerciements
 

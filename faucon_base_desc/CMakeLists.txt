@@ -14,7 +14,7 @@ find_package(rclcpp REQUIRED)
 
 
 install(
-  DIRECTORY  description launch worlds config
+  DIRECTORY  description description_mini launch worlds config
   DESTINATION share/${PROJECT_NAME}
 )
 

@@ -1,0 +1,22 @@
+# Build ROS2
+build/
+install/
+log/
+
+# Build React
+ihm/node_modules/
+ihm/dist/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

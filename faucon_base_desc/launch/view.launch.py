@@ -2,28 +2,56 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 import os, xacro
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, OpaqueFunction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
-from launch.conditions import IfCondition
+from launch.substitutions import PathJoinSubstitution, LaunchConfiguration, PythonExpression
+from launch.conditions import IfCondition, UnlessCondition
 from launch.actions import SetEnvironmentVariable, AppendEnvironmentVariable
 from os import path
 
 
-def generate_launch_description():
+def launch_setup(context, *args, **kwargs):
+   
     pkg_path = get_package_share_directory("faucon_base_desc")
     pkg_ros_gz_sim = get_package_share_directory("ros_gz_sim")
     pkg_maize_field = get_package_share_directory("virtual_maize_field")
+    pkg_faucon_ihm = get_package_share_directory("faucon_ihm")  
+    
     xacro_file = os.path.join(pkg_path, "description", "robot.urdf.xacro")
-    robot_desc = xacro.process_file(xacro_file).toxml()
+    xacro_file_mini = os.path.join(pkg_path, "description_mini", "robot.urdf.xacro")
+    
+   
+    use_sim_time = LaunchConfiguration("use_sim_time")
+    use_mini_value = LaunchConfiguration("use_mini").perform(context)
+    use_rviz = LaunchConfiguration("use_rviz").perform(context)
+    
+    
+    if use_mini_value.lower() == "true":
+        robot_desc = xacro.process_file(xacro_file_mini).toxml()
+        spawn_z = "0.4"
+        spawn_y = "-2.94"
+        use_ros2_control_value = "false"
+    else:
+        use_ros2_control_value = LaunchConfiguration("use_ros2_control").perform(context).lower()
+        # L'argument doit etre transmis au xacro : il choisit ros2_control ou le
+        # DiffDrive Gazebo, et le type (revolute / fixed) des jambes de braquage.
+        robot_desc = xacro.process_file(
+            xacro_file, mappings={"use_ros2_control": use_ros2_control_value}
+        ).toxml()
+        spawn_z = "1.0"
+        spawn_y = "-2.83"
 
     twist_mux_params = os.path.join(
-        get_package_share_directory("faucon_base_desc"), "config", "twrist_mux.yaml"
+        get_package_share_directory("faucon_base_desc"), "config", "twist_mux.yaml"
     )
 
-    use_sim_time = LaunchConfiguration("use_sim_time")
-    use_ros2_control = LaunchConfiguration("use_ros2_control")
+   
+    environment = AppendEnvironmentVariable(
+        "GZ_SIM_RESOURCE_PATH",
+        path.join(get_package_share_directory("faucon_base_desc"), "worlds"),
+    )
 
+    
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, "launch", "gz_sim.launch.py")
@@ -36,11 +64,7 @@ def generate_launch_description():
         }.items(),
     )
 
-    environment = AppendEnvironmentVariable(
-        "GZ_SIM_RESOURCE_PATH",
-        path.join(get_package_share_directory("faucon_base_desc"), "worlds"),
-    )
-
+   
     launch_world = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_maize_field, "launch", "simulation.launch.py")
@@ -51,37 +75,89 @@ def generate_launch_description():
         }.items(),
     )
 
+    faucon_ihm = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(pkg_faucon_ihm, "launch", "ihm_launch.py")
+        ),
+        launch_arguments={
+            "use_sim_time": use_sim_time,
+            # false (defaut) : IHM / rosbridge accessibles en local uniquement
+            "ihm_lan": LaunchConfiguration("ihm_lan"),
+        }.items(),
+    )
+
+    
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
         name="robot_state_publisher",
         output="screen",
-        parameters=[{"robot_description": robot_desc}],
+        parameters=[
+            {
+                "robot_description": robot_desc,
+                "use_sim_time": use_sim_time
+            }
+        ],
     )
 
-    joint_state_publisher_gui = Node(
-        package="joint_state_publisher_gui",
-        executable="joint_state_publisher_gui",
-        name="joint_state_publisher_gui",
-    )
-
+    
+    # Uniquement sans ros2_control (robot mini, ou use_ros2_control:=false) :
+    # avec ros2_control, le joint_state_broadcaster publie deja les vrais etats
+    # sur /joint_states, et joint_state_publisher (qui publie des zeros) entrait
+    # en conflit avec lui (TF des roues / jambes qui sautaient).
     joint_state_publisher_node = Node(
         package="joint_state_publisher",
         executable="joint_state_publisher",
         name="joint_state_publisher",
-        parameters=[{"robot_description": robot_desc}],
+        parameters=[
+            {
+                "robot_description": robot_desc,
+                "use_sim_time": use_sim_time
+            }
+        ],
+        condition=UnlessCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
     )
 
+   
     control_4ws = Node(
         package="faucon_control",
         executable="control_4ws.py",
         name="control_4ws",
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
+        condition=IfCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
     )
 
-    rviz = Node(package="rviz2", executable="rviz2", name="rviz2", output="screen")
+    # Modes DiffDrive (mini, use_ros2_control:=false) : control_4ws n'est pas lance,
+    # ce noeud assure l'arret sur /e_stop et le watchdog /cmd_vel.
+    diffdrive_safety = Node(
+        package="faucon_control",
+        executable="diffdrive_safety.py",
+        name="diffdrive_safety",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+        condition=UnlessCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
+    )
 
+    ground_filter = Node(
+        package="faucon_perception",
+        executable="lidar_calibrator",
+        name="lidar_calibrator",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+    )
+
+    
+    rviz = Node(
+        package="rviz2", 
+        executable="rviz2", 
+        name="rviz2", 
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+        condition=IfCondition(PythonExpression(['"', use_rviz, '" == "true"'])),
+    )
+
+    
     spawn_robot = Node(
         package="ros_gz_sim",
         executable="create",
@@ -96,9 +172,9 @@ def generate_launch_description():
             "-x",
             "-2.28",
             "-y",
-            "-3.83",
+            spawn_y,
             "-z",
-            "0.7",
+            spawn_z,
             "-R",
             "-0.01",
             "-P",
@@ -108,6 +184,7 @@ def generate_launch_description():
         ],
     )
 
+   
     gz_bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
@@ -115,6 +192,7 @@ def generate_launch_description():
             {
                 "config_file": os.path.join(pkg_path, "config", "bridge.yaml"),
                 "qos_overrides./tf_static.publisher.durability": "transient_local",
+                "use_sim_time": use_sim_time
             }
         ],
         output="screen",
@@ -123,75 +201,110 @@ def generate_launch_description():
     ros_gz_image_bridge = Node(
         package="ros_gz_image",
         executable="image_bridge",
-        arguments=["/camera/image_raw"],
+        arguments=[
+            "/camera/image",
+            "/camera/depth_image",
+        ],
+        parameters=[{"use_sim_time": use_sim_time}],
+        output="screen",
     )
 
-    # Spawn ROS2 Control controllers
-
-    # diff_drive_spawner = Node(
-    #     package="controller_manager",
-    #     executable="spawner",
-    #     arguments=["diff_cont", "--controller-manager-timeout", "50"],
-    #     condition=IfCondition(LaunchConfiguration("use_ros2_control")),
-    #     output="screen",
-    # )
-
+    
     joint_broad_spawner = Node(
         package="controller_manager",
         executable="spawner",
         arguments=["joint_broad", "--controller-manager-timeout", "20"],
-        condition=IfCondition(LaunchConfiguration("use_ros2_control")),
+        condition=IfCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
     )
 
     steer_controller = Node(
         package="controller_manager",
         executable="spawner",
         arguments=["steer_controller"],
-        condition=IfCondition(LaunchConfiguration("use_ros2_control")),
+        condition=IfCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
     )
 
     velocity_controller = Node(
         package="controller_manager",
         executable="spawner",
         arguments=["velocity_controller"],
-        condition=IfCondition(LaunchConfiguration("use_ros2_control")),
+        condition=IfCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
     )
 
+    
+    # Arbitrage des commandes de vitesse : Nav2 (/cmd_vel_nav2) et teleop
+    # (/cmd_vel_teleop) -> /cmd_vel, lu par control_4ws.
     twist_mux = Node(
         package="twist_mux",
         executable="twist_mux",
+        output="screen",
         parameters=[
             twist_mux_params,
-            {"use_sim_time": use_sim_time, "use_stamped": use_ros2_control},
+            {
+                "use_sim_time": use_sim_time,
+                # Nav2 Jazzy et l'IHM publient des Twist (non stamped) ;
+                # twist_mux Jazzy est en TwistStamped par defaut.
+                "use_stamped": False,
+            },
         ],
-        remappings=[("/cmd_vel_out", "/diff_cont/cmd_vel_unstamped")],
+        remappings=[("cmd_vel_out", "/cmd_vel")],
     )
 
+   
+    return [
+        environment,
+        robot_state_publisher,
+        joint_state_publisher_node,
+        rviz,
+        spawn_robot,
+        gz_bridge,
+        control_4ws,
+        diffdrive_safety,
+        launch_world,
+        ros_gz_image_bridge,
+        steer_controller,
+        velocity_controller,
+        joint_broad_spawner,
+        twist_mux,
+        #gz_sim,
+        ground_filter, 
+        faucon_ihm, 
+    ]
+
+
+def generate_launch_description():
     return LaunchDescription(
         [
+            
             DeclareLaunchArgument(
-                "use_sim_time", default_value="true", description="Use sim time if true"
+                "use_sim_time", 
+                default_value="true", 
+                description="Use sim time if true"
+            ),
+            DeclareLaunchArgument(
+                "use_mini", 
+                default_value="false", 
+                description="Use mini robot if true (forces use_ros2_control=false)"
             ),
             DeclareLaunchArgument(
                 "use_ros2_control",
                 default_value="true",
-                description="ROS2 control enabled if true",
+                description="true: ros2_control + control_4ws (4 roues directrices) ; "
+                            "false: DiffDrive Gazebo, jambes de braquage fixes (ignored if use_mini=true)",
             ),
-            robot_state_publisher,
-            # joint_state_publisher_gui,
-            joint_state_publisher_node,
-            #rviz,
-            spawn_robot,
-            gz_bridge,
-            #gz_sim,
-            control_4ws,
-            environment,
-            launch_world,
-            ros_gz_image_bridge,
-            steer_controller,
-            velocity_controller,
-            # diff_drive_spawner,
-            joint_broad_spawner,
-            #twist_mux,
+            DeclareLaunchArgument(
+                "use_rviz",
+                 default_value="false",
+                 description="Launch RViz if true (ignored if use_mini=true)",
+            ),
+        
+            DeclareLaunchArgument(
+                "ihm_lan",
+                default_value="false",
+                description="true : IHM, rosbridge et camera accessibles depuis le reseau "
+                            "(SANS authentification) ; false : machine locale uniquement",
+            ),
+
+            OpaqueFunction(function=launch_setup),
         ]
     )

@@ -1,0 +1,56 @@
+rtabmap:
+  ros__parameters:
+
+    #  Synchronisation 
+    approx_sync: true
+    approx_sync_max_interval: 0.1      # tolérance de sync en secondes
+
+    #  Frames
+    frame_id: base_link
+    odom_frame_id: odom
+    map_frame_id: map
+    publish_tf: false                  
+
+    #  Entrées actives 
+    subscribe_depth: false
+    subscribe_rgb: false               # désactive /rgb/image et /rgb/camera_info
+    subscribe_scan_cloud: true         # LiDAR PointCloud2 (/cloud)
+    subscribe_rgbd: false
+    subscribe_stereo: false
+
+    #  Mode loop closure LiDAR pur (pas de features visuels) 
+    Vis/MaxFeatures: "-1"              # -1 = désactive le détecteur de features RGB
+
+    #  Mémoire RTAB-Map 
+    Mem/IncrementalMemory: "true"
+    Mem/InitWMWithAllNodes: "false"
+    Mem/STMSize: "30"                  # nb de noeuds en mémoire court-terme
+
+    #  Mise à jour de la carte 
+    RGBD/LinearUpdate: "0.1"           # recalcule si déplacement > 10 cm
+    RGBD/AngularUpdate: "0.05"         # recalcule si rotation > ~3°
+    RGBD/ProximityBySpace: "true"      # détection de boucle par proximité spatiale
+    RGBD/ProximityPathMaxNeighbors: "10"
+
+    #  Enregistrement ICP (loop closure LiDAR) 
+    Reg/Strategy: "1"                  # 1 = ICP (pas de features visuelles)
+    Icp/MaxCorrespondenceDistance: "0.2"
+    Icp/MaxIterations: "30"
+    Icp/VoxelSize: "0.05"             # voxelise le cloud à 5 cm pour l'ICP
+    Icp/PointToPlane: "false"
+
+    #  Grille 3D (carte occupancy + nuage) 
+    Grid/3D: "true"
+    Grid/CellSize: "0.05"             # résolution 5 cm par voxel
+    Grid/RangeMin: "0.2"              # ignore les points trop proches (parasites)
+    Grid/RangeMax: "9.0"              # portée max du LiDAR Faucon
+    Grid/NormalsSegmentation: "false"
+    Grid/MaxObstacleHeight: "3.0"     
+
+    #  Filtrage du nuage de sortie 
+    cloud_noise_filtering_radius: 0.05
+    cloud_noise_filtering_min_neighbors: 5
+    cloud_voxel_size: 0.05            # voxelise la carte publiée sur /rtabmap/cloud_map
+
+    #  Base de données 
+    database_path: "~/.ros/faucon_map.db"

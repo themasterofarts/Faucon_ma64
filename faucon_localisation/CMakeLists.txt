@@ -11,6 +11,25 @@ find_package(ament_cmake REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 
+
+install(
+  DIRECTORY config launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+  script/datum_manager.py
+  script/gps_to_local.py
+  script/pose_robot.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# local_frame est un module (pas un point d'entree), importe par gps_to_local.py
+install(FILES
+  script/local_frame.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

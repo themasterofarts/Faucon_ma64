@@ -29,6 +29,7 @@ ament_python_install_package(${PROJECT_NAME})
 install(
   PROGRAMS
   script/control_4ws.py
+  script/diffdrive_safety.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

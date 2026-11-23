@@ -4,6 +4,11 @@
     <xacro:arg name="use_ros2_control" default="true"/>
     <!-- <xacro:arg name="type_leg_joint" defaut="revolute"/> -->
 
+    <!-- Articulations de braquage des jambes : pilotees (revolute) avec ros2_control,
+         bloquees (fixed) avec le DiffDrive Gazebo, qui n'a aucun controleur pour elles. -->
+    <xacro:property name="steer_joint_type"
+                    value="${'revolute' if '$(arg use_ros2_control)'.lower() == 'true' else 'fixed'}"/>
+
     <xacro:include filename="robot_core_control.xacro" />
     
     <xacro:include filename="lidar.xacro" />

@@ -1,0 +1,70 @@
+rtabmap:
+  ros__parameters:
+
+    #  Synchronisation 
+    approx_sync: true
+    approx_sync_max_interval: 0.15     # élargi pour sync 3 topics (rgb + depth + cloud)
+
+    #  Frames 
+    frame_id: base_link
+    odom_frame_id: odom
+    map_frame_id: map
+    publish_tf: false                  
+
+    #  Entrées actives : caméra RGBD + LiDAR 
+    subscribe_depth: true
+    subscribe_rgb: true
+    subscribe_scan_cloud: true         
+    subscribe_rgbd: false
+    subscribe_stereo: false
+
+    #  Enregistrement : visual + ICP 
+    Reg/Strategy: "2"                  # 0=visual, 1=ICP, 2=visual+ICP
+    Vis/MaxFeatures: "500"
+    Vis/MinInliers: "15"
+    Icp/MaxCorrespondenceDistance: "0.2"
+    Icp/MaxIterations: "30"
+    Icp/VoxelSize: "0.05"
+    Icp/PointToPlane: "false"
+
+    #  Mémoire RTAB-Map 
+    Mem/IncrementalMemory: "true"
+    Mem/InitWMWithAllNodes: "false"
+    Mem/STMSize: "30"
+
+    #  Mise à jour de la carte 
+    RGBD/LinearUpdate: "0.1"
+    RGBD/AngularUpdate: "0.05"
+    RGBD/ProximityBySpace: "true"
+    RGBD/ProximityPathMaxNeighbors: "10"
+
+    #  Grille 3D (LiDAR portée 9 m, caméra profondeur 8 m) 
+    Grid/3D: "true"
+    Grid/CellSize: "0.05"
+    Grid/RangeMin: "0.2"
+    Grid/RangeMax: "9.0"              # portée LiDAR (> far clip caméra 8 m)
+    Grid/NormalsSegmentation: "false"  
+    Grid/MaxObstacleHeight: "3.0"
+    Grid/MinGroundHeight: "-0.2"
+
+    #  Filtrage du nuage de sortie 
+    cloud_noise_filtering_radius: 0.05
+    cloud_noise_filtering_min_neighbors: 5
+    cloud_voxel_size: 0.05
+
+    #  Base de données 
+    database_path: "~/.ros/faucon_map_rgbd.db"
+
+    # metrics
+    publish_stats: true
+    Stats/Rate: 1.0
+    Stats/Time: true
+    Stats/Memory: true
+    Stats/LoopClosure: true
+    Stats/Localization: true
+    Stats/Proximity: true
+    Stats/Reg: true
+    Stats/Graph: true   
+    publish_graph: true 
+    log_to_file: true
+    

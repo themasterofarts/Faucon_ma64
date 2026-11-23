@@ -13,7 +13,7 @@
     <xacro:property name="leg_height" value="0.7"/>
     <xacro:property name="leg_mass" value="0.5"/>
 
-    <xacro:property name="leg_offset_x" value="1.0"/>
+    <xacro:property name="leg_offset_x" value="0.325"/>
     <xacro:property name="leg_offset_y" value="0.5"/>
     <xacro:property name="leg_offset_z" value="0.1"/>
 
@@ -21,12 +21,13 @@
     <xacro:property name="wheel_thickness" value="0.1"/>
     <xacro:property name="wheel_mass" value="0.5"/>
 
-    <xacro:property name="wheel_offset_x" value="1.0"/>
+    <xacro:property name="wheel_offset_x" value="0.325"/>
     <xacro:property name="wheel_offset_y" value="0.5"/>
     <xacro:property name="wheel_offset_z" value="0.01"/>
-    
-    
-    <xacro:property name="caster_wheel_offset_x" value="0.350"/>
+
+
+    <xacro:property name="caster_wheel_radius" value="0.12"/>
+    <xacro:property name="caster_wheel_offset_x" value="-0.325"/>
     <xacro:property name="caster_wheel_offset_z" value="${wheel_offset_z - wheel_radius + caster_wheel_radius}"/>
 
     <material name="white">
@@ -67,20 +68,22 @@
 
     <link name="base_link">
         <visual>
-            <origin xyz="${chassis_length/2} 0 ${chassis_height/2}"/>
+            <origin xyz="0 0 ${chassis_height/2}"/>
             <geometry>
                 <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
             </geometry>
             <material name="blue"/>
         </visual>
         <collision>
-            <origin xyz="${chassis_length/2} 0 ${chassis_height/2}"/>
+            <origin xyz="0 0 ${chassis_height/2}"/>
             <geometry>
                 <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
             </geometry>
         </collision>
-        <xacro:inertial_box mass="0.5" x="${chassis_length}" y="${chassis_width}" z="${chassis_height}">
-            <origin xyz="${chassis_length/2} 0 ${chassis_height/2}" rpy="0 0 0"/>
+        <!-- Inertiel aligne sur le visuel / la collision (origine du robot au centre depuis
+             b8333e3) ; masse issue de la propriete chassis_mass (auparavant 0.5 en dur). -->
+        <xacro:inertial_box mass="${chassis_mass}" x="${chassis_length}" y="${chassis_width}" z="${chassis_height}">
+            <origin xyz="0 0 ${chassis_height/2}" rpy="0 0 0"/>
         </xacro:inertial_box>
     </link>
 
@@ -97,7 +100,7 @@
         
     </joint>
 
-    <joint name="left_wheel_leg_joint" type="revolute">  <!-- revolute to ros2 control and fixed to diffdrive -->
+    <joint name="left_wheel_leg_joint" type="${steer_joint_type}">  <!-- revolute to ros2 control and fixed to diffdrive -->
         <parent link="base_link"/>
         <child link="left_leg_link"/>
         <origin xyz="${leg_offset_x} ${leg_offset_y} ${-leg_offset_z}" rpy="0 0 0"/>
@@ -120,7 +123,7 @@
             </geometry>
         </collision>
         <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="${leg_length/2} 0 ${leg_height/2}" rpy="0 0 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
         </xacro:inertial_box>
     </link>
 
@@ -157,7 +160,7 @@
         <disable_collision>0</disable_collision>
     </joint>
 
-    <joint name="right_wheel_leg_joint" type="revolute">   <!-- revolute to ros2 control and fixed to diffdrive -->
+    <joint name="right_wheel_leg_joint" type="${steer_joint_type}">   <!-- revolute to ros2 control and fixed to diffdrive -->
         <parent link="base_link"/>
         <child link="right_leg_link"/>
         <origin xyz="${leg_offset_x} ${-leg_offset_y} ${-leg_offset_z}" rpy="0 0 0"/>
@@ -180,7 +183,7 @@
             </geometry>
         </collision>
         <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="${leg_length/2} 0 ${leg_height/2}" rpy="0 0 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
         </xacro:inertial_box>
     </link>
 
@@ -216,7 +219,7 @@
 
 </joint>
 
-<joint name="right_wheel_back_leg_joint" type="revolute">  <!-- revolute to ros2 control and fixed to diffdrive  -->
+<joint name="right_wheel_back_leg_joint" type="${steer_joint_type}">  <!-- revolute to ros2 control and fixed to diffdrive  -->
         <parent link="base_link"/>
         <child link="right_back_leg_link"/>
         <origin xyz="${caster_wheel_offset_x} ${-wheel_offset_y} ${-leg_offset_z}" rpy="0.0 0.0 0.0"/>
@@ -239,7 +242,7 @@
             </geometry>
         </collision>
         <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="${leg_length/2} 0 ${leg_height/2}" rpy="0 0 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
         </xacro:inertial_box>
     </link>
 
@@ -273,7 +276,7 @@
 
 </joint>
 
-<joint name="left_wheel_back_leg_joint" type="revolute"> <!-- revolute to ros2 control and fixed to diffdrive -->
+<joint name="left_wheel_back_leg_joint" type="${steer_joint_type}"> <!-- revolute to ros2 control and fixed to diffdrive -->
         <parent link="base_link"/>
         <child link="left_back_leg_link"/>
         <origin xyz="${caster_wheel_offset_x} ${wheel_offset_y} ${-leg_offset_z}" rpy="0.0 0.0 0.0"/>
@@ -296,7 +299,7 @@
             </geometry>
         </collision>
         <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="${leg_length/2} 0 ${leg_height/2}" rpy="0 0 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
         </xacro:inertial_box>
     </link>
 
