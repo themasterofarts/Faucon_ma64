@@ -1,0 +1,14 @@
+twist_mux:
+  ros__parameters:
+    # Entrees en geometry_msgs/Twist (Nav2 Jazzy, IHM) : use_stamped est force a
+    # false dans view.launch.py (twist_mux Jazzy utilise TwistStamped par defaut).
+    # Sortie : /cmd_vel (remappee dans view.launch.py), lue par control_4ws.
+    topics:
+      navigation:
+        topic   : cmd_vel_nav2     # sortie du collision_monitor Nav2
+        timeout : 0.5
+        priority: 10
+      teleop:
+        topic   : cmd_vel_teleop   # IHM (clavier / joystick) et teleop_twist_keyboard
+        timeout : 0.5
+        priority: 100              # la commande manuelle est prioritaire sur Nav2

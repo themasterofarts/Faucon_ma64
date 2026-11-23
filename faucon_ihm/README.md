@@ -15,7 +15,7 @@
 | 🗺 Carte GPS | `/gnss/fix` | Carte OpenStreetMap + trace de trajectoire temps réel |
 | ✈ Cockpit IMU | `/imu/data` | Horizon artificiel — roll / pitch / cap |
 | 📷 Caméra | `web_video_server :8080` | Flux MJPEG configurable via URL |
-| 🕹 Contrôle manuel | `/cmd_vel` | Joystick souris/touch + clavier ZQSD/flèches |
+| 🕹 Contrôle manuel | `/cmd_vel_teleop` (via twist_mux) | Joystick souris/touch + clavier ZQSD/flèches |
 | 📡 Télémétrie | `/odom` | Vitesse, uptime, statut Nav2 |
 
 ---
@@ -100,7 +100,7 @@ Au premier lancement, cliquez sur **⚙ CONFIG** (en haut à droite) et renseign
 | VIDEO SERVER | `http://localhost:8080/stream?topic=/camera/image_raw` | URL du flux caméra MJPEG |
 | GPS TOPIC | `/gnss/fix` | Topic NavSatFix |
 | IMU TOPIC | `/imu/data` | Topic Imu |
-| CMD_VEL TOPIC | `/cmd_vel` | Topic de commande vitesse |
+| CMD_VEL TOPIC | `/cmd_vel_teleop` | Topic de commande vitesse (entrée teleop de twist_mux) |
 
 > Si l'IHM est sur une machine différente du robot, remplacez `localhost` par l'IP du robot.
 
@@ -204,7 +204,7 @@ Subscriptions (lecture) :
   /odom         nav_msgs/Odometry       — odométrie
 
 Publications (écriture) :
-  /cmd_vel      geometry_msgs/Twist     — commande vitesse
+  /cmd_vel_teleop geometry_msgs/Twist   — commande vitesse (entrée teleop de twist_mux, prioritaire sur Nav2)
 ```
 
 ---

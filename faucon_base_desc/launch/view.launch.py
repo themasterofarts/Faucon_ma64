@@ -210,17 +210,22 @@ def launch_setup(context, *args, **kwargs):
     )
 
     
+    # Arbitrage des commandes de vitesse : Nav2 (/cmd_vel_nav2) et teleop
+    # (/cmd_vel_teleop) -> /cmd_vel, lu par control_4ws.
     twist_mux = Node(
         package="twist_mux",
         executable="twist_mux",
+        output="screen",
         parameters=[
             twist_mux_params,
             {
-                "use_sim_time": use_sim_time, 
-                "use_stamped": PythonExpression(['"', use_ros2_control_value, '" == "true"'])
+                "use_sim_time": use_sim_time,
+                # Nav2 Jazzy et l'IHM publient des Twist (non stamped) ;
+                # twist_mux Jazzy est en TwistStamped par defaut.
+                "use_stamped": False,
             },
         ],
-        remappings=[("/cmd_vel_out", "/diff_cont/cmd_vel_unstamped")],
+        remappings=[("cmd_vel_out", "/cmd_vel")],
     )
 
    
@@ -237,7 +242,7 @@ def launch_setup(context, *args, **kwargs):
         steer_controller,
         velocity_controller,
         joint_broad_spawner,
-        # twist_mux,
+        twist_mux,
         #gz_sim,
         ground_filter, 
         faucon_ihm, 

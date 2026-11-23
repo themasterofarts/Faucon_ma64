@@ -143,8 +143,13 @@ ros2 launch faucon_ihm ihm_launch.py
 
 #### Pilotage en manuel
 ```bash
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
+# remap vers l'entree teleop de twist_mux (prioritaire sur Nav2)
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=cmd_vel_teleop
 ```
+
+> Les commandes de vitesse passent par `twist_mux` : Nav2 publie sur `/cmd_vel_nav2` (priorité 10),
+> la téléopération (IHM, clavier) sur `/cmd_vel_teleop` (priorité 100). `twist_mux` publie le résultat sur `/cmd_vel`.
+> Ne publiez pas directement sur `/cmd_vel` : cela contournerait l'arbitrage.
 ---
 
 ### Contribuer au projet

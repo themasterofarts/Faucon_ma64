@@ -702,10 +702,12 @@ function JoystickWidget({ publish, connected }) {
 
   const MAX_LINEAR = 1.0;
   const MAX_ANGULAR = 1.5;
+  // Topic d'entree teleop de twist_mux (prioritaire sur Nav2), qui publie ensuite /cmd_vel
+  const CMD_VEL_TELEOP_TOPIC = "/cmd_vel_teleop";
 
   const sendCmd = useCallback((linear, angular) => {
     if (!connected) return;
-    publish("/cmd_vel", "geometry_msgs/Twist", {
+    publish(CMD_VEL_TELEOP_TOPIC, "geometry_msgs/Twist", {
       linear: { x: linear, y: 0, z: 0 },
       angular: { x: 0, y: 0, z: angular }
     });
@@ -996,7 +998,7 @@ function ConfigModal({ config, onSave, onClose }) {
           ["VIDEO SERVER", "videoServer", "http://192.168.1.x:8080/stream?topic=/camera/image"],
           ["GPS TOPIC", "gpsTopic", "/gps/fix"],
           ["IMU TOPIC", "imuTopic", "/imu/data"],
-          ["CMD_VEL TOPIC", "cmdVelTopic", "/cmd_vel"],
+          ["CMD_VEL TOPIC", "cmdVelTopic", "/cmd_vel_teleop"],
         ].map(([label, key, ph]) => (
           <div key={key} className="modal-field">
             <label>{label}</label>
@@ -1020,7 +1022,7 @@ export default function App() {
     videoServer: "",
     gpsTopic: "/gnss/fix",
     imuTopic: "/imu/data",
-    cmdVelTopic: "/cmd_vel",
+    cmdVelTopic: "/cmd_vel_teleop",
   });
 
   const { connected, latency, subscribe, publish } = useRosBridge(config.rosBridgeUrl);
@@ -1090,7 +1092,7 @@ export default function App() {
           <div className="panel">
             <div className="panel-header">
               <span className="panel-title">◎ MANUAL CONTROL</span>
-              <span className="panel-badge">Twist · /cmd_vel</span>
+              <span className="panel-badge">Twist · /cmd_vel_teleop</span>
             </div>
             <div className="panel-body">
               <JoystickWidget publish={publish} connected={connected} />
