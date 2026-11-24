@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-import math
 import yaml
 from dataclasses import dataclass
 from typing import List, Optional
@@ -10,25 +9,17 @@ from typing import List, Optional
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from rclpy.executors import ExternalShutdownException
-from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from action_msgs.msg import GoalStatus
 from ament_index_python.packages import get_package_share_directory
 
 from sensor_msgs.msg import NavSatFix
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped, Quaternion, Point
+from geometry_msgs.msg import PoseStamped, Point
 from geographic_msgs.msg import GeoPoint
 
 from robot_localization.srv import FromLLArray
 from nav2_msgs.action import FollowPath
-
-
-LATCHED_QOS = QoSProfile(
-    depth=1,
-    durability=DurabilityPolicy.TRANSIENT_LOCAL,
-    reliability=ReliabilityPolicy.RELIABLE,
-)
+from faucon_common.ros_utils import LATCHED_QOS, spin_until_shutdown, yaw_to_quaternion  # utilitaires partages (paquet faucon_common)
 
 
 # ----------------------------
@@ -37,15 +28,6 @@ LATCHED_QOS = QoSProfile(
 
 def expand_path(p: str) -> str:
     return os.path.expanduser(p)
-
-
-def yaw_to_quat(yaw: float) -> Quaternion:
-    q = Quaternion()
-    q.x = 0.0
-    q.y = 0.0
-    q.z = math.sin(yaw * 0.5)
-    q.w = math.cos(yaw * 0.5)
-    return q
 
 
 @dataclass(frozen=True)
@@ -230,7 +212,7 @@ class GpsPathSender(Node):
             ps.pose.position.x = pt.x
             ps.pose.position.y = pt.y
             ps.pose.position.z = 0.0
-            ps.pose.orientation = yaw_to_quat(wp.yaw)
+            ps.pose.orientation = yaw_to_quaternion(wp.yaw)
             path.poses.append(ps)
 
         return path
@@ -290,12 +272,7 @@ class GpsPathSender(Node):
 def main():
     rclpy.init()
     node = GpsPathSender()
-    try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        pass
-    node.destroy_node()
-    rclpy.try_shutdown()
+    spin_until_shutdown(node)
 
 
 if __name__ == "__main__":

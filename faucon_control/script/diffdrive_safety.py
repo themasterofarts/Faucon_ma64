@@ -19,6 +19,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool
+from faucon_common.ros_utils import spin_until_shutdown  # utilitaires partages (paquet faucon_common)
 
 
 def _is_zero(msg: Twist, eps: float = 1e-6) -> bool:
@@ -86,12 +87,7 @@ class DiffDriveSafety(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = DiffDriveSafety()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    node.destroy_node()
-    rclpy.try_shutdown()
+    spin_until_shutdown(node)
 
 
 if __name__ == "__main__":

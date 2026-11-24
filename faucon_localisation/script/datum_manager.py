@@ -5,19 +5,11 @@ import math
 
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
-from rclpy.executors import ExternalShutdownException
 
 from sensor_msgs.msg import NavSatFix
 from robot_localization.srv import SetDatum
 from geographic_msgs.msg import GeoPose
-
-
-LATCHED_QOS = QoSProfile(
-    depth=1,
-    durability=DurabilityPolicy.TRANSIENT_LOCAL,
-    reliability=ReliabilityPolicy.RELIABLE,
-)
+from faucon_common.ros_utils import LATCHED_QOS, spin_until_shutdown  # utilitaires partages (paquet faucon_common)
 
 
 def _is_valid_fix(msg: NavSatFix) -> bool:
@@ -147,13 +139,7 @@ class DatumManager(Node):
 def main():
     rclpy.init()
     node = DatumManager()
-    try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        # Ctrl+C / arret par ros2 launch (SIGINT/SIGTERM) : arret silencieux
-        pass
-    node.destroy_node()
-    rclpy.try_shutdown()
+    spin_until_shutdown(node)
 
 
 if __name__ == "__main__":

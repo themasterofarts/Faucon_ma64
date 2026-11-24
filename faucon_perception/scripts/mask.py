@@ -5,7 +5,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge 
 import cv2
 import numpy as np
-from rclpy.executors import ExternalShutdownException
+from faucon_common.ros_utils import spin_until_shutdown  # utilitaires partages (paquet faucon_common)
 
 
 # Class used to create a mask 
@@ -57,12 +57,7 @@ class ImageMasking(Node):
 def main(args = None):
     rclpy.init(args=args)
     image_converter = ImageMasking()
-    try:
-        rclpy.spin(image_converter)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        pass
-    image_converter.destroy_node()
-    rclpy.try_shutdown()
+    spin_until_shutdown(image_converter)
 
 if __name__ == '__main__':
     main()

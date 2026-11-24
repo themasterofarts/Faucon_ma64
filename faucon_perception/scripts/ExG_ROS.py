@@ -5,7 +5,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import cv2 
 import numpy as np 
-from rclpy.executors import ExternalShutdownException
+from faucon_common.ros_utils import spin_until_shutdown  # utilitaires partages (paquet faucon_common)
 
 class CornDetectorNode(Node):
     def __init__(self):
@@ -218,12 +218,7 @@ class CornDetectorNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = CornDetectorNode()
-    try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        pass
-    node.destroy_node()
-    rclpy.try_shutdown()
+    spin_until_shutdown(node)
 
 if __name__ == '__main__':
     main()

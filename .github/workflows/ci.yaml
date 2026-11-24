@@ -103,7 +103,7 @@ jobs:
           source "$WS_DIR/install/setup.bash"
           cd "$WS_DIR/src/this_repo"
           python3 -m pytest -q -p no:cacheprovider \
-            faucon_navigation/test faucon_control/test faucon_base_desc/test
+            faucon_common/test faucon_navigation/test faucon_control/test faucon_base_desc/test
 
       - name: Upload logs (artefacts)
         if: always()
