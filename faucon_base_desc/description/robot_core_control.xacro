@@ -89,241 +89,89 @@
 
   
 
-    <!-- LEFT WHEEL LINK -->
+    <!-- JAMBES DE BRAQUAGE + ROUES
+         Les 4 ensembles identiques (jambe pivotante + roue) sont generes par la macro
+         steer_leg. Les noms des joints et des liens sont inchanges : ils sont utilises
+         par ros2_control.xacro, steer_controllers.yaml, control_4ws.py et le DiffDrive.
 
-    <joint name="left_wheel_joint" type="continuous">
-        <parent link="left_leg_link"/>
-        <child link="left_wheel"/>
-        <origin xyz="0 0 -0.35" rpy="-${pi/2} 0 0" />
-        <axis xyz="0 0 1"/>
-        <disable_collision>1</disable_collision>
-        
-    </joint>
+         leg_joint   : pivot de braquage base_link -> jambe (revolute avec ros2_control,
+                       fixed avec le DiffDrive Gazebo, cf. steer_joint_type)
+         wheel_joint : rotation de la roue au bas de la jambe (continuous)
+         x, y        : position du pivot dans base_link
+         disable_collision : balise conservee telle quelle (non standard URDF) -->
 
-    <joint name="left_wheel_leg_joint" type="${steer_joint_type}">  <!-- revolute to ros2 control and fixed to diffdrive -->
-        <parent link="base_link"/>
-        <child link="left_leg_link"/>
-        <origin xyz="${leg_offset_x} ${leg_offset_y} ${-leg_offset_z}" rpy="0 0 0"/>
-        <axis xyz="0 0 1"/>
-        <limit lower="-0.7854" upper="0.7854" effort="10" velocity="0.5"/>
-        
-    </joint>
+    <xacro:macro name="steer_leg" params="leg_joint leg_link wheel_joint wheel_link x y disable_collision">
 
-    <!-- Left leg link -->
-    <link name="left_leg_link">
-        <visual>
-            <geometry>
-                <box size="${leg_length} ${leg_width} ${leg_height}"/>
-            </geometry>
-            <material name="red"/>
-        </visual>
-        <collision>
-            <geometry>
-                <box size="${leg_length} ${leg_width} ${leg_height}"/>
-            </geometry>
-        </collision>
-        <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
-        </xacro:inertial_box>
-    </link>
+        <joint name="${wheel_joint}" type="continuous">
+            <parent link="${leg_link}"/>
+            <child link="${wheel_link}"/>
+            <origin xyz="0 0 -0.35" rpy="-${pi/2} 0 0" />
+            <axis xyz="0 0 1"/>
+            <disable_collision>${disable_collision}</disable_collision>
+        </joint>
 
+        <joint name="${leg_joint}" type="${steer_joint_type}">
+            <parent link="base_link"/>
+            <child link="${leg_link}"/>
+            <origin xyz="${x} ${y} ${-leg_offset_z}" rpy="0 0 0"/>
+            <axis xyz="0 0 1"/>
+            <limit lower="-0.7854" upper="0.7854" effort="10" velocity="0.5"/>
+        </joint>
 
-    <link name="left_wheel">
-        <visual>
-            <geometry>
-                <cylinder radius="${wheel_radius}" length="${wheel_thickness}"/>
-            </geometry>
-            <material name="black"/>
-        </visual>
-        <collision>
-            <geometry>
-                <sphere radius="${wheel_radius}"/>
-            </geometry>
-        </collision>
-        <xacro:inertial_cylinder mass="${wheel_mass}" length="${wheel_thickness}" radius="${wheel_radius}">
-            <origin xyz="0 0 0" rpy="0 0 0"/>
-        </xacro:inertial_cylinder>
-    </link>
+        <link name="${leg_link}">
+            <visual>
+                <geometry>
+                    <box size="${leg_length} ${leg_width} ${leg_height}"/>
+                </geometry>
+                <material name="red"/>
+            </visual>
+            <collision>
+                <geometry>
+                    <box size="${leg_length} ${leg_width} ${leg_height}"/>
+                </geometry>
+            </collision>
+            <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
+                <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
+            </xacro:inertial_box>
+        </link>
 
-   
+        <link name="${wheel_link}">
+            <visual>
+                <geometry>
+                    <cylinder radius="${wheel_radius}" length="${wheel_thickness}"/>
+                </geometry>
+                <material name="black"/>
+            </visual>
+            <collision>
+                <geometry>
+                    <sphere radius="${wheel_radius}"/>
+                </geometry>
+            </collision>
+            <xacro:inertial_cylinder mass="${wheel_mass}" length="${wheel_thickness}" radius="${wheel_radius}">
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+            </xacro:inertial_cylinder>
+        </link>
 
+    </xacro:macro>
 
+    <!-- avant gauche -->
+    <xacro:steer_leg leg_joint="left_wheel_leg_joint" leg_link="left_leg_link"
+                     wheel_joint="left_wheel_joint" wheel_link="left_wheel"
+                     x="${leg_offset_x}" y="${leg_offset_y}" disable_collision="1"/>
 
+    <!-- avant droite -->
+    <xacro:steer_leg leg_joint="right_wheel_leg_joint" leg_link="right_leg_link"
+                     wheel_joint="right_wheel_joint" wheel_link="right_wheel"
+                     x="${leg_offset_x}" y="${-leg_offset_y}" disable_collision="0"/>
 
-    <!-- RIGHT WHEEL LINK -->
+    <!-- arriere droite -->
+    <xacro:steer_leg leg_joint="right_wheel_back_leg_joint" leg_link="right_back_leg_link"
+                     wheel_joint="wheel_back_right_joint" wheel_link="wheel_back_right"
+                     x="${caster_wheel_offset_x}" y="${-wheel_offset_y}" disable_collision="0"/>
 
-    <joint name="right_wheel_joint" type="continuous">
-        <parent link="right_leg_link"/>
-        <child link="right_wheel"/>
-        <origin xyz="0 0 -0.35" rpy="-${pi/2} 0 0" />
-        <axis xyz="0 0 1"/>
-        <disable_collision>0</disable_collision>
-    </joint>
-
-    <joint name="right_wheel_leg_joint" type="${steer_joint_type}">   <!-- revolute to ros2 control and fixed to diffdrive -->
-        <parent link="base_link"/>
-        <child link="right_leg_link"/>
-        <origin xyz="${leg_offset_x} ${-leg_offset_y} ${-leg_offset_z}" rpy="0 0 0"/>
-        <axis xyz="0 0 1"/>
-        <limit lower="-0.7854" upper="0.7854" effort="10" velocity="0.5"/>
-        
-    </joint>
-
-    <!-- Right leg link -->
-    <link name="right_leg_link">
-         <visual>
-            <geometry>
-                <box size="${leg_length} ${leg_width} ${leg_height}"/>
-            </geometry>
-            <material name="red"/>
-        </visual>
-        <collision>
-            <geometry>
-                <box size="${leg_length} ${leg_width} ${leg_height}"/>
-            </geometry>
-        </collision>
-        <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
-        </xacro:inertial_box>
-    </link>
-
-    <link name="right_wheel">
-        <visual>
-            <geometry>
-                <cylinder radius="${wheel_radius}" length="${wheel_thickness}"/>
-            </geometry>
-            <material name="black"/>
-        </visual>
-        <collision>
-            <geometry>
-                <sphere radius="${wheel_radius}"/>
-            </geometry>
-        </collision>
-        <xacro:inertial_cylinder mass="${wheel_mass}" length="${wheel_thickness}" radius="${wheel_radius}">
-            <origin xyz="0 0 0" rpy="0 0 0"/>
-        </xacro:inertial_cylinder>
-    </link>
-
-   
-
-
-     <!-- wheel back right-->
-
-<joint name="wheel_back_right_joint" type="continuous">
-
-    <parent link="right_back_leg_link"/>
-    <child link="wheel_back_right"/>
-      <origin xyz="0 0 -0.35" rpy="-${pi/2} 0 0" />
-    <axis xyz="0 0 1"/>
-    <disable_collision>0</disable_collision>
-
-</joint>
-
-<joint name="right_wheel_back_leg_joint" type="${steer_joint_type}">  <!-- revolute to ros2 control and fixed to diffdrive  -->
-        <parent link="base_link"/>
-        <child link="right_back_leg_link"/>
-        <origin xyz="${caster_wheel_offset_x} ${-wheel_offset_y} ${-leg_offset_z}" rpy="0.0 0.0 0.0"/>
-        <axis xyz="0 0 1"/>
-        <limit lower="-0.7854" upper="0.7854" effort="10" velocity="0.5"/>
-        
-</joint>
-
-    <!-- Right back leg link -->
-    <link name="right_back_leg_link">
-         <visual>
-            <geometry>
-                <box size="${leg_length} ${leg_width} ${leg_height}"/>
-            </geometry>
-            <material name="red"/>
-        </visual>
-        <collision>
-            <geometry>
-                <box size="${leg_length} ${leg_width} ${leg_height}"/>
-            </geometry>
-        </collision>
-        <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
-        </xacro:inertial_box>
-    </link>
-
-<link name="wheel_back_right">
-    <visual>
-            <geometry>
-                <cylinder radius="${wheel_radius}" length="${wheel_thickness}"/>
-            </geometry>
-            <material name="black"/>
-        </visual>
-        <collision>
-            <geometry>
-                <sphere radius="${wheel_radius}"/>
-            </geometry>
-        </collision>
-        <xacro:inertial_cylinder mass="${wheel_mass}" length="${wheel_thickness}" radius="${wheel_radius}">
-            <origin xyz="0 0 0" rpy="0 0 0"/>
-        </xacro:inertial_cylinder>
-</link>
-
-
-
-<!-- wheel back left-->
-<joint name="wheel_back_left_joint" type="continuous">
-
-    <parent link="left_back_leg_link"/>
-    <child link="wheel_back_left"/>
-      <origin xyz="0 0 -0.35" rpy="-${pi/2} 0 0" />
-    <axis xyz="0 0 1"/>
-    <disable_collision>0</disable_collision>
-
-</joint>
-
-<joint name="left_wheel_back_leg_joint" type="${steer_joint_type}"> <!-- revolute to ros2 control and fixed to diffdrive -->
-        <parent link="base_link"/>
-        <child link="left_back_leg_link"/>
-        <origin xyz="${caster_wheel_offset_x} ${wheel_offset_y} ${-leg_offset_z}" rpy="0.0 0.0 0.0"/>
-        <axis xyz="0 0 1"/>
-        <limit lower="-0.7854" upper="0.7854" effort="10" velocity="0.5"/>
-        
-</joint>
-
-    <!-- left back leg link -->
-    <link name="left_back_leg_link">
-         <visual>
-            <geometry>
-                <box size="${leg_length} ${leg_width} ${leg_height}"/>
-            </geometry>
-            <material name="red"/>
-        </visual>
-        <collision>
-            <geometry>
-                <box size="${leg_length} ${leg_width} ${leg_height}"/>
-            </geometry>
-        </collision>
-        <xacro:inertial_box mass="0.2" x="${leg_length}" y="${leg_width}" z="${leg_height}">
-            <origin xyz="0 0 0" rpy="0 0 0"/> <!-- centre de la boite de la jambe -->
-        </xacro:inertial_box>
-    </link>
-
-<link name="wheel_back_left">
-    <visual>
-            <geometry>
-                <cylinder radius="${wheel_radius}" length="${wheel_thickness}"/>
-            </geometry>
-            <material name="black"/>
-        </visual>
-        <collision>
-            <geometry>
-                <sphere radius="${wheel_radius}"/>
-            </geometry>
-        </collision>
-        <xacro:inertial_cylinder mass="${wheel_mass}" length="${wheel_thickness}" radius="${wheel_radius}">
-            <origin xyz="0 0 0" rpy="0 0 0"/>
-        </xacro:inertial_cylinder>
-</link>
-
-
-
-
-
-
+    <!-- arriere gauche -->
+    <xacro:steer_leg leg_joint="left_wheel_back_leg_joint" leg_link="left_back_leg_link"
+                     wheel_joint="wheel_back_left_joint" wheel_link="wheel_back_left"
+                     x="${caster_wheel_offset_x}" y="${wheel_offset_y}" disable_collision="0"/>
 
 </robot>
