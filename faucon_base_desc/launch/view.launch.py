@@ -198,12 +198,13 @@ def launch_setup(context, *args, **kwargs):
         output="screen",
     )
 
+    # /camera/image seulement : /camera/depth_image passe par le parameter_bridge
+    # (bridge.yaml) en mode lazy, qu'image_bridge ne gere pas.
     ros_gz_image_bridge = Node(
         package="ros_gz_image",
         executable="image_bridge",
         arguments=[
             "/camera/image",
-            "/camera/depth_image",
         ],
         parameters=[{"use_sim_time": use_sim_time}],
         output="screen",
