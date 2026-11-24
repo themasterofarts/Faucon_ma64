@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-import math
 import os
 import sys
 
 import rclpy
 from rclpy.node import Node
-from rclpy.executors import ExternalShutdownException
 
 from sensor_msgs.msg import NavSatFix, Imu
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Quaternion
+from faucon_common.ros_utils import quaternion_to_yaw, spin_until_shutdown, yaw_to_quaternion  # utilitaires partages (paquet faucon_common)
 
 # local_frame.py est installe a cote de ce script (lib/faucon_localisation)
 _DIR = os.path.dirname(os.path.abspath(__file__))
@@ -111,7 +109,7 @@ class GnssToLocal(Node):
         
         ##### Orientation depuis IMU #####
         
-        q = self.yaw_to_quaternion(self.yaw)
+        q = yaw_to_quaternion(self.yaw)
         odome.pose.pose.orientation = q
         
         #### publication sur l'odometry ####
@@ -126,33 +124,16 @@ class GnssToLocal(Node):
             
             q = msg.orientation
             
-            self.yaw = self.quaternion_to_yaw(q)
+            self.yaw = quaternion_to_yaw(q)
             
         ### fonction pour la convertion de quaternion à yaw : c'est convertir la rotation defini sur ros en rotation autour de l'axe z (angle d'euler vue que rons ne connais pas ces angles)
-    def quaternion_to_yaw(self, q):
-        siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
-        cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-            
-        return math.atan2(siny_cosp, cosy_cosp)   
-        
-    def yaw_to_quaternion(self, yaw):
-        q = Quaternion()
-        q.x = 0.0
-        q.y = 0.0
-        q.z = math.sin(yaw / 2.0)
-        q.w = math.cos(yaw / 2.0)
-        return q  
+        # conversions yaw <-> quaternion : faucon_common.ros_utils
         
         
 def main():
     rclpy.init()
     node = GnssToLocal()
-    try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        pass
-    node.destroy_node()
-    rclpy.try_shutdown()
+    spin_until_shutdown(node)
 
 
 if __name__ == '__main__':

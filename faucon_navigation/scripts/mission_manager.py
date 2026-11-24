@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import math
 import os
 import sys
 import time
@@ -13,30 +12,23 @@ from typing import List, Optional
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from action_msgs.msg import GoalStatus
 
 from std_msgs.msg import Bool, String
 from sensor_msgs.msg import NavSatFix
 from nav_msgs.msg import Odometry, Path
-from geometry_msgs.msg import PoseStamped, Quaternion, Point
+from geometry_msgs.msg import PoseStamped, Point
 from geographic_msgs.msg import GeoPoint
 
 from robot_localization.srv import FromLLArray
 from nav2_msgs.action import FollowPath
+from faucon_common.ros_utils import LATCHED_QOS, spin_until_shutdown, yaw_to_quaternion  # utilitaires partages (paquet faucon_common)
 
 # mission_core.py lives in the same install dir as this script, so we can import it directly.
 _DIR = os.path.dirname(os.path.abspath(__file__))
 if _DIR not in sys.path:
     sys.path.insert(0, _DIR)
 from mission_core import State, validate_waypoints, nearest_wp_index  # noqa: E402
-
-
-LATCHED_QOS = QoSProfile(
-    depth=1,
-    durability=DurabilityPolicy.TRANSIENT_LOCAL,
-    reliability=ReliabilityPolicy.RELIABLE,
-)
 
 
 class MissionManager(Node):
@@ -270,11 +262,7 @@ class MissionManager(Node):
             ps.pose.position.x = pt.x
             ps.pose.position.y = pt.y
             ps.pose.position.z = 0.0
-            yaw = float(wp.get("yaw", 0.0))
-            q   = Quaternion()
-            q.z = math.sin(yaw * 0.5)
-            q.w = math.cos(yaw * 0.5)
-            ps.pose.orientation = q
+            ps.pose.orientation = yaw_to_quaternion(float(wp.get("yaw", 0.0)))
             path.poses.append(ps)
         return path
 
@@ -431,9 +419,7 @@ class MissionManager(Node):
 def main():
     rclpy.init()
     node = MissionManager()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    spin_until_shutdown(node)
 
 
 if __name__ == "__main__":

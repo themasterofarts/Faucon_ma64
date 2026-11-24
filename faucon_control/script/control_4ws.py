@@ -8,7 +8,7 @@ from std_msgs.msg import Bool, Float64MultiArray
 import math
 
 from rclpy.duration import Duration
-from rclpy.executors import ExternalShutdownException
+from faucon_common.ros_utils import spin_until_shutdown  # utilitaires partages (paquet faucon_common)
 
 
 class CmdVelToJoints(Node):
@@ -217,13 +217,7 @@ class CmdVelToJoints(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = CmdVelToJoints()
-    try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        # Ctrl+C / arret par ros2 launch (SIGINT/SIGTERM) : arret silencieux
-        pass
-    node.destroy_node()
-    rclpy.try_shutdown()
+    spin_until_shutdown(node)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-import math
-
 import rclpy
 from rclpy.node import Node
-from rclpy.executors import ExternalShutdownException
 from nav_msgs.msg import Odometry
+from faucon_common.ros_utils import quaternion_to_yaw, spin_until_shutdown  # utilitaires partages (paquet faucon_common)
 
 
 
@@ -38,8 +36,7 @@ class PoseRobot(Node):
 
 
         ### rotation autour de z (yaw), sans dependance a tf_transformations
-        q = msg.pose.pose.orientation
-        yaw_local = math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        yaw_local = quaternion_to_yaw(msg.pose.pose.orientation)
 
         self.get_logger().info( f"  position local  [x_robot= {x_robot:.3f}m ,  y_robot= {y_robot:.3f}m ],yaw_local= {yaw_local:.3f} rad ")
 
@@ -47,12 +44,7 @@ class PoseRobot(Node):
 def main():
     rclpy.init()
     node =PoseRobot()
-    try:
-        rclpy.spin(node)
-    except (KeyboardInterrupt, ExternalShutdownException):
-        pass
-    node.destroy_node()
-    rclpy.try_shutdown()
+    spin_until_shutdown(node)
 
 
 if __name__ == "__main__":

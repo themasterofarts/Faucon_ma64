@@ -9,9 +9,8 @@ import sys
 import time
 import tkinter as tk
 from tkinter import messagebox
-import math
 from ament_index_python.packages import get_package_share_directory
-from geometry_msgs.msg import Quaternion
+from faucon_common.ros_utils import quaternion_to_yaw  # utilitaires partages (paquet faucon_common)
 
 class GpsGuiLogger(tk.Tk, Node):
     def __init__(self, logging_file_path):
@@ -48,19 +47,6 @@ class GpsGuiLogger(tk.Tk, Node):
         # Timer pour mettre à jour l'UI régulièrement (vérifier le timeout)
         self.ui_update_timer = self.create_timer(0.5, self.update_ui)
 
-    def euler_from_quaternion(self, q: Quaternion):
-        t0 = +2.0 * (q.w * q.x + q.y * q.z)
-        t1 = +1.0 - 2.0 * (q.x * q.x + q.y * q.y)
-        roll_x = math.atan2(t0, t1)
-        t2 = +2.0 * (q.w * q.y - q.z * q.x)
-        t2 = 1.0 if t2 > 1.0 else t2
-        t2 = -1.0 if t2 < -1.0 else t2
-        pitch_y = math.asin(t2)
-        t3 = +2.0 * (q.w * q.z + q.x * q.y)
-        t4 = +1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        yaw_z = math.atan2(t3, t4)
-        return roll_x, pitch_y, yaw_z
-
     def gps_callback(self, msg: NavSatFix):
         if msg.status.status >= 0:
             self.last_gps_position = msg
@@ -68,7 +54,7 @@ class GpsGuiLogger(tk.Tk, Node):
             self.update_ui()
 
     def imu_callback(self, msg: Imu):
-        _, _, self.last_heading = self.euler_from_quaternion(msg.orientation)
+        self.last_heading = quaternion_to_yaw(msg.orientation)
         self.last_imu_time = time.time()
         self.update_ui()
 

@@ -116,7 +116,26 @@ sudo chmod +x ./faucon/launch_full.sh
 
 ---
 
-#### **3. Cartographie RTAB-Map** (optionnel, après `launch_full.sh`)
+#### Options de lancement (`launch_base.sh` et `launch_full.sh`)
+
+| Option | Défaut | Effet |
+|---|---|---|
+| `use_mini=true` | `false` | Robot mini (DiffDrive) |
+| `headless=false` | `true` | Affiche l'interface Gazebo. Par défaut Gazebo tourne **sans interface** (capteurs toujours simulés), ce qui économise ~2 cœurs et ~0,9 Go ; RViz ou l'IHM servent à visualiser. |
+| `use_lidar_calibrator=true` | `false` | Lance `lidar_calibrator` (`/cloud_calib_out`), **requis par la cartographie RTAB-Map et la détection de rangs** |
+| `ihm_lan=true` | `false` | IHM accessible depuis le réseau (voir plus bas) |
+
+```bash
+./faucon/launch_full.sh headless=false                 # avec l'interface Gazebo
+./faucon/launch_full.sh use_lidar_calibrator=true      # avant une cartographie
+```
+
+---
+
+#### **3. Cartographie RTAB-Map** (optionnel, après `launch_full.sh use_lidar_calibrator=true`)
+
+> La cartographie utilise `/cloud_calib_out`, publié par `lidar_calibrator`, qui n'est plus
+> lancé par défaut : lancer la base avec `use_lidar_calibrator=true`.
 
 ```bash
 # LiDAR seul
