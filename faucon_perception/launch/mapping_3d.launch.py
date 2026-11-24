@@ -1,7 +1,8 @@
 """
 Cartographie 3D du champ de maïs avec RTAB-Map lidar seul.
 
-Prérequis (à lancer avant) : ./faucon/launch_full.sh (description et navigation)
+Prérequis (à lancer avant) : ./faucon/launch_full.sh use_lidar_calibrator=true
+  (description et navigation ; lidar_calibrator publie /cloud_calib_out, non lancé par défaut)
 
 Topics publiés par RTAB-Map :
   /rtabmap/cloud_map      

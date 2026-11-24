@@ -12,6 +12,8 @@ echo "Workspace : ${WS_DIR}"
 
 use_mini=false
 ihm_lan=false
+headless=true
+use_lidar_calibrator=false
 
 for arg in "$@"; do
     case $arg in
@@ -20,6 +22,12 @@ for arg in "$@"; do
             ;;
         ihm_lan=*)
             ihm_lan="${arg#*=}"
+            ;;
+        headless=*)
+            headless="${arg#*=}"
+            ;;
+        use_lidar_calibrator=*)
+            use_lidar_calibrator="${arg#*=}"
             ;;
         *)
             echo "Argument inconnu : $arg"
@@ -37,6 +45,13 @@ if [[ "$ihm_lan" != "true" && "$ihm_lan" != "false" ]]; then
     echo "Erreur : ihm_lan doit être true ou false (valeur reçue : $ihm_lan)"
     exit 1
 fi
+for v in headless use_lidar_calibrator; do
+    if [[ "${!v}" != "true" && "${!v}" != "false" ]]; then
+        echo "Erreur : $v doit être true ou false (valeur reçue : ${!v})"
+        exit 1
+    fi
+done
+
 if [[ "$ihm_lan" == "true" ]]; then
     echo "⚠  ihm_lan=true : IHM et rosbridge accessibles depuis le réseau SANS authentification."
 fi
@@ -49,7 +64,7 @@ source "${WS_DIR}/install/setup.bash"
 
 # Lancement de la base en arrière-plan
 echo "Lancement base : ros2 launch faucon_base_desc view.launch.py use_sim_time:=true use_mini:=${use_mini}"
-ros2 launch faucon_base_desc view.launch.py use_sim_time:=true use_mini:="${use_mini}" ihm_lan:="${ihm_lan}" &
+ros2 launch faucon_base_desc view.launch.py use_sim_time:=true use_mini:="${use_mini}" ihm_lan:="${ihm_lan}" headless:="${headless}" use_lidar_calibrator:="${use_lidar_calibrator}" &
 BASE_PID=$!
 
 echo "Attente du démarrage de la base (5s)…"
