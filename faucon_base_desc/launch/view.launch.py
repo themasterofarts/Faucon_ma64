@@ -24,6 +24,8 @@ def launch_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_mini_value = LaunchConfiguration("use_mini").perform(context)
     use_rviz = LaunchConfiguration("use_rviz").perform(context)
+    headless = LaunchConfiguration("headless").perform(context).lower()
+    use_lidar_calibrator = LaunchConfiguration("use_lidar_calibrator").perform(context).lower()
     
     
     if use_mini_value.lower() == "true":
@@ -41,14 +43,18 @@ def launch_setup(context, *args, **kwargs):
         spawn_z = "1.0"
         spawn_y = "-2.83"
 
-    twist_mux_params = os.path.join(
-        get_package_share_directory("faucon_base_desc"), "config", "twist_mux.yaml"
-    )
+    # Conditions calculees une seule fois (auparavant : PythonExpression repete 6 fois)
+    #  - with_ros2_control : robot complet 4WS (controleurs ros2_control + control_4ws)
+    #  - without_ros2_control : DiffDrive Gazebo (robot mini, ou use_ros2_control:=false)
+    with_ros2_control = IfCondition(use_ros2_control_value)
+    without_ros2_control = UnlessCondition(use_ros2_control_value)
+
+    twist_mux_params = os.path.join(pkg_path, "config", "twist_mux.yaml")
 
    
     environment = AppendEnvironmentVariable(
         "GZ_SIM_RESOURCE_PATH",
-        path.join(get_package_share_directory("faucon_base_desc"), "worlds"),
+        path.join(pkg_path, "worlds"),
     )
 
     
@@ -72,6 +78,9 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             "world_path": os.path.join(pkg_path, "worlds", "virtual_maize_field"),
             "world_name": "generated.world",
+            # true (defaut) : Gazebo sans interface graphique (~2 coeurs et ~0,9 Go
+            # economises) ; les capteurs (camera, LiDAR) restent simules.
+            "headless": headless,
         }.items(),
     )
 
@@ -115,7 +124,7 @@ def launch_setup(context, *args, **kwargs):
                 "use_sim_time": use_sim_time
             }
         ],
-        condition=UnlessCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
+        condition=without_ros2_control,
     )
 
    
@@ -125,7 +134,7 @@ def launch_setup(context, *args, **kwargs):
         name="control_4ws",
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
-        condition=IfCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
+        condition=with_ros2_control,
     )
 
     # Modes DiffDrive (mini, use_ros2_control:=false) : control_4ws n'est pas lance,
@@ -136,15 +145,19 @@ def launch_setup(context, *args, **kwargs):
         name="diffdrive_safety",
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
-        condition=UnlessCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
+        condition=without_ros2_control,
     )
 
+    # Retrait du sol du nuage LiDAR (/cloud -> /cloud_calib_out, /ground_cloud).
+    # Necessaire a la cartographie RTAB-Map et a la detection de rangs : desactive
+    # par defaut (~0,6 coeur), activer avec use_lidar_calibrator:=true.
     ground_filter = Node(
         package="faucon_perception",
         executable="lidar_calibrator",
         name="lidar_calibrator",
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
+        condition=IfCondition(use_lidar_calibrator),
     )
 
     
@@ -154,7 +167,7 @@ def launch_setup(context, *args, **kwargs):
         name="rviz2", 
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
-        condition=IfCondition(PythonExpression(['"', use_rviz, '" == "true"'])),
+        condition=IfCondition(use_rviz),
     )
 
     
@@ -215,21 +228,21 @@ def launch_setup(context, *args, **kwargs):
         package="controller_manager",
         executable="spawner",
         arguments=["joint_broad", "--controller-manager-timeout", "20"],
-        condition=IfCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
+        condition=with_ros2_control,
     )
 
     steer_controller = Node(
         package="controller_manager",
         executable="spawner",
         arguments=["steer_controller"],
-        condition=IfCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
+        condition=with_ros2_control,
     )
 
     velocity_controller = Node(
         package="controller_manager",
         executable="spawner",
         arguments=["velocity_controller"],
-        condition=IfCondition(PythonExpression(['"', use_ros2_control_value, '" == "true"'])),
+        condition=with_ros2_control,
     )
 
     
@@ -299,6 +312,18 @@ def generate_launch_description():
                  description="Launch RViz if true (ignored if use_mini=true)",
             ),
         
+            DeclareLaunchArgument(
+                "headless",
+                default_value="true",
+                description="true : Gazebo sans interface graphique (capteurs toujours simules, "
+                            "economise ~2 coeurs et ~0,9 Go) ; false : interface Gazebo affichee",
+            ),
+            DeclareLaunchArgument(
+                "use_lidar_calibrator",
+                default_value="false",
+                description="true : lance lidar_calibrator (/cloud_calib_out), requis par la "
+                            "cartographie RTAB-Map et la detection de rangs",
+            ),
             DeclareLaunchArgument(
                 "ihm_lan",
                 default_value="false",

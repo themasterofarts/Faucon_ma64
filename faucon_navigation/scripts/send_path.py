@@ -6,19 +6,12 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 
-from geometry_msgs.msg import PoseStamped, Quaternion
+from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
 from nav2_msgs.action import FollowPath
+from faucon_common.ros_utils import spin_until_shutdown, yaw_to_quaternion  # utilitaires partages (paquet faucon_common)
 
 
-def yaw_to_quat(yaw: float) -> Quaternion:
-    """Convert yaw (rad) to geometry_msgs/Quaternion."""
-    q = Quaternion()
-    q.x = 0.0
-    q.y = 0.0
-    q.z = math.sin(yaw * 0.5)
-    q.w = math.cos(yaw * 0.5)
-    return q
 
 
 def make_linear_points(
@@ -77,7 +70,7 @@ class LinearPathSender(Node):
 
         pts = make_linear_points(self.start, self.goal, self.step)
         yaw = math.atan2(self.goal[1] - self.start[1], self.goal[0] - self.start[0])
-        q = yaw_to_quat(yaw)
+        q = yaw_to_quaternion(yaw)
 
         for (x, y) in pts:
             ps = PoseStamped()
@@ -142,7 +135,7 @@ def main():
     rclpy.init()
     node = LinearPathSender()
     node.send()
-    rclpy.spin(node)
+    spin_until_shutdown(node)
 
 
 if __name__ == "__main__":
