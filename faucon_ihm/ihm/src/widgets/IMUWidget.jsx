@@ -14,6 +14,7 @@ export default function IMUWidget({ subscribe }) {
   const [stale, setStale] = useState(true);
 
   useEffect(() => {
+    // IMU publiée à 100 Hz : 10 Hz suffisent largement pour l'horizon artificiel
     const unsub = subscribe("/imu/data", "sensor_msgs/Imu", (msg) => {
       lastImuRef.current = Date.now();
       const q = msg.orientation;
@@ -27,7 +28,7 @@ export default function IMUWidget({ subscribe }) {
       const cosy = 1 - 2 * (q.y * q.y + q.z * q.z);
       const yaw = Math.atan2(siny, cosy) * (180 / Math.PI);
       setAttitude({ roll, pitch, yaw });
-    });
+    }, { throttleRate: 100 });
     return unsub;
   }, [subscribe]);
 

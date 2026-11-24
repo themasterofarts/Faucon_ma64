@@ -1,12 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── ROSBRIDGE CONNECTION HOOK ────────────────────────────────────────────────
+
+// Message "subscribe" du protocole rosbridge, avec limitation de débit optionnelle
+// (throttle_rate en ms ; queue_length 1 = seul le message le plus récent est gardé).
+export function subscribeOp(topic, type, options = {}) {
+  const op = { op: "subscribe", topic, type };
+  if (options.throttleRate) {
+    op.throttle_rate = options.throttleRate;
+    op.queue_length = 1;
+  }
+  return op;
+}
+
 export function useRosBridge(url) {
   const wsRef = useRef(null);
   const [connected, setConnected] = useState(false);
   const [latency, setLatency] = useState(null);
   const subscribers = useRef({});
   const topicTypes = useRef({});
+  const topicOptions = useRef({});
   const pingInterval = useRef(null);
 
   const connect = useCallback(() => {
@@ -19,7 +32,7 @@ export function useRosBridge(url) {
       // Re-subscribe all topics after reconnect
       Object.keys(subscribers.current).forEach(topic => {
         if (subscribers.current[topic]?.length > 0 && topicTypes.current[topic]) {
-          ws.send(JSON.stringify({ op: "subscribe", topic, type: topicTypes.current[topic] }));
+          ws.send(JSON.stringify(subscribeOp(topic, topicTypes.current[topic], topicOptions.current[topic])));
         }
       });
       // Ping : on publie sur un topic /rosout (toujours présent) et on mesure
@@ -74,12 +87,16 @@ export function useRosBridge(url) {
 
   useEffect(() => { connect(); return () => { wsRef.current?.close(); clearInterval(pingInterval.current); }; }, [connect]);
 
-  const subscribe = useCallback((topic, type, cb) => {
+  // options.throttleRate (ms) : intervalle minimal entre deux messages envoyés par
+  // rosbridge (ex. 100 ms = 10 Hz max). Limite le JSON transmis et les rendus React
+  // pour les topics rapides (IMU 100 Hz, odométrie 50 Hz).
+  const subscribe = useCallback((topic, type, cb, options = {}) => {
     if (!subscribers.current[topic]) subscribers.current[topic] = [];
     subscribers.current[topic].push(cb);
     topicTypes.current[topic] = type;
+    topicOptions.current[topic] = options;
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ op: "subscribe", topic, type }));
+      wsRef.current.send(JSON.stringify(subscribeOp(topic, type, options)));
     }
     return () => {
       subscribers.current[topic] = (subscribers.current[topic] || []).filter(f => f !== cb);

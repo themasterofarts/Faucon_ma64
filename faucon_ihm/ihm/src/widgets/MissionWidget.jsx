@@ -25,10 +25,11 @@ export default function MissionWidget({ subscribe, publish, connected }) {
   }, [subscribe]);
 
   useEffect(() => {
+    // Odométrie publiée à 50 Hz, utilisée seulement pour afficher la vitesse : 5 Hz suffisent
     const unsub = subscribe("/odom", "nav_msgs/Odometry", (msg) => {
       const vx = msg.twist?.twist?.linear?.x ?? 0;
       setSpeed(Math.abs(vx));
-    });
+    }, { throttleRate: 200 });
     const timer = setInterval(() => {
       setUptime(Math.floor((Date.now() - startRef.current) / 1000));
     }, 1000);
