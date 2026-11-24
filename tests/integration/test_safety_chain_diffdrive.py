@@ -42,6 +42,18 @@ def chain():
                              and probe.count_subscribers("/e_stop") >= 2
                              and probe.count_publishers("/cmd_vel") >= 2, timeout=20)
     assert ready, "chaine non connectee :\n" + mux.log()[-2000:] + safety.log()[-2000:]
+    # Les compteurs du graphe ne garantissent pas que la liaison twist_mux -> diffdrive_safety
+    # sur /cmd_vel est etablie (decouverte DDS plus lente en CI). Echauffement de bout en
+    # bout : on envoie des commandes jusqu'a voir diffdrive_safety forcer un zero (delai
+    # de securite), ce qui prouve qu'il recoit bien /cmd_vel.
+    probe.safety_log = safety.log
+    warm = False
+    end = time.monotonic() + 30
+    while not warm and time.monotonic() < end:
+        publish_for(probe.nav, lambda: twist(0.3), 0.3, 20)
+        warm = Probe.wait_until(lambda: probe.cmd and probe.cmd[-1][1] == 0.0, timeout=1.5)
+    assert warm, "diffdrive_safety ne reagit pas a /cmd_vel :\n" + safety.log()[-2000:]
+    time.sleep(0.3)
     yield probe
     probe.estop.publish(flag(False))
     probe.close()
@@ -58,7 +70,8 @@ def test_watchdog_forces_zero_when_commands_stop(chain):
     publish_for(chain.nav, lambda: twist(0.3), 0.6, 20)
     assert held(chain) == pytest.approx(0.3)
     t_last = time.monotonic()
-    assert Probe.wait_until(lambda: held(chain) == 0.0, timeout=2.0)
+    assert Probe.wait_until(lambda: held(chain) == 0.0, timeout=2.0), \
+        "vitesse non forcee a zero apres l'arret des commandes :\n" + chain.safety_log()[-1500:]
     t_zero = next(t for t, v in chain.cmd if t > t_last and v == 0.0)
     delay = t_zero - t_last  # cmd_timeout = 0.5 s ; borne haute large (charge CI)
     assert 0.3 < delay < 2.0, f"vitesse forcee a zero {delay:.2f} s apres la derniere commande (attendu ~0.5 s)"

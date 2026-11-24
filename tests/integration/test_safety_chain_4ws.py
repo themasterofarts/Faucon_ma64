@@ -51,6 +51,15 @@ def chain():
                              and probe.count_publishers("/velocity_controller/commands") > 0, timeout=20)
     assert ready, "chaine non connectee :\n" + mux.log()[-2000:] + ctrl.log()[-2000:]
     probe.ctrl_log = ctrl.log
+    # Echauffement de bout en bout (decouverte DDS plus lente en CI) : des commandes
+    # jusqu'a voir les roues tourner, ce qui prouve que nav2 -> twist_mux -> control_4ws
+    # -> roues est connecte.
+    warm = False
+    end = time.monotonic() + 30
+    while not warm and time.monotonic() < end:
+        publish_for(probe.nav, lambda: twist(0.3), 0.3, 20)
+        warm = bool(probe.wheels) and any(abs(w) > 0 for w in probe.wheels[-1][1])
+    assert warm, "control_4ws ne recoit pas les commandes :\n" + ctrl.log()[-2000:]
     yield probe
     probe.estop.publish(flag(False))
     probe.close()
