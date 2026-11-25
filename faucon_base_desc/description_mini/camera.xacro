@@ -54,20 +54,17 @@
                     <near>0.05</near>
                     <far>10.0</far>
                 </clip>
-                
+                <!-- depth_camera doit etre dans <camera> (il etait sous <sensor>,
+                     donc ignore). Memes valeurs que <clip> : comportement inchange.
+                     L'ancien bruit de profondeur (gaussien, ecart-type 0.001) n'est
+                     pas exprimable dans depth_camera en SDF ; il etait ignore. -->
+                <depth_camera>
+                    <clip>
+                        <near>0.05</near>
+                        <far>10.0</far>
+                    </clip>
+                </depth_camera>
             </camera>
-
-            <depth_camera>
-                <clip>
-                    <near>0.05</near>
-                    <far>10.0</far>
-                </clip>
-                <noise>
-                    <type>gaussian</type>
-                    <mean>0.0</mean>
-                    <stddev>0.001</stddev>
-                </noise>
-            </depth_camera>
             
            
             <always_on>1</always_on>
