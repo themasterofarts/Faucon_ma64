@@ -14,3 +14,10 @@ __pycache__/
 
 # Cache pytest
 .pytest_cache/
+
+# Tests et couverture (tests/run_tests.sh)
+.coverage
+.coverage.*
+coverage_html/
+coverage.xml
+test-results/
