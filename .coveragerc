@@ -1,0 +1,30 @@
+# Couverture Python (coverage.py) : tests unitaires + tests d'integration.
+# Les noeuds lances en sous-processus par tests/integration/harness.py ecrivent
+# leurs propres fichiers .coverage.* (mode parallele) ; on les fusionne ensuite :
+#   python3 -m coverage combine && python3 -m coverage report
+[run]
+branch = True
+parallel = True
+relative_files = True
+source =
+    faucon_common/faucon_common
+    faucon_control/script
+    faucon_localisation/script
+    faucon_navigation/scripts
+    faucon_perception/scripts
+    faucon_path_planning/gui
+omit =
+    */test/*
+    tests/*
+    conftest.py
+
+[report]
+show_missing = True
+skip_empty = True
+precision = 1
+
+[html]
+directory = coverage_html
+
+[xml]
+output = coverage.xml

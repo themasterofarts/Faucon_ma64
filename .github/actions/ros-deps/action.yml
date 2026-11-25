@@ -1,0 +1,46 @@
+name: "Dependances ROS 2 Jazzy"
+description: >
+  Installe les outils et dependances ROS du projet dans le conteneur
+  osrf/ros:jazzy-desktop, copie le depot dans le workspace et lance rosdep.
+  Partage par les jobs build, unit-tests et integration-tests.
+
+runs:
+  using: composite
+  steps:
+    - name: Install base tools & ROS deps
+      shell: bash
+      run: |
+        # Retries pour les erreurs réseau transitoires (520, timeout, etc.)
+        echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+          git curl gnupg lsb-release rsync \
+          python3-pip python3-colcon-common-extensions python3-vcstool \
+          build-essential cmake \
+          ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
+          ros-jazzy-ros-gz ros-jazzy-ros-gz-bridge ros-jazzy-ros-gz-image \
+          ros-jazzy-gz-ros2-control \
+          ros-jazzy-behaviortree-cpp ros-jazzy-behaviortree-cpp-dbgsym ros-jazzy-nav2-bringup \
+          ros-jazzy-rosbridge-server ros-jazzy-pcl-ros \
+          libopencv-dev \
+          python3-pytest python3-coverage
+        # Packages Python depuis Ubuntu universe peu fiables → pip
+        pip3 install --quiet --break-system-packages ujson utm pyproj
+        rosdep update || (rosdep init && rosdep update)
+
+    - name: Prepare workspace
+      shell: bash
+      run: |
+        mkdir -p "$WS_DIR/src"
+        # copie le dépôt courant dans le workspace (sans .git)
+        rsync -a --exclude='.git' "$GITHUB_WORKSPACE/" "$WS_DIR/src/this_repo"
+
+    - name: rosdep install
+      shell: bash
+      run: |
+        set -e
+        source /opt/ros/$ROS_DISTRO/setup.sh
+        cd "$WS_DIR"
+        # --skip-keys : packages déjà installés ci-dessus (apt ou pip)
+        rosdep install --from-paths src --ignore-src -y \
+          --skip-keys "python3-ujson python3-utm python3-pyproj ros-jazzy-rosbridge-server ros-jazzy-pcl-ros"

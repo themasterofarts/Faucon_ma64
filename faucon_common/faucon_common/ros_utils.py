@@ -7,9 +7,11 @@ Conventions : REP-103 (ENU), yaw en radians autour de z.
 from __future__ import annotations
 
 import math
+import signal
+import threading
 
 import rclpy
-from rclpy.executors import ExternalShutdownException
+from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
 from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
 
 # QoS "latched" : le dernier message est conserve et livre aux abonnes qui se
@@ -40,15 +42,39 @@ def quaternion_to_yaw(q) -> float:
     return math.atan2(siny_cosp, cosy_cosp)
 
 
-def spin_until_shutdown(node) -> None:
+def spin_until_shutdown(node, poll_period: float = 0.1) -> None:
     """Fait tourner `node` jusqu'a l'arret, puis le detruit et arrete rclpy.
 
     Ctrl+C (SIGINT) et l'arret par ros2 launch (SIGTERM) terminent le noeud
-    silencieusement, sans trace KeyboardInterrupt / ExternalShutdownException.
+    silencieusement (code de sortie 0).
+
+    Les signaux ne levent pas d'exception : le gestionnaire installe ici leve
+    seulement un drapeau, verifie entre deux iterations de l'executeur (au plus
+    `poll_period` s). Avec rclpy.spin(), une interruption arrivant pendant la
+    lecture d'un message (code C++) remontait parfois en RuntimeError au lieu de
+    KeyboardInterrupt (noeuds a fort debit, ex. diffdrive_safety sur /cmd_vel),
+    d'ou une trace et un code de sortie 1.
     """
+    stop = threading.Event()
+
+    def _request_stop(signum, frame):
+        stop.set()
+
+    previous = {}
+    if threading.current_thread() is threading.main_thread():
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            previous[sig] = signal.signal(sig, _request_stop)
+
+    executor = SingleThreadedExecutor()
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        while rclpy.ok() and not stop.is_set():
+            executor.spin_once(timeout_sec=poll_period)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+        executor.shutdown(timeout_sec=1.0)
     node.destroy_node()
     rclpy.try_shutdown()

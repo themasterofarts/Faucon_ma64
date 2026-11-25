@@ -43,11 +43,22 @@
             </noise>
           </vertical>
         </position_sensing>
+        <!-- Format SDF valide (horizontal / vertical). L'ancienne balise <noise>
+             directement sous velocity_sensing (ecart-type 0.0001) etait ignoree :
+             l'ecart-type 0 conserve le comportement reel. -->
         <velocity_sensing>
-          <noise type="gaussian">
-            <mean>0.0</mean>
-            <stddev>0.0001</stddev>       
-          </noise>
+          <horizontal>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.0</stddev>
+            </noise>
+          </horizontal>
+          <vertical>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.0</stddev>
+            </noise>
+          </vertical>
         </velocity_sensing>
       </navsat>
 

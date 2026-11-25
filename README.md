@@ -182,6 +182,21 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=cmd_
 > Ne publiez pas directement sur `/cmd_vel` : cela contournerait l'arbitrage.
 ---
 
+### Tests
+
+Les tests se lancent en local comme dans la CI, depuis la racine du dépôt :
+
+```bash
+source /opt/ros/jazzy/setup.bash && source install/setup.bash   # après colcon build
+./tests/run_tests.sh              # unitaires + intégration + rapport de couverture
+./tests/run_tests.sh unit         # tests unitaires seuls (rapides)
+./tests/run_tests.sh integration  # tests d'intégration seuls
+```
+
+- **Tests unitaires** (`*/test/`) : logique pure (cinématique 4WS, générateur de trajectoires, validation de mission, URDF, utilitaires).
+- **Tests d'intégration** (`tests/integration/`) : vrais nœuds ROS 2, **sans Gazebo**. Ils couvrent la chaîne de sécurité (`twist_mux` + `control_4ws` / `diffdrive_safety` : priorités, délai de sécurité, arrêt d'urgence) et le cycle de vie d'une mission (`mission_manager` + `datum_manager`, avec Nav2 et navsat_transform factices). Ils utilisent un domaine ROS dédié et une découverte limitée à la machine : aucune interférence avec une simulation en cours.
+- **Couverture** : rapport HTML dans `coverage_html/index.html`. En CI, le tableau de couverture apparaît dans le résumé du job « Coverage report », et le rapport complet est disponible en artefact.
+
 ### Contribuer au projet
 
 Nous accueillons toutes les contributions de la communauté !

@@ -10,17 +10,30 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  ROS_DISTRO: jazzy
+  WS_DIR: /root/ws
+
+# Organisation :
+#   build ──┬── unit-tests ─────────┬── coverage (rapport de couverture Python)
+#           └── integration-tests ──┘
+# - build              : colcon build + verification de syntaxe ; le workspace installe
+#                        est transmis aux jobs de tests (artefact ros-install).
+# - unit-tests         : tests unitaires (pytest) sous coverage.py.
+# - integration-tests  : vrais noeuds ROS 2 sans Gazebo (chaine de securite, mission),
+#                        noeuds instrumentes par coverage.py.
+# - coverage           : fusion des donnees de couverture, tableau dans le resume du
+#                        job, rapport HTML et coverage.xml en artefacts. Non bloquant.
+# Les tests se lancent aussi en local : ./tests/run_tests.sh
+
 jobs:
   build:
     name: Build & Checks
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
 
     container:
       image: osrf/ros:jazzy-desktop
-
-    env:
-      ROS_DISTRO: jazzy
-      WS_DIR: /root/ws
 
     steps:
       - name: Checkout repository
@@ -28,34 +41,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install base tools & ROS deps
-        run: |
-          # Retries pour les erreurs réseau transitoires (520, timeout, etc.)
-          echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            git curl gnupg lsb-release rsync \
-            python3-pip python3-colcon-common-extensions python3-vcstool \
-            build-essential cmake \
-            ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
-            ros-jazzy-ros-gz ros-jazzy-ros-gz-bridge ros-jazzy-ros-gz-image \
-            ros-jazzy-gz-ros2-control \
-            ros-jazzy-behaviortree-cpp ros-jazzy-behaviortree-cpp-dbgsym ros-jazzy-nav2-bringup \
-            ros-jazzy-rosbridge-server ros-jazzy-pcl-ros \
-            libopencv-dev \
-            python3-pytest
-          # Packages Python depuis Ubuntu universe peu fiables → pip
-          pip3 install --quiet --break-system-packages ujson utm pyproj
-          rosdep update || (rosdep init && rosdep update)
+      - name: Dependances ROS
+        uses: ./.github/actions/ros-deps
 
-      - name:  Prepare workspace
-        shell: bash
-        run: |
-          mkdir -p "$WS_DIR/src"
-          # copie le dépôt courant dans le workspace (sans .git)
-          rsync -a --exclude='.git' "$GITHUB_WORKSPACE/" "$WS_DIR/src/this_repo"
-
-      - name: Clone dependency virtual_maize_field 
+      - name: Clone dependency virtual_maize_field
         shell: bash
         run: |
           set -e
@@ -65,16 +54,6 @@ jobs:
           #   git clone https://github.com/themasterofarts/virtual_maize_field.git
           # fi
           # echo " virtual_maize_field cloned."
-
-      - name:  rosdep install
-        shell: bash
-        run: |
-          set -e
-          source /opt/ros/$ROS_DISTRO/setup.sh
-          cd "$WS_DIR"
-          # --skip-keys : packages déjà installés ci-dessus (apt ou pip)
-          rosdep install --from-paths src --ignore-src -y \
-            --skip-keys "python3-ujson python3-utm python3-pyproj ros-jazzy-rosbridge-server ros-jazzy-pcl-ros"
 
       - name: colcon build
         shell: bash
@@ -94,16 +73,16 @@ jobs:
             -print0 | xargs -0 python3 -m py_compile
           echo "::notice:: Syntaxe Python OK"
 
-      - name: Tests
+      - name: Archive du workspace installe
         shell: bash
-        run: |
-          set -e
-          source /opt/ros/$ROS_DISTRO/setup.bash
-          # workspace source : les tests URDF ont besoin de $(find faucon_base_desc)
-          source "$WS_DIR/install/setup.bash"
-          cd "$WS_DIR/src/this_repo"
-          python3 -m pytest -q -p no:cacheprovider \
-            faucon_common/test faucon_navigation/test faucon_control/test faucon_base_desc/test
+        run: tar czf /tmp/ros-install.tgz -C "$WS_DIR" install
+
+      - name: Upload workspace installe
+        uses: actions/upload-artifact@v4
+        with:
+          name: ros-install
+          path: /tmp/ros-install.tgz
+          retention-days: 3
 
       - name: Upload logs (artefacts)
         if: always()
@@ -132,3 +111,129 @@ jobs:
           echo "- Commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Status: ❌ *Check logs & artifacts*" >> $GITHUB_STEP_SUMMARY
           echo "::error::❌ Build failed. See summary and artifacts."
+
+  tests:
+    name: ${{ matrix.suite == 'unit' && 'Unit tests' || 'Integration tests' }}
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ unit, integration ]
+
+    container:
+      image: osrf/ros:jazzy-desktop
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Dependances ROS
+        uses: ./.github/actions/ros-deps
+
+      - name: Download workspace installe
+        uses: actions/download-artifact@v4
+        with:
+          name: ros-install
+          path: /tmp
+
+      - name: Extract workspace installe
+        shell: bash
+        run: tar xzf /tmp/ros-install.tgz -C "$WS_DIR"
+
+      - name: Tests (${{ matrix.suite }})
+        shell: bash
+        run: |
+          set -e
+          source /opt/ros/$ROS_DISTRO/setup.bash
+          # workspace source : tests URDF ($(find faucon_base_desc)), faucon_common installe
+          source "$WS_DIR/install/setup.bash"
+          cd "$WS_DIR/src/this_repo"
+          ./tests/run_tests.sh ${{ matrix.suite }}
+
+      - name: Resume des tests
+        if: always()
+        shell: bash
+        run: |
+          cd "$WS_DIR/src/this_repo"
+          python3 - "${{ matrix.suite }}" >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          import sys, xml.etree.ElementTree as ET
+          suite = sys.argv[1]
+          try:
+              r = ET.parse(f"test-results/{suite}.xml").getroot()
+              s = r if r.tag == "testsuite" else r.find("testsuite")
+              t, f, e, k = (int(s.get(a, 0)) for a in ("tests", "failures", "errors", "skipped"))
+              icon = "🟢" if f + e == 0 else "🔴"
+              print(f"## {icon} Tests {suite} : {t - f - e - k} reussis, {f + e} en echec, {k} ignores")
+              for c in s.iter("testcase"):
+                  if c.find("failure") is not None or c.find("error") is not None:
+                      print(f"- ❌ `{c.get('classname')}.{c.get('name')}`")
+          except FileNotFoundError:
+              print(f"## 🔴 Tests {suite} : aucun resultat (voir les journaux du job)")
+          EOF
+
+      - name: Upload donnees de couverture
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data-${{ matrix.suite }}
+          path: ${{ env.WS_DIR }}/src/this_repo/.coverage*
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Upload resultats et journaux des noeuds
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.suite }}
+          path: ${{ env.WS_DIR }}/src/this_repo/test-results
+          if-no-files-found: ignore
+
+  coverage:
+    name: Coverage report
+    needs: [ build, tests ]
+    # meme si des tests echouent : la couverture reste utile pour comprendre l'echec
+    if: always() && needs.build.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install coverage.py
+        # meme version que python3-coverage du conteneur ROS (Ubuntu 24.04)
+        run: python3 -m pip install --quiet --break-system-packages "coverage==7.4.4"
+
+      - name: Download donnees de couverture
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-data-*
+          merge-multiple: true
+          path: .
+
+      - name: Rapport de couverture
+        run: |
+          python3 -m coverage combine --rcfile=.coveragerc
+          python3 -m coverage report --rcfile=.coveragerc
+          python3 -m coverage html --rcfile=.coveragerc -q
+          python3 -m coverage xml --rcfile=.coveragerc -q
+          {
+            echo "## 📊 Couverture Python (tests unitaires + integration)"
+            echo ""
+            echo "Couverture totale : **$(python3 -m coverage report --rcfile=.coveragerc --format=total)%**"
+            echo ""
+            python3 -m coverage report --rcfile=.coveragerc --format=markdown
+            echo ""
+            echo "Rapport detaille : artefact \`coverage-report\` (ouvrir \`coverage_html/index.html\`)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload rapport de couverture
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage_html
+            coverage.xml
