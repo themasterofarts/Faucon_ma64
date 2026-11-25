@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" width="1200" height="820" role="img" aria-labelledby="t d">
+  <title id="t">Architecture logicielle de Faucon</title>
+  <desc id="d">Couches du système : interface opérateur, mission, navigation / localisation / perception, commande et sécurité, simulation. Les flèches indiquent les principaux topics ROS 2.</desc>
+  <defs>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#22c55e"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3b82f6"/></marker>
+    <marker id="aa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/></marker>
+    <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/></marker>
+    <style>
+      .bg   { fill: #0d1320; }
+      .band { fill: #111a2b; stroke: #1e2a3d; stroke-width: 1; }
+      .blabel { font: 700 11px Inter, 'Segoe UI', system-ui, sans-serif; letter-spacing: 2px; fill: #22c55e; }
+      .box  { fill: #162033; stroke: #2a3a52; stroke-width: 1.2; }
+      .todo { fill: #121a29; stroke: #4b5a73; stroke-width: 1.2; stroke-dasharray: 6 5; }
+      .t    { font: 700 15px Inter, 'Segoe UI', system-ui, sans-serif; fill: #e2e8f0; }
+      .pkg  { font: 600 11.5px 'JetBrains Mono', ui-monospace, monospace; fill: #22c55e; }
+      .s    { font: 400 12px Inter, 'Segoe UI', system-ui, sans-serif; fill: #94a3b8; }
+      .chip { fill: #0f2a1d; stroke: #1f5135; stroke-width: 1; }
+      .chipt{ font: 600 11.5px Inter, 'Segoe UI', system-ui, sans-serif; fill: #86efac; }
+      .lbl  { font: 600 11px 'JetBrains Mono', ui-monospace, monospace; }
+      .lblbg{ fill: #0d1320; }
+      .g    { stroke: #22c55e; stroke-width: 2; fill: none; }
+      .b    { stroke: #3b82f6; stroke-width: 2; fill: none; }
+      .a    { stroke: #f59e0b; stroke-width: 2; fill: none; }
+      .p    { stroke: #94a3b8; stroke-width: 1.6; fill: none; }
+      .pd   { stroke: #94a3b8; stroke-width: 1.6; fill: none; stroke-dasharray: 5 5; }
+      .leg  { font: 400 12px Inter, 'Segoe UI', system-ui, sans-serif; fill: #cbd5e1; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="820" rx="18"/>
+
+  <!-- ====== BANDES (couches) ====== -->
+  <rect class="band" x="16" y="20"  width="1168" height="112" rx="12"/>
+  <rect class="band" x="16" y="146" width="1168" height="112" rx="12"/>
+  <rect class="band" x="16" y="272" width="1168" height="132" rx="12"/>
+  <rect class="band" x="16" y="418" width="1168" height="112" rx="12"/>
+  <rect class="band" x="16" y="544" width="1168" height="176" rx="12"/>
+  <text class="blabel" x="32" y="70">INTERFACE</text>
+  <text class="blabel" x="32" y="196">MISSION</text>
+  <text class="blabel" x="32" y="330">NAVIGATION</text>
+  <text class="blabel" x="32" y="346">LOCALISATION</text>
+  <text class="blabel" x="32" y="362">PERCEPTION</text>
+  <text class="blabel" x="32" y="468">COMMANDE</text>
+  <text class="blabel" x="32" y="484">&amp; SÉCURITÉ</text>
+  <text class="blabel" x="32" y="628">SIMULATION</text>
+  <text class="blabel" x="32" y="644">&amp; ROBOT</text>
+
+  <!-- ====== FLECHES (derriere les boites) ====== -->
+  <!-- IHM <-> rosbridge -->
+  <path class="a" d="M462 76 H518" marker-start="url(#aa)" marker-end="url(#aa)"/>
+  <!-- GUI trajectoires -> mission_manager -->
+  <path class="p" d="M880 112 L452 166" marker-end="url(#ap)"/>
+  <rect class="lblbg" x="684" y="125" width="96" height="16" rx="3"/>
+  <text class="lbl" x="732" y="137" text-anchor="middle" fill="#94a3b8">fichier YAML</text>
+  <!-- rosbridge -> mission_manager -->
+  <path class="a" d="M600 112 L408 166" marker-end="url(#aa)"/>
+  <rect class="lblbg" x="476" y="127" width="80" height="16" rx="3"/>
+  <text class="lbl" x="516" y="139" text-anchor="middle" fill="#f59e0b">/mission/*</text>
+  <!-- rosbridge -> twist_mux : teleop + arret d'urgence (couloir entre les colonnes) -->
+  <path class="a" d="M540 112 V122 H490 V452 H462" marker-end="url(#aa)"/>
+  <rect class="lblbg" x="498" y="404" width="190" height="16" rx="3"/>
+  <text class="lbl" x="502" y="416" fill="#f59e0b">/cmd_vel_teleop · /e_stop</text>
+  <!-- Orchestration <-> mission (en cours) -->
+  <path class="pd" d="M868 222 H462" marker-start="url(#ap)" marker-end="url(#ap)"/>
+  <rect class="lblbg" x="600" y="214" width="120" height="16" rx="3"/>
+  <text class="lbl" x="660" y="226" text-anchor="middle" fill="#94a3b8">coordination</text>
+  <!-- mission -> Nav2 -->
+  <path class="g" d="M315 236 V290" marker-end="url(#ag)"/>
+  <text class="lbl" x="324" y="268" fill="#22c55e">FollowPath</text>
+  <!-- Localisation -> Nav2 -->
+  <path class="b" d="M520 336 H462" marker-end="url(#ab)"/>
+  <!-- Nav2 -> twist_mux -->
+  <path class="g" d="M315 382 V436" marker-end="url(#ag)"/>
+  <text class="lbl" x="324" y="414" fill="#22c55e">/cmd_vel_nav2</text>
+  <!-- twist_mux -> controle -->
+  <path class="g" d="M460 492 H518" marker-end="url(#ag)"/>
+  <text class="lbl" x="490" y="485" text-anchor="middle" fill="#22c55e">/cmd_vel</text>
+  <!-- controle -> Gazebo -->
+  <path class="g" d="M665 508 V562" marker-end="url(#ag)"/>
+  <text class="lbl" x="674" y="540" fill="#22c55e">roues · braquage</text>
+  <!-- Gazebo -> ros_gz_bridge -->
+  <path class="b" d="M790 562 C 790 536, 905 540, 905 512" marker-end="url(#ab)"/>
+  <text class="lbl" x="914" y="538" fill="#3b82f6">capteurs</text>
+  <!-- ros_gz_bridge -> Localisation -->
+  <path class="b" d="M880 438 L760 384" marker-end="url(#ab)"/>
+  <rect class="lblbg" x="742" y="404" width="118" height="16" rx="3"/>
+  <text class="lbl" x="801" y="416" text-anchor="middle" fill="#3b82f6">/odom /imu /gnss</text>
+  <!-- ros_gz_bridge -> Perception -->
+  <path class="b" d="M1060 438 V384" marker-end="url(#ab)"/>
+  <text class="lbl" x="1068" y="416" fill="#3b82f6">/cloud /camera</text>
+
+  <!-- ====== COUCHE 1 : INTERFACE ====== -->
+  <rect class="box" x="170" y="40" width="290" height="72" rx="10"/>
+  <text class="t"   x="186" y="64">IHM web (React)</text>
+  <text class="pkg" x="186" y="82">faucon_ihm</text>
+  <text class="s"   x="186" y="100">GPS · caméra · IMU · mission · arrêt d'urgence</text>
+
+  <rect class="box" x="520" y="40" width="290" height="72" rx="10"/>
+  <text class="t"   x="536" y="64">rosbridge · web_video_server</text>
+  <text class="s"   x="536" y="84">WebSocket et flux caméra</text>
+  <text class="s"   x="536" y="100">local par défaut, réseau avec ihm_lan</text>
+
+  <rect class="box" x="870" y="40" width="290" height="72" rx="10"/>
+  <text class="t"   x="886" y="64">GUI de trajectoires</text>
+  <text class="pkg" x="886" y="82">faucon_path_planning</text>
+  <text class="s"   x="886" y="100">waypoints GPS · virages de Dubins</text>
+
+  <!-- ====== COUCHE 2 : MISSION ====== -->
+  <rect class="box" x="170" y="166" width="290" height="72" rx="10"/>
+  <text class="t"   x="186" y="190">mission_manager</text>
+  <text class="pkg" x="186" y="208">faucon_navigation</text>
+  <text class="s"   x="186" y="226">START · PAUSE · RESUME · STOP</text>
+
+  <rect class="todo" x="870" y="166" width="290" height="72" rx="10"/>
+  <text class="t"   x="886" y="190">Orchestration BehaviorTree</text>
+  <text class="pkg" x="886" y="208">Faucon_Orchestration</text>
+  <text class="s"   x="886" y="226">coordination robot ↔ drone · en cours</text>
+
+  <!-- ====== COUCHE 3 : NAVIGATION / LOCALISATION / PERCEPTION ====== -->
+  <rect class="box" x="170" y="290" width="290" height="92" rx="10"/>
+  <text class="t"   x="186" y="314">Nav2</text>
+  <text class="pkg" x="230" y="314">nav2_bringup</text>
+  <text class="s"   x="186" y="334">Regulated Pure Pursuit · costmaps</text>
+  <text class="s"   x="186" y="352">collision_monitor</text>
+  <text class="s"   x="186" y="370">entrées : /scan, /odometry/global, TF</text>
+
+  <rect class="box" x="520" y="290" width="290" height="92" rx="10"/>
+  <text class="t"   x="536" y="314">Localisation</text>
+  <text class="pkg" x="536" y="332">faucon_localisation</text>
+  <text class="s"   x="536" y="352">datum_manager · navsat_transform</text>
+  <text class="s"   x="536" y="370">double EKF (robot_localization)</text>
+
+  <rect class="box" x="870" y="290" width="290" height="92" rx="10"/>
+  <text class="t"   x="886" y="314">Perception</text>
+  <text class="pkg" x="886" y="332">faucon_perception</text>
+  <text class="s"   x="886" y="352">lidar_calibrator → RTAB-Map 3D</text>
+  <text class="s"   x="886" y="370">détection de rangs (LiDAR, vision)</text>
+
+  <!-- ====== COUCHE 4 : COMMANDE & SECURITE ====== -->
+  <rect class="box" x="170" y="436" width="290" height="72" rx="10"/>
+  <text class="t"   x="186" y="460">twist_mux</text>
+  <text class="s"   x="186" y="480">priorités : Nav2 10 · téléop 100</text>
+  <text class="s"   x="186" y="498">verrou d'arrêt d'urgence /e_stop</text>
+
+  <rect class="box" x="520" y="436" width="290" height="72" rx="10"/>
+  <text class="t"   x="536" y="460">Contrôle</text>
+  <text class="pkg" x="612" y="460">faucon_control</text>
+  <text class="s"   x="536" y="480">control_4ws (4 roues directrices)</text>
+  <text class="s"   x="536" y="498">diffdrive_safety (mini) · délai 0,5 s</text>
+
+  <rect class="box" x="870" y="436" width="290" height="72" rx="10"/>
+  <text class="t"   x="886" y="460">ros_gz_bridge</text>
+  <text class="s"   x="886" y="480">capteurs Gazebo → topics ROS 2</text>
+  <text class="s"   x="886" y="498">/clock · /odom · /tf (flux lourds en lazy)</text>
+
+  <!-- ====== COUCHE 5 : SIMULATION & ROBOT ====== -->
+  <rect class="box" x="170" y="562" width="640" height="140" rx="10"/>
+  <text class="t"   x="186" y="588">Gazebo Sim</text>
+  <text class="s"   x="276" y="588">— champ de maïs et robot simulés</text>
+  <text class="pkg" x="186" y="608">virtual_maize_field · faucon_base_desc (URDF / Xacro)</text>
+  <!-- capteurs / actionneurs -->
+  <rect class="chip" x="186" y="626" width="86" height="28" rx="14"/><text class="chipt" x="229" y="645" text-anchor="middle">LiDAR 3D</text>
+  <rect class="chip" x="280" y="626" width="112" height="28" rx="14"/><text class="chipt" x="336" y="645" text-anchor="middle">Caméra RGBD</text>
+  <rect class="chip" x="400" y="626" width="56" height="28" rx="14"/><text class="chipt" x="428" y="645" text-anchor="middle">IMU</text>
+  <rect class="chip" x="464" y="626" width="66" height="28" rx="14"/><text class="chipt" x="497" y="645" text-anchor="middle">GNSS</text>
+  <rect class="chip" x="538" y="626" width="98" height="28" rx="14"/><text class="chipt" x="587" y="645" text-anchor="middle">Odométrie</text>
+  <rect class="chip" x="644" y="626" width="112" height="28" rx="14"/><text class="chipt" x="700" y="645" text-anchor="middle">ros2_control</text>
+  <text class="s" x="186" y="684">Robot complet 4WS ou robot mini (DiffDrive) · Gazebo sans interface par défaut</text>
+
+  <rect class="todo" x="870" y="562" width="290" height="140" rx="10"/>
+  <text class="t"   x="886" y="588">Drone</text>
+  <text class="pkg" x="886" y="606">faucon_drone</text>
+  <text class="s"   x="886" y="626">PX4 SITL · vue aérienne</text>
+  <text class="s"   x="886" y="644">en cours</text>
+
+  <!-- ====== LEGENDE ====== -->
+  <line class="a" x1="32"  y1="752" x2="72"  y2="752"/><text class="leg" x="80"  y="756">opérateur (téléop, mission, arrêt d'urgence)</text>
+  <line class="g" x1="380" y1="752" x2="420" y2="752"/><text class="leg" x="428" y="756">commandes de déplacement</text>
+  <line class="b" x1="620" y1="752" x2="660" y2="752"/><text class="leg" x="668" y="756">données capteurs</text>
+  <rect class="box" x="808" y="742" width="34" height="20" rx="5"/><text class="leg" x="850" y="756">opérationnel</text>
+  <rect class="todo" x="952" y="742" width="34" height="20" rx="5"/><text class="leg" x="994" y="756">en cours</text>
+  <text class="s" x="32" y="796">faucon_common : utilitaires Python partagés par les nœuds (QoS, conversions yaw ↔ quaternion, arrêt propre).</text>
+</svg>
