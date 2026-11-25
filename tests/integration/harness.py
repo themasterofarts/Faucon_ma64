@@ -42,6 +42,9 @@ class NodeProcess:
         env = dict(os.environ)
         # faucon_common depuis les sources (fonctionne aussi sans colcon build)
         env["PYTHONPATH"] = repo_path("faucon_common") + os.pathsep + env.get("PYTHONPATH", "")
+        # journaux ROS ecrits immediatement : les tests les lisent pendant l'execution
+        env["RCUTILS_LOGGING_BUFFERED_STREAM"] = "0"
+        env["PYTHONUNBUFFERED"] = "1"
         if python_script:
             prefix = [sys.executable]
             if os.environ.get("FAUCON_COVERAGE") == "1":
@@ -111,6 +114,29 @@ def publish_for(pub, msg_factory: Callable[[], object], duration: float, rate_hz
     while time.monotonic() < end:
         pub.publish(msg_factory())
         time.sleep(1.0 / rate_hz)
+
+
+def publish_until(pub, msg_factory: Callable[[], object], predicate: Callable[[], bool],
+                  timeout: float, rate_hz: float = 20.0) -> bool:
+    """Publie a frequence fixe jusqu'a ce que `predicate` soit vrai (ou timeout).
+
+    A preferer a publish_for() + assertion immediate : le transport DDS peut retarder
+    ponctuellement la reception de plusieurs centaines de ms (observe en CI).
+    """
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        pub.publish(msg_factory())
+        if predicate():
+            return True
+        time.sleep(1.0 / rate_hz)
+    return predicate()
+
+
+def watchdog_ages(log_text: str) -> list[float]:
+    """Ages mesures par le noeud lui-meme lors des declenchements de son delai de
+    securite ("Aucune commande /cmd_vel depuis X s"), dans l'ordre du journal."""
+    import re
+    return [float(x) for x in re.findall(r"Aucune commande /cmd_vel depuis ([0-9.]+) s", log_text)]
 
 
 def ensure_rclpy() -> None:
