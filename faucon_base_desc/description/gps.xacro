@@ -45,10 +45,18 @@
           </vertical>
         </position_sensing>
         <velocity_sensing>
-          <noise type="gaussian">
-            <mean>0.0</mean>
-            <stddev>0.0</stddev>        
-          </noise>
+          <horizontal>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.0</stddev>
+            </noise>
+          </horizontal>
+          <vertical>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>0.0</stddev>
+            </noise>
+          </vertical>
         </velocity_sensing>
       </navsat>
 

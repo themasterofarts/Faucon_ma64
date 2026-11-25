@@ -48,7 +48,11 @@
     
     <imu>
       
-      <orientation_reference_frame parent_frame="imu_link" custom_rpy="0 0 0"/>
+      <!-- Pas de orientation_reference_frame : l'ancienne balise
+           <orientation_reference_frame parent_frame="imu_link" custom_rpy="0 0 0"/>
+           utilisait des attributs inexistants en SDF et etait ignoree par Gazebo.
+           Une version valide (ex. <localization>ENU</localization>) changerait le
+           cap mesure par l'IMU : a traiter separement (cf. rpy de imu_joint). -->
 
       
       <angular_velocity>
@@ -95,7 +99,7 @@
       </linear_acceleration>
 
      
-        <orientation_enabled>true</orientation_enabled>
+        <enable_orientation>true</enable_orientation>
       </imu>
 
       

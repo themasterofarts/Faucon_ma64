@@ -96,9 +96,15 @@
               <near>0.05</near>
               <far>8.0</far>
             </clip>
-            <!-- Active le nuage de points dense -->
-            <depth_far_clip>8.0</depth_far_clip>
-            <depth_near_clip>0.05</depth_near_clip>
+            <!-- Portee de l'image de profondeur (format SDF valide ; auparavant
+                 depth_near_clip / depth_far_clip, ignores par Gazebo). Memes
+                 valeurs que <clip> ci-dessus : comportement inchange. -->
+            <depth_camera>
+              <clip>
+                <near>0.05</near>
+                <far>8.0</far>
+              </clip>
+            </depth_camera>
           </camera>
       
           <!-- Topics publiés -->
