@@ -72,9 +72,12 @@ def held(probe):
 # d'apres l'age mesure par le noeud depuis sa derniere reception (son journal).
 
 def test_watchdog_forces_zero_when_commands_stop(chain):
+    # Reference prise AVANT de publier : si une coupure de livraison DDS prive
+    # diffdrive_safety de la fin des commandes, son delai de securite se declenche
+    # pendant la publication (age mesure correct) et ne se redeclenchera plus.
+    n_ages = len(watchdog_ages(chain.safety_log()))
     assert publish_until(chain.nav, lambda: twist(0.3), lambda: held(chain) == pytest.approx(0.3), timeout=5)
     publish_for(chain.nav, lambda: twist(0.3), 0.3, 20)
-    n_ages = len(watchdog_ages(chain.safety_log()))
     # plus aucune commande : diffdrive_safety doit forcer une vitesse nulle
     assert Probe.wait_until(lambda: held(chain) == 0.0, timeout=3.0), \
         "vitesse non forcee a zero apres l'arret des commandes :\n" + chain.safety_log()[-1500:]
@@ -82,8 +85,9 @@ def test_watchdog_forces_zero_when_commands_stop(chain):
     # reception : jamais avant cmd_timeout (0,5 s), et sans retard excessif
     assert Probe.wait_until(lambda: len(watchdog_ages(chain.safety_log())) > n_ages, timeout=2.0), \
         "pas de declenchement du delai de securite dans le journal :\n" + chain.safety_log()[-1500:]
-    age = watchdog_ages(chain.safety_log())[n_ages]
-    assert 0.5 <= age <= 1.0, f"delai de securite declenche a {age:.2f} s (attendu entre 0,5 et 1,0 s)"
+    ages = watchdog_ages(chain.safety_log())[n_ages:]
+    assert all(0.5 <= a <= 1.0 for a in ages), \
+        f"delai de securite declenche a {ages} s (attendu entre 0,5 et 1,0 s)"
 
 
 def test_e_stop_forces_zero_while_nav2_insists(chain):

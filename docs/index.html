@@ -296,6 +296,7 @@
       box-shadow: 0 20px 60px rgba(0,0,0,.4);
     }
     .arch-img-wrap img { width: 100%; display: block; }
+    .arch-hint { display: none; font-size: .8rem; color: var(--text-muted); margin-top: -2rem; margin-bottom: 2rem; }
     .packages-grid {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 2.5rem;
     }
@@ -355,8 +356,16 @@
     }
 
     /* ── QUICKSTART ── */
-    #start .steps { display: grid; grid-template-columns: repeat(4,1fr); gap: 2rem; margin-top: 2.5rem; }
-    .step { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem; }
+    /* minmax(0, 1fr) : sans cela, les longues lignes des <pre> elargissent les colonnes
+       et la derniere etape deborde (masquee par overflow-x: hidden sur body) */
+    #start .steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; margin-top: 2.5rem; }
+    .step { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem; min-width: 0; }
+    .start-tips { margin-top: 2rem; color: var(--text-muted); font-size: .9rem; }
+    .start-tips code {
+      font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: #a3e635;
+      background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; padding: .1rem .35rem;
+    }
+    .start-tips li { margin: .35rem 0 .35rem 1.2rem; }
     .step-num {
       width: 36px; height: 36px; background: rgba(34,197,94,.1);
       border: 1px solid rgba(34,197,94,.3); border-radius: 8px;
@@ -405,12 +414,15 @@
       .hero-inner { grid-template-columns: 1fr; }
       .hero-visual { display: none; }
       #vision { grid-template-columns: 1fr; gap: 3rem; }
-      .collab-grid { grid-template-columns: 1fr; }
-      .collab-connector { flex-direction: row; }
-      .connector-line { width: 80px; height: 2px; }
+      .collab-grid { grid-template-columns: minmax(0, 1fr); }
+      .collab-connector { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+      .connector-line { width: 32px; height: 2px; }
+      .connector-tag { white-space: normal; text-align: center; }
+      .arch-img-wrap { overflow-x: auto; }
+      .arch-img-wrap img { width: 900px; max-width: none; }
+      .arch-hint { display: block; }
       .features-grid { grid-template-columns: 1fr 1fr; }
       .packages-grid { grid-template-columns: 1fr 1fr; }
-      #start .steps { grid-template-columns: 1fr 1fr; }
       .stats-inner { grid-template-columns: repeat(2,1fr); }
       .nav-links { display: none; }
       #demo .gallery { grid-template-columns: 1fr; }
@@ -418,6 +430,7 @@
     @media (max-width: 600px) {
       .features-grid { grid-template-columns: 1fr; }
       .packages-grid { grid-template-columns: 1fr; }
+      #start .steps { grid-template-columns: minmax(0, 1fr); }
     }
   </style>
 </head>
@@ -680,8 +693,9 @@
     <h2>Une architecture en <em>couches</em></h2>
     <p class="lead">Le projet est structuré en packages indépendants qui communiquent via les topics et services ROS2, organisés en couches fonctionnelles clairement séparées.</p>
     <div class="arch-img-wrap">
-      <img src="assets/architecture.png" alt="Diagramme d'architecture Faucon" />
+      <img src="assets/architecture.svg" alt="Schéma d'architecture de Faucon : interface opérateur, mission, navigation, localisation, perception, commande et sécurité (twist_mux, contrôle 4WS), simulation Gazebo et drone, avec les principaux topics ROS 2" />
     </div>
+    <p class="arch-hint">↔ Faites défiler le schéma horizontalement.</p>
     <div class="packages-grid">
       <div class="pkg-card">
         <div class="pkg-name">faucon_base_desc</div>
@@ -801,14 +815,15 @@
 <!-- QUICKSTART -->
 <section id="start">
   <div class="section-label">Démarrage rapide</div>
-  <h2>Lancé en <em>3 étapes</em></h2>
-  <p class="lead">Prérequis : Ubuntu 24.04 · ROS2 Jazzy · Gazebo Harmonic</p>
+  <h2>Lancé en <em>4 étapes</em></h2>
+  <p class="lead">Prérequis : Ubuntu 24.04 · ROS2 Jazzy · Gazebo Harmonic · Node.js (pour l'IHM)</p>
   <div class="steps">
     <div class="step">
       <div class="step-num">1</div>
       <h3>Cloner & installer les dépendances</h3>
       <pre><span class="comment"># Cloner le dépôt</span>
-git clone git@github.com:themasterofarts/Faucon_ma64.git
+git clone \
+  git@github.com:themasterofarts/Faucon_ma64.git
 cd Faucon_ma64
 
 rosdep update
@@ -819,10 +834,14 @@ rosdep install \
     <div class="step">
       <div class="step-num">2</div>
       <h3>Builder le workspace</h3>
-      <pre><span class="comment"># Build avec colcon</span>
+      <pre><span class="comment"># IHM web (une fois)</span>
+cd faucon_ihm/ihm
+npm install && npm run build
+cd ../..
+
+<span class="comment"># Workspace ROS2</span>
 colcon build \
   --symlink-install
-
 source install/setup.bash</pre>
     </div>
     <div class="step">
@@ -831,21 +850,38 @@ source install/setup.bash</pre>
       <pre><span class="comment"># Robot complet</span>
 ./faucon/launch_base.sh
 
-<span class="comment"># Ou version Mini</span>
+<span class="comment"># Gazebo tourne sans</span>
+<span class="comment"># interface : suivre le</span>
+<span class="comment"># robot dans l'IHM</span>
+<span class="comment"># http://localhost:3000</span>
+
+<span class="comment"># Avec l'interface Gazebo</span>
+./faucon/launch_base.sh \
+  headless=false
+
+<span class="comment"># Version Mini</span>
 ./faucon/launch_base.sh \
   use_mini=true</pre>
     </div>
     <div class="step">
       <div class="step-num">4</div>
       <h3>Simulation + Navigation autonome</h3>
-      <pre><span class="comment"># Base + Nav2 + mission_manager</span>
+      <pre><span class="comment"># Base + Nav2 + missions</span>
 ./faucon/launch_full.sh
 
-<span class="comment"># Build, démarrage base,</span>
-<span class="comment"># puis navigation auto.</span>
+<span class="comment"># Avant une cartographie</span>
+<span class="comment"># RTAB-Map</span>
+./faucon/launch_full.sh \
+  use_lidar_calibrator=true
+
 <span class="comment"># Ctrl+C arrête tout.</span></pre>
     </div>
   </div>
+  <ul class="start-tips">
+    <li>Piloter au clavier : <code>ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=cmd_vel_teleop</code> (passe par l'arbitrage et l'arrêt d'urgence).</li>
+    <li>IHM depuis une tablette : ajouter <code>ihm_lan=true</code>, de préférence sur un réseau dédié au robot (pas d'authentification).</li>
+    <li>Toutes les options et la cartographie : voir le <a href="https://github.com/themasterofarts/Faucon_ma64#readme" target="_blank" style="color:var(--green)">README</a>.</li>
+  </ul>
 </section>
 
 <!-- CONTRIBUTE -->
