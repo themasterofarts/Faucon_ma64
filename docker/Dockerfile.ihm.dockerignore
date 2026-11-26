@@ -1,0 +1,7 @@
+# Contexte de build de l'image IHM : liste blanche (le depot contient des rosbags
+# de plusieurs Go qui ne doivent jamais etre envoyes au daemon Docker).
+*
+!faucon_ihm/ihm/**
+!docker/nginx/**
+faucon_ihm/ihm/node_modules
+faucon_ihm/ihm/dist
