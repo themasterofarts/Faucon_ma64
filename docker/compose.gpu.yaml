@@ -1,0 +1,16 @@
+# Ajoute le GPU NVIDIA au conteneur ROS (rendu Gazebo et capteurs simules).
+# Ajoute automatiquement par faucon_docker.sh si le runtime nvidia est disponible
+# (nvidia-container-toolkit) ; forcer avec FAUCON_DOCKER_GPU=1 ou 0.
+services:
+  ros:
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      # Portables hybrides (PRIME « on-demand ») : l'affichage est gere par le GPU
+      # integre, il faut demander explicitement le rendu sur la carte NVIDIA.
+      # Sans effet genant sur une machine dont la NVIDIA est le seul GPU.
+      - __NV_PRIME_RENDER_OFFLOAD=1
+      - __GLX_VENDOR_LIBRARY_NAME=nvidia
+      # Rendu sans affichage (capteurs Gazebo, mode headless) : EGL NVIDIA plutot que Mesa
+      - __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json

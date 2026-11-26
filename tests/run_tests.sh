@@ -24,7 +24,7 @@ export FAUCON_TEST_LOGS="${FAUCON_TEST_LOGS:-$REPO/test-results/logs}"
 RESULTS="$REPO/test-results"
 mkdir -p "$RESULTS" "$FAUCON_TEST_LOGS"
 
-UNIT_DIRS="faucon_common/test faucon_navigation/test faucon_control/test faucon_base_desc/test faucon_ihm/test"
+UNIT_DIRS="faucon_common/test faucon_navigation/test faucon_control/test faucon_base_desc/test faucon_ihm/test docker/tests"
 
 run_unit() {
     python3 -m coverage run --rcfile=.coveragerc -m pytest -q -p no:cacheprovider \
