@@ -180,6 +180,14 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=cmd_
 > Les commandes de vitesse passent par `twist_mux` : Nav2 publie sur `/cmd_vel_nav2` (priorité 10),
 > la téléopération (IHM, clavier) sur `/cmd_vel_teleop` (priorité 100). `twist_mux` publie le résultat sur `/cmd_vel`.
 > Ne publiez pas directement sur `/cmd_vel` : cela contournerait l'arbitrage.
+
+#### Lancement via Docker (optionnel)
+Pour essayer Faucon sans installer ROS 2, Gazebo ni Nav2 (Linux, Docker avec Compose v2) :
+```bash
+./docker/faucon_docker.sh full        # mêmes options que launch_full.sh, IHM sur http://127.0.0.1:3000
+```
+Deux images (pile ROS, IHM web) ; détails dans [docker/README.md](docker/README.md).
+L'installation native ci-dessus reste la voie principale pour développer.
 ---
 
 ### Tests
