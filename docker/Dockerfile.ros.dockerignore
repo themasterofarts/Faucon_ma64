@@ -1,0 +1,13 @@
+# Contexte de build de l'image ROS : liste blanche. Le depot contient des rosbags
+# de plusieurs Go (end_locolisat1/, rolocal20/) et des artefacts locaux (build/,
+# install/, log/) qui ne doivent jamais etre envoyes au daemon Docker.
+*
+!faucon_*/**
+!Faucon_Orchestration/**
+!virtual_maize_field/**
+!docker/ros_entrypoint.sh
+**/__pycache__
+**/node_modules
+faucon_ihm/ihm/dist
+**/*.db3
+**/*.mcap
