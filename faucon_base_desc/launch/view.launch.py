@@ -92,6 +92,8 @@ def launch_setup(context, *args, **kwargs):
             "use_sim_time": use_sim_time,
             # false (defaut) : IHM / rosbridge accessibles en local uniquement
             "ihm_lan": LaunchConfiguration("ihm_lan"),
+            # false : IHM servie hors de ce lancement (conteneur nginx sous Docker)
+            "ihm_server": LaunchConfiguration("ihm_server"),
         }.items(),
     )
 
@@ -329,6 +331,12 @@ def generate_launch_description():
                 default_value="false",
                 description="true : IHM, rosbridge et camera accessibles depuis le reseau "
                             "(SANS authentification) ; false : machine locale uniquement",
+            ),
+            DeclareLaunchArgument(
+                "ihm_server",
+                default_value="true",
+                description="false : ne pas lancer le serveur HTTP de l'IHM (servie par un "
+                            "autre conteneur, ex. Docker) ; rosbridge et la camera restent lances",
             ),
 
             OpaqueFunction(function=launch_setup),
