@@ -1,0 +1,57 @@
+# Image ROS de Faucon : ROS 2 Jazzy, Gazebo, Nav2 et le workspace Faucon compile.
+# Construite depuis la racine du depot (voir docker/compose.yaml) :
+#   docker build -f docker/Dockerfile.ros -t faucon-ros .
+# L'IHM n'est pas compilee ici : elle est servie par l'image faucon-ihm.
+FROM osrf/ros:jazzy-desktop
+
+SHELL ["/bin/bash", "-c"]
+ENV DEBIAN_FRONTEND=noninteractive \
+    ROS_DISTRO=jazzy \
+    PYTHONDONTWRITEBYTECODE=1
+
+# --- Dependances systeme (meme liste que la CI : .github/actions/ros-deps) ---
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
+      python3-pip python3-colcon-common-extensions \
+      build-essential cmake \
+      ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
+      ros-jazzy-ros-gz ros-jazzy-ros-gz-bridge ros-jazzy-ros-gz-image \
+      ros-jazzy-gz-ros2-control \
+      ros-jazzy-behaviortree-cpp ros-jazzy-nav2-bringup \
+      ros-jazzy-rosbridge-server ros-jazzy-web-video-server ros-jazzy-pcl-ros \
+      libopencv-dev \
+ && pip3 install --no-cache-dir --break-system-packages ujson utm pyproj \
+ && rm -rf /var/lib/apt/lists/*
+
+# --- Dependances des paquets (rosdep) ---
+# Seuls les package.xml sont copies : modifier le code n'invalide pas cette couche.
+WORKDIR /faucon_ws
+COPY faucon_base_desc/package.xml     src/faucon/faucon_base_desc/package.xml
+COPY faucon_common/package.xml        src/faucon/faucon_common/package.xml
+COPY faucon_control/package.xml       src/faucon/faucon_control/package.xml
+COPY faucon_drone/package.xml         src/faucon/faucon_drone/package.xml
+COPY faucon_ihm/package.xml           src/faucon/faucon_ihm/package.xml
+COPY faucon_localisation/package.xml  src/faucon/faucon_localisation/package.xml
+COPY faucon_navigation/package.xml    src/faucon/faucon_navigation/package.xml
+COPY faucon_perception/package.xml    src/faucon/faucon_perception/package.xml
+COPY Faucon_Orchestration/package.xml src/faucon/Faucon_Orchestration/package.xml
+COPY virtual_maize_field/package.xml  src/faucon/virtual_maize_field/package.xml
+RUN apt-get update \
+ && (rosdep update --rosdistro jazzy || (rosdep init && rosdep update --rosdistro jazzy)) \
+ && rosdep install --from-paths src --ignore-src -y --rosdistro jazzy \
+      --skip-keys "python3-ujson python3-utm python3-pyproj" \
+ && rm -rf /var/lib/apt/lists/*
+
+# --- Code Faucon ---
+COPY . src/faucon
+RUN source /opt/ros/jazzy/setup.bash \
+ && colcon build --merge-install --event-handlers console_cohesion+ \
+ && rm -rf build log
+
+# shells interactifs (docker compose exec ros bash) : environnement ROS deja charge
+RUN printf 'source /opt/ros/jazzy/setup.bash\nsource /faucon_ws/install/setup.bash\n' >> /root/.bashrc
+
+COPY docker/ros_entrypoint.sh /faucon_entrypoint.sh
+ENTRYPOINT ["/faucon_entrypoint.sh"]
+CMD ["bash"]

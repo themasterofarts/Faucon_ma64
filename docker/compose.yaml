@@ -1,0 +1,35 @@
+# Faucon sous Docker : pile ROS (simulation, navigation, rosbridge) et IHM web.
+# Ne pas lancer directement : utiliser docker/faucon_docker.sh, qui valide les
+# arguments et construit la commande de lancement ROS (FAUCON_ROS_CMD).
+name: faucon
+
+services:
+  ros:
+    image: faucon-ros
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ros
+    # Reseau et IPC de l'hote : meme comportement qu'en natif (127.0.0.1 par
+    # defaut, ihm_lan=true pour le reseau) et DDS sans configuration.
+    network_mode: host
+    ipc: host
+    init: true
+    stop_signal: SIGINT
+    stop_grace_period: 15s
+    environment:
+      - FAUCON_ROS_CMD
+      - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-0}
+      - DISPLAY=${DISPLAY:-}
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    command: ["bash", "-c", "eval \"$$FAUCON_ROS_CMD\""]
+
+  ihm:
+    image: faucon-ihm
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ihm
+    network_mode: host
+    environment:
+      - IHM_BIND=${IHM_BIND:-127.0.0.1}

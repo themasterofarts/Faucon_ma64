@@ -33,6 +33,8 @@ def launch_setup(context, *args, **kwargs):
 
     lan = LaunchConfiguration("ihm_lan").perform(context).strip().lower() in ("true", "1", "yes")
     bind = "0.0.0.0" if lan else "127.0.0.1"
+    # false : l'IHM est servie ailleurs (ex. conteneur nginx sous Docker)
+    serve_ihm = LaunchConfiguration("ihm_server").perform(context).strip().lower() in ("true", "1", "yes")
 
     # ihm_host conservé pour compatibilité : "auto" = suit ihm_lan
     ihm_host = LaunchConfiguration("ihm_host").perform(context).strip()
@@ -95,7 +97,8 @@ def launch_setup(context, *args, **kwargs):
         f"║  écoute      {shown}\n",
         "║  rosbridge   port ", rosbridge_port, "\n",
         "║  camera      port ", video_port, "\n",
-        "║  IHM         port ", ihm_port, "\n",
+        *(["║  IHM         port ", ihm_port, "\n"] if serve_ihm
+          else ["║  IHM         servie ailleurs (ihm_server:=false)\n"]),
         "╚══════════════════════════════════════════════╝\n",
     ])
 
@@ -110,7 +113,9 @@ def launch_setup(context, *args, **kwargs):
         actions.append(LogInfo(msg=(
             "[IHM] Accès local uniquement. Pour piloter depuis un autre appareil : ihm_lan:=true"
         )))
-    actions += [rosbridge_node, video_server_node, ihm_server]
+    actions += [rosbridge_node, video_server_node]
+    if serve_ihm:
+        actions.append(ihm_server)
     return actions
 
 
@@ -136,6 +141,11 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "ihm_host", default_value="auto",
             description="Interface d'écoute du serveur HTTP IHM ; 'auto' = suit ihm_lan"
+        ),
+        DeclareLaunchArgument(
+            "ihm_server", default_value="true",
+            description="false : ne pas lancer le serveur HTTP de l'IHM "
+                        "(servie par un autre conteneur, ex. Docker)"
         ),
         OpaqueFunction(function=launch_setup),
     ])

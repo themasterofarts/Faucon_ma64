@@ -5,6 +5,7 @@ from ament_index_python.packages import get_package_share_directory
 import launch
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 from launch_ros.actions import Node
@@ -97,6 +98,12 @@ def generate_launch_description():
             ),
             
             launch.actions.DeclareLaunchArgument(
+                "use_rviz",
+                default_value="true",
+                description="false : sans RViz (machine ou conteneur sans affichage ; "
+                            "rviz2 qui s'arrete au demarrage arreterait toute la navigation)",
+            ),
+            launch.actions.DeclareLaunchArgument(
                 name="params_file",
                 default_value=nav2_params_path,
                 description="Full path to the ROS2 parameters file to use for all launched nodes",
@@ -131,6 +138,7 @@ def generate_launch_description():
                     "use_sim_time": use_sim_time,
                     "rviz_config": rviz_config_file,
                 }.items(),
+                condition=IfCondition(LaunchConfiguration("use_rviz")),
             ),
             #static_tf,
             #static_tf2,

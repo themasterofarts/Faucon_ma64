@@ -1,0 +1,17 @@
+# Service de l'IHM Faucon. IHM_BIND et IHM_PORT sont substitues au demarrage.
+server {
+    listen ${IHM_BIND}:${IHM_PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        # application monopage : toute route inconnue renvoie l'IHM
+        try_files $uri $uri/ /index.html;
+    }
+
+    # index.html jamais mis en cache : une nouvelle image est prise en compte tout de suite
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+}

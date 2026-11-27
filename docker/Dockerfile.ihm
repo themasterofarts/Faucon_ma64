@@ -1,0 +1,23 @@
+# Image IHM de Faucon : compilation de l'interface React, puis service par nginx.
+# Construite depuis la racine du depot (voir docker/compose.yaml) :
+#   docker build -f docker/Dockerfile.ihm -t faucon-ihm .
+# L'IHM se connecte a rosbridge (ws://<hote du navigateur>:9090) et a la camera
+# (port 8080), servis par le conteneur ROS.
+
+# --- Etape 1 : compilation (vite build) ---
+FROM node:20-alpine AS build
+WORKDIR /ihm
+COPY faucon_ihm/ihm/package.json faucon_ihm/ihm/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY faucon_ihm/ihm/ ./
+RUN npm run build
+
+# --- Etape 2 : service statique ---
+FROM nginx:alpine
+# 127.0.0.1 : machine locale uniquement (defaut) ; 0.0.0.0 avec ihm_lan=true
+ENV IHM_BIND=127.0.0.1 \
+    IHM_PORT=3000
+RUN rm -f /etc/nginx/conf.d/default.conf
+# Les templates sont rendus par l'entrypoint de l'image nginx (envsubst)
+COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /ihm/dist /usr/share/nginx/html
