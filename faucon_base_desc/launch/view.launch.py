@@ -7,6 +7,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import PathJoinSubstitution, LaunchConfiguration, PythonExpression
 from launch.conditions import IfCondition, UnlessCondition
 from launch.actions import SetEnvironmentVariable, AppendEnvironmentVariable
+from launch.actions import RegisterEventHandler, Shutdown
+from launch.event_handlers import OnProcessExit
 from os import path
 
 
@@ -226,24 +228,34 @@ def launch_setup(context, *args, **kwargs):
     )
 
     
-    joint_broad_spawner = Node(
+    # Un seul spawner pour les trois controleurs, avec des delais longs : au demarrage
+    # sous charge (Gazebo + Nav2), controller_manager peut mettre plus de 10 s a
+    # repondre. Avec trois spawners separes, velocity_controller restait parfois non
+    # configure sans autre signe : roues immobiles, Nav2 "Failed to make progress".
+    controllers_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_broad", "--controller-manager-timeout", "20"],
+        arguments=[
+            "joint_broad", "steer_controller", "velocity_controller",
+            "--controller-manager-timeout", "60",
+            "--service-call-timeout", "30",
+            "--switch-timeout", "30",
+        ],
         condition=with_ros2_control,
     )
 
-    steer_controller = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["steer_controller"],
-        condition=with_ros2_control,
-    )
+    # Si les controleurs ne se chargent pas malgre tout, arreter le lancement plutot
+    # que de laisser un robot qui ne roule pas.
+    def _on_spawner_exit(event, _context):
+        if event.returncode != 0:
+            return [Shutdown(reason=(
+                "les controleurs ros2_control ne se sont pas charges "
+                f"(spawner code {event.returncode}) : le robot ne pourrait pas rouler"
+            ))]
+        return []
 
-    velocity_controller = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["velocity_controller"],
+    controllers_failure = RegisterEventHandler(
+        OnProcessExit(target_action=controllers_spawner, on_exit=_on_spawner_exit),
         condition=with_ros2_control,
     )
 
@@ -278,9 +290,8 @@ def launch_setup(context, *args, **kwargs):
         diffdrive_safety,
         launch_world,
         ros_gz_image_bridge,
-        steer_controller,
-        velocity_controller,
-        joint_broad_spawner,
+        controllers_spawner,
+        controllers_failure,
         twist_mux,
         #gz_sim,
         ground_filter, 
